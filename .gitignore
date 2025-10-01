@@ -1,0 +1,4 @@
+*.env
+temp_audio/
+.ipynb_checkpoints/
+audio_outputs/
