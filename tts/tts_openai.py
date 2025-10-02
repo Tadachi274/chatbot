@@ -1,83 +1,169 @@
 import os
 import threading
-import uuid
 from pathlib import Path
 from datetime import datetime
 import json
+import atexit
+from queue import Queue, Empty
+import platform
+import subprocess
+import shutil
 
 import openai
+# simpleaudio is optional; we will prefer afplay on macOS to avoid segfaults
+try:
+    import simpleaudio as sa
+except Exception:
+    sa = None
 from pydub import AudioSegment
-from playsound import playsound
-from simpleaudio import WaveObject, PlayObject
 
 # APIキーの読み込み
 openai.api_key = os.getenv("OPENAI_API_KEY")
-
-def _synthesize(text: str, config_path: str, model: str = "tts-1", voice: str = "alloy",  play: bool = True):
-    # 一時ファイル名の生成
-    temp_dir = Path("temp_audio")
-    temp_dir.mkdir(exist_ok=True)
-
-    mp3_path = temp_dir / f"tts_{uuid.uuid4().hex}.mp3"
-    wav_path = mp3_path.with_suffix(".wav")
-
-    # 設定ファイルの読み込み
-    instructions = None
-    config_file = Path(config_path)
-    if config_file.exists():
-        with open(config_file, "r", encoding="utf-8") as f:
-            config = json.load(f)
-        if "instructions" in config:
-            instructions = config["instructions"]
-        else:
-            print("⚠ 'instructions' not found in config.")
-    else:
-        print(f"⚠ Config file {config_path} not found. Proceeding with default settings.")
-
-
-    # TTS リクエスト
-    response = openai.audio.speech.create(
-        model="gpt-4o-mini-tts",
-        voice=voice,
-        input=text,
-        instructions=instructions
-    )
-
-    # MP3 ファイルに保存
-    response.stream_to_file(mp3_path)
-
-    # MP3 → WAV に変換
-    audio_segment = AudioSegment.from_mp3(str(mp3_path)) # mp3_pathを文字列に変換
-    audio_segment.export(str(wav_path), format="wav") # wav_pathを文字列に変換
-
-    # 音声再生
-    if play:
-        print(f"playsound:{datetime.now()}")
-        playsound(str(wav_path)) # wav_pathを文字列に変換
-
-    return wav_path # 保存したWAVファイルのパスを返す
 
 def speak_async(text: str, **kwargs):
     """
     非同期で音声合成を行う
     """
-    thread = threading.Thread(target=_synthesize, args=(text,), kwargs=kwargs)
+    thread = threading.Thread(target=_synthesize_and_enqueue, args=(text,), kwargs=kwargs, name="TTSWorker")
+    thread.daemon = False
     thread.start()
     return thread
 
-def save_audio(text: str, output_path: str, config_path: str, **kwargs):
-    """
-    音声合成を行い、指定されたパスに保存する
-    """
-    kwargs.pop('output_path', None) # output_pathはsynthesizeに渡さない
-    # 音声は生成するが、ここでは再生しない
-    wav_path = _synthesize(text, config_path,**kwargs, play=False)
-    if wav_path:
-        Path(output_path).parent.mkdir(exist_ok=True, parents=True)
-        # ファイルを移動
-        os.rename(str(wav_path), output_path) # wav_pathを文字列に変換
-        print(f"Audio saved to {output_path}")
-        # 移動後に再生
-        print(f"playsound:{datetime.now()}")
-        playsound(output_path)
+def _synthesize_and_enqueue(
+    text: str,
+    config_path: str,
+    model: str = "gpt-4o-mini-tts",
+    voice: str = "alloy",
+    play: bool = True
+):
+    wav_path = _synthesize_to_wav(text, config_path, model=model, voice=voice)
+    if play:
+        _player.play_later(wav_path)   # 非同期で再生
+    return wav_path
 
+
+def _synthesize_to_wav(
+    text: str,
+    config_path: str,
+    model: str = "gpt-4o-mini-tts",
+    voice: str = "alloy",
+) -> Path:
+    temp_dir = Path("temp_audio")
+    temp_dir.mkdir(exist_ok=True)
+
+    # Use a filename safe for macOS (no spaces/colons)
+    ts = datetime.now().strftime("%Y%m%d-%H%M%S-%f")
+    raw_path = temp_dir / f"tts_{ts}.bin"
+    wav_path = raw_path.with_suffix(".wav")
+
+    # 設定読み込み
+    instructions = None
+    cfg = Path(config_path)
+    if cfg.exists():
+        with cfg.open("r", encoding="utf-8") as f:
+            config = json.load(f)
+        instructions = config.get("instructions")
+
+    # TTS（SDKがformat無視する可能性があるため一旦.binで受ける）
+    response = openai.audio.speech.create(
+        model=model,
+        voice=voice,
+        input=text,
+        instructions=instructions,
+        # format="wav",
+    )
+    response.stream_to_file(raw_path)
+
+    # ヘッダで判定→WAVへ
+    filetype = _detect_audio_type(raw_path)
+    if filetype == "wav":
+        raw_path.replace(wav_path)
+    elif filetype == "mp3":
+        audio = AudioSegment.from_file(raw_path, format="mp3")
+        audio.export(wav_path, format="wav")
+        raw_path.unlink(missing_ok=True)
+    else:
+        audio = AudioSegment.from_file(raw_path)
+        audio.export(wav_path, format="wav")
+        raw_path.unlink(missing_ok=True)
+
+    return wav_path
+
+
+def _detect_audio_type(path: Path) -> str:
+    with path.open("rb") as f:
+        head = f.read(12)
+    if head.startswith(b"RIFF"):
+        return "wav"
+    if head.startswith(b"ID3"):
+        return "mp3"
+    if len(head) >= 2 and head[0] == 0xFF and (head[1] & 0xE0) == 0xE0:
+        return "mp3"
+    return "unknown"
+
+class AudioPlayer:
+    def __init__(self, autoremove=True):
+        self.q = Queue()
+        self._th = threading.Thread(target=self._worker, name="AudioPlayer")
+        self._th.daemon = False           # 終了まで確実に生かす
+        self._stop = threading.Event()
+        self.autoremove = autoremove      # 再生後に一時WAVを削除するか
+
+        # Prefer afplay on macOS to avoid simpleaudio segfaults
+        self._afplay = shutil.which("afplay") if platform.system() == "Darwin" else None
+        prefer_simple = os.getenv("USE_SIMPLEAUDIO", "0") == "1"
+        if prefer_simple and sa is not None:
+            self._backend = "simpleaudio"
+        elif self._afplay:
+            self._backend = "afplay"
+        elif sa is not None:
+            self._backend = "simpleaudio"
+        else:
+            self._backend = "afplay"  # will fail clearly if not present
+
+        self._th.start()
+
+    def play_later(self, wav_path: Path):
+        """WAVファイルのパスをキューに積む（非ブロッキング）"""
+        self.q.put(wav_path)
+
+    def _worker(self):
+        while not self._stop.is_set():
+            try:
+                wav_path = self.q.get(timeout=0.2)
+            except Empty:
+                continue
+            try:
+                print(f"playsound:{datetime.now()}")
+                if self._backend == "afplay":
+                    # Blocking until playback finishes
+                    subprocess.run([self._afplay, str(wav_path)], check=False)
+                else:
+                    wave_obj = sa.WaveObject.from_wave_file(str(wav_path))
+                    play_obj = wave_obj.play()
+                    play_obj.wait_done()
+            except Exception as e:
+                print(f"[AudioPlayer] playback error: {e}")
+            finally:
+                if self.autoremove:
+                    try:
+                        wav_path.unlink(missing_ok=True)
+                    except Exception:
+                        pass
+                self.q.task_done()
+
+    def stop(self):
+        """アプリ終了時に呼ぶ。キュー消化後に停止"""
+        self.q.join()
+        self._stop.set()
+        self._th.join()
+
+# グローバルなプレイヤー（プロセス中1つ）
+_player = AudioPlayer(autoremove=True)
+
+@atexit.register
+def _shutdown_audio():
+    try:
+        _player.stop()
+    except Exception:
+        pass

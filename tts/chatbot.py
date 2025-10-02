@@ -9,11 +9,14 @@ import zmq
 from string_to_file import StringFile
 import openai
 import os
+from dotenv import load_dotenv
 import tts_openai as tts
 import json
 from pathlib import Path
 import system_content_file 
+import sys
 
+load_dotenv()
 openai.api_key = os.getenv("OPENAI_API_KEY")
 
 def remove_quotes(text):
@@ -29,15 +32,16 @@ class StyleChangeServer(object):
         
     def run(self,config_path="voice_config_openai.json"):
         try:
+            system_content = system_content_file.system_content_raw
+            print(f"system_content: {system_content}")
+            config_file = Path(config_path)
             while True:
-                # Word Conversion
-                system_content = system_content_file.system_content_raw
-                print(f"system_content: {system_content}")
-                
-                config_file = Path(config_path)
                 if config_file.exists():
                     with open(config_file, "r", encoding="utf-8") as f:
                         config = json.load(f)
+                else:
+                    print(f"Config file not found: {config_path}")
+                    return 
 
                 system_content2 = config['gpt_system']
                 print(f"system_content2: {system_content2}")
@@ -71,7 +75,6 @@ class StyleChangeServer(object):
                 pol_msg = response.choices[0].message.content
                 response = remove_quotes(pol_msg)
     
-                
                 # Show results:
                 print(f"output:{datetime.now()}")
                 print(f"Send: {response}")
@@ -89,6 +92,11 @@ class StyleChangeServer(object):
                 self.history.append((utterance, response))
         except KeyboardInterrupt:
             print("\nCtrl+C を検知しました。サーバーを終了します。")
+            try:
+                tts._player.stop()  # 再生スレッドを停止
+            except Exception:
+                pass
+            sys.exit(0)
             
 if __name__ == "__main__":
 

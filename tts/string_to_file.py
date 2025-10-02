@@ -20,7 +20,7 @@ class StringFile(object):
             w_file.write(f"output: {response}\n")
             w_file.write("\n")
 
-    def add_config(self,before, input, after):
+    def add_config(self, before, input, after):
         with open(self.file_path, 'a') as w_file:
             w_file.write(f"before: {before}\n")
             w_file.write(f"input: {input}\n")

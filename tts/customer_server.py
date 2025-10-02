@@ -11,7 +11,7 @@ from string_to_file import StringFile
 
 import openai
 import os
-import tts_openai
+import tts_openai as tts
 
 openai.api_key = os.getenv("OPENAI_API_KEY")
 
