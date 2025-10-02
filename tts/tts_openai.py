@@ -41,7 +41,6 @@ def _synthesize_and_enqueue(
         _player.play_later(wav_path)   # 非同期で再生
     return wav_path
 
-
 def _synthesize_to_wav(
     text: str,
     config_path: str,

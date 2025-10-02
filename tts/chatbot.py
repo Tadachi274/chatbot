@@ -33,6 +33,8 @@ class StyleChangeServer(object):
     def run(self,config_path="voice_config_openai.json"):
         try:
             system_content = system_content_file.system_content_raw
+            ### American Version
+            # system_content = system_content_file.system_content_america
             print(f"system_content: {system_content}")
             config_file = Path(config_path)
             while True:

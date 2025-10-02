@@ -6,7 +6,7 @@ import requests
 import pyaudio
 import time
 from openai import OpenAI  # Use v1 client import
-import tts_voicevox as tts  # Assuming tts_openai is a custom module for TTS
+import tts.一旦保留.tts_voicevox as tts  # Assuming tts_openai is a custom module for TTS
 import test_chatbot as chatbot  # Assuming test_chatbot is a custom module for chatbot functionality
 import string_to_file  # Assuming string_to_file is a custom module for logging
 

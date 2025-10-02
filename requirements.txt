@@ -3,3 +3,5 @@ pyzmq
 simpleaudio
 pydub
 ffmpeg-python
+dotenv
+requests

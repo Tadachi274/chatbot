@@ -5,11 +5,14 @@ from datetime import datetime
 from openai import OpenAI  # tts_voicevoxからtts_openaiに変更
 import test_chatbot as chatbot
 import string_to_file
-
+import sys
+from dotenv import load_dotenv
+ 
 CONFIG_PATH = "voice_config_openai.json"
 TTS_SERVER = "openai"  # Assuming this is the TTS server you want to use
 
 # ---------- OpenAI API 設定 ----------
+load_dotenv()
 api_key = os.getenv("OPENAI_API_KEY")
 if not api_key:
     raise ValueError("環境変数 OPENAI_API_KEY が設定されていません。")
@@ -91,7 +94,6 @@ def llm_update_config(user_request: str, config: dict) -> dict:
     if hasattr(message, 'function_call') and message.function_call:
         fc = message.function_call
         args = json.loads(fc.arguments)
-        print(f"with arguments: {args} ")
         if 'instructions' in args:
             config['instructions'] = args['instructions'].strip()
         if 'gpt_system' in args:

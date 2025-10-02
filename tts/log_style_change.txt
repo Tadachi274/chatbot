@@ -481,3 +481,27 @@ output: こんにちは！いらっしゃいませ。今日はどのようなお
 input: こんにちは
 output: こんにちは！いらっしゃいませ。京都のお土産をお探しですか？何かお手伝いできることがあれば、どうぞお知らせください。
 
+before: {'gpt_system': 'You do not need to use honorific language when responding to users.', 'instructions': 'Speak in a casual and friendly tone, using a natural pace without formalities.'}
+input: 敬語はいらない
+output: {'gpt_system': 'You do not need to use honorific language when responding to users.', 'instructions': 'Speak in a casual and friendly tone, using a natural pace without formalities.'}
+
+before: {'gpt_system': 'You do not need to use polite language or keigo.', 'instructions': 'Use a casual tone, speaking in a friendly and approachable manner. Keep the pace relaxed and ensure clarity in delivery.'}
+input: 敬語はいらない
+output: {'gpt_system': 'You do not need to use polite language or keigo.', 'instructions': 'Use a casual tone, speaking in a friendly and approachable manner. Keep the pace relaxed and ensure clarity in delivery.'}
+
+before: {'gpt_system': 'You are a staff member at a service counter who speaks quickly and clearly to assist customers efficiently.', 'instructions': 'Please speak quickly, with a lively and energetic tone, maintaining clarity and enthusiasm to ensure understanding.'}
+input: めっちゃ早く話して
+output: {'gpt_system': 'You are a staff member at a service counter who speaks quickly and clearly to assist customers efficiently.', 'instructions': 'Please speak quickly, with a lively and energetic tone, maintaining clarity and enthusiasm to ensure understanding.'}
+
+before: {'gpt_system': 'Please speak faster.', 'instructions': 'Speak with a quick and energetic tone, maintaining clarity and enthusiasm. Keep the pace brisk and engaging.'}
+input: めっちゃ早くして
+output: {'gpt_system': 'Please speak faster.', 'instructions': 'Speak with a quick and energetic tone, maintaining clarity and enthusiasm. Keep the pace brisk and engaging.'}
+
+before: {'gpt_system': 'Please speak faster.', 'instructions': 'Speak in a quick and energetic manner, maintaining clarity and enthusiasm. The tone should be upbeat and engaging, encouraging swift communication.'}
+input: めっちゃ早くして
+output: {'gpt_system': 'Please speak faster.', 'instructions': 'Speak in a quick and energetic manner, maintaining clarity and enthusiasm. The tone should be upbeat and engaging, encouraging swift communication.'}
+
+before: {'gpt_system': 'Please speak even faster.', 'instructions': 'Speak in a very quick and energetic manner, ensuring clarity and high enthusiasm. The tone should be extremely upbeat and engaging, promoting swift communication.'}
+input: もっともっと早くして
+output: {'gpt_system': 'Please speak even faster.', 'instructions': 'Speak in a very quick and energetic manner, ensuring clarity and high enthusiasm. The tone should be extremely upbeat and engaging, promoting swift communication.'}
+

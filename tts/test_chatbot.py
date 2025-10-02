@@ -10,7 +10,7 @@ from string_to_file import StringFile
 import openai
 import os
 import tts_openai 
-import tts_voicevox2 as tts_voicevox
+# import 一旦保留.tts_voicevox2 as tts_voicevox
 import system_content_file 
 
 import json
@@ -60,18 +60,12 @@ def run(config_path="voice_config1.json",tts_server="voicevox"):
     
         # 非同期でOpenAI TTSを呼び出し、再生し、保存する
         try:
-            # 保存先パスの生成
-            timestamp = datetime.now().strftime("%Y%m%d-%H%M%S")
-            output_dir = Path("audio_outputs")
-            output_dir.mkdir(exist_ok=True)
-            output_path = output_dir / f"{timestamp}.wav"
-
             # 音声の再生と保存
             if(tts_server=="openai"):
-                tts_openai.save_audio(response, str(output_path), config_path)
-            elif(tts_server=="voicevox"):
+                tts_openai.speak_async(response, config_path=config_path)
+            # elif(tts_server=="voicevox"):
                 #tts_voicevox.speak_async(response,config_path)
-                tts_voicevox.save_audio(response, str(output_path), config_path)
+                # tts_voicevox.save_audio(response, str(output_path), config_path)
 
         except Exception as e:
             logging.warning(f"TTS error: {e}")
