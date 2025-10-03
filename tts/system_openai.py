@@ -4,6 +4,7 @@ from pathlib import Path
 from datetime import datetime
 from openai import OpenAI  # tts_voicevoxからtts_openaiに変更
 import test_chatbot as chatbot
+import compiler_openai
 import string_to_file
 import sys
 from dotenv import load_dotenv
@@ -70,6 +71,8 @@ def llm_update_config(user_request: str, config: dict) -> dict:
         A user has made the following comment or request:
         "{user_request}"
 
+        If the request is not related to voice style or speaking style, do not change anything and return the current configuration as is.
+
         If the user comment includes only feedback such as a problem (e.g. "The speed is too slow", "It's hard to understand"), rephrase it into an English request that reflects the intended improvement (e.g. "Please speak faster", "Please make it easier to understand").
 
         If the comment is already a request, just use it as is.
@@ -106,29 +109,7 @@ def interactive_loop():
     print("=== OpenAI 動的設定編集モード ===")
     while True:
         try:
-            # req = input('[コマンド] 変更内容を入力 (Ctrl+Cで終了): ')
-            req = """#### 1\. 声の調子（音声表現の調整）
-
-*   **声のトーン**：少し高めで明るい調子にする → 落ち着いたが元気さを感じる声を意識
-*   **話すスピード**：通常よりややゆっくり → 聞き取りやすさを確保
-*   **間の取り方**：文と文の間に0.5～1秒程度のポーズを置く → 相手が理解・反応しやすい
-
-#### 2\. 言葉選び（語彙・表現の調整）
-
-*   **難しい言葉の回避**：専門用語や略語は避け、日常的な言葉で言い換える
-*   **具体的な表現**：「こちらの商品」より「この赤い袋のお菓子」など視覚的・具体的に伝える
-*   **丁寧さ**：「〜してください」より「〜していただけますか？」など、依頼は丁寧に
-
-#### 3\. 会話構造（話し方の進め方）
-
-*   **一文を短く区切る**：長い説明を避け、2〜3文でまとめる
-*   **確認を入れる**：「ここまでで大丈夫ですか？」など理解を確認する問いを適度に挟む
-*   **復唱・要約**：相手の言葉を繰り返す、要点をまとめることで安心感を与える
-
-#### 4\. 非言語的な工夫（必要に応じて）
-
-*   **声色の変化**：重要な部分でやや強調して抑揚をつける
-*   **笑い声や相槌**：「そうですね」「はい」など相槌を多めにする → 共感と安心感を演出"""
+            req = input('[コマンド] 変更内容を入力 (Ctrl+Cで終了): ')
         except KeyboardInterrupt:
             print("\nCtrl+C を検知しました。サーバーを終了します。")
             # 現在の設定ファイルをタイムスタンプ付きでバックアップ
@@ -144,9 +125,11 @@ def interactive_loop():
             print(f"バックアップを作成しました: {backup_path}")
             print(f"{CONFIG_PATH} をリセットしました。")
             break
+        req = compiler_openai.compile(req)
+        print(f'[要望詳細化] {req}')
         after_config = llm_update_config(req, before_config)
         save_config(after_config)
-        string_to_file.StringFile(1).add_config(
+        string_to_file.StringFile(2).add_config(
             str(before_config), req, str(after_config) # 文字列に変換
         )
         print('[更新後設定]', json.dumps(after_config, ensure_ascii=False, indent=2))
