@@ -17,14 +17,13 @@ import json
 from pathlib import Path
 
 openai.api_key = os.getenv("OPENAI_API_KEY")
-SYSTEM_CONTENT = system_content_file.system_content_america_closingtime
 
 
 #def run(config_path="voice_config_openai.json",tts_server="openai"):
 def run(config_path="voice_config1.json",tts_server="voicevox"):
     try:
         # Word Conversion
-        system_content = SYSTEM_CONTENT
+        system_content = system_content_file.system_content_raw
         
         config_file = Path(config_path)
         if config_file.exists():

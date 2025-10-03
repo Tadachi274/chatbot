@@ -1,5 +1,9 @@
 system_content_raw="""
 Note that the Japanese sentences I provide are statements made by a customer to the store staff.
+"""
+
+system_content_souvenir_shop="""
+Note that the Japanese sentences I provide are statements made by a customer to the store staff.
 Please serve customers as a clerk in a Kyoto souvenir shop.
 """
 
