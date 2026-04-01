@@ -5,3 +5,5 @@ pydub
 ffmpeg-python
 dotenv
 requests
+pygame
+watchdog

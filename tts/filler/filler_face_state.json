@@ -1,0 +1,69 @@
+{
+  "updated_at": "2026-04-01T19:32:36",
+  "faces": {
+    "cant_hear": {
+      "type": "sorry",
+      "level": 1
+    },
+    "cant_hear_voice": {
+      "type": "もう一度よろしいでしょうか",
+      "level": 1
+    },
+    "listen": {
+      "type": "AffiliativeSmileOpenEyes",
+      "level": 3
+    },
+    "listen_nod": {
+      "type": "small",
+      "level": 1
+    },
+    "listen_voice": {
+      "type": "うん",
+      "level": 1
+    },
+    "listen_emotion": {
+      "type": "AffiliativeSmile",
+      "level": 2
+    },
+    "understand": {
+      "type": "RewardSmile",
+      "level": 2
+    },
+    "understand_nod": {
+      "type": "small",
+      "level": 7
+    },
+    "understand_voice": {
+      "type": "はい",
+      "level": 1
+    },
+    "think": {
+      "type": "WaitSmile",
+      "level": 3
+    },
+    "think_gaze": {
+      "type": "d",
+      "level": 0.5
+    },
+    "speak_face": {
+      "type": "AffiliativeSmile",
+      "level": 2
+    },
+    "speak_gaze": {
+      "type": "d",
+      "level": 0.5
+    },
+    "speak_gaze_match": {
+      "type": "",
+      "level": 2.0
+    },
+    "speak_gaze_avert": {
+      "type": "",
+      "level": 2.0
+    },
+    "speak_person": {
+      "type": "nozomi_emo_22_standard",
+      "level": 0
+    }
+  }
+}

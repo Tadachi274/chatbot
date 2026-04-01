@@ -1,0 +1,4 @@
+before: {'instructions': 'Speak clearly and at a moderate pace to ensure comprehension.', 'gpt_system': 'Please maintain a responsive and engaging manner when addressing user requests.'}
+input: k
+output: {'instructions': 'Speak clearly and at a moderate pace to ensure comprehension.', 'gpt_system': 'Please maintain a responsive and engaging manner when addressing user requests.'}
+

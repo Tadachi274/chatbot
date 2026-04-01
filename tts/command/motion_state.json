@@ -1,0 +1,64 @@
+{
+  "motions": {
+    "greeting": {
+      "face": {
+        "type": "AffiliativeSmile",
+        "level": 2
+      },
+      "bow": {
+        "enabled": true,
+        "kind": "small"
+      },
+      "between_gaze": {
+        "type": "l",
+        "level": 0.4
+      },
+      "end_gaze_return": true
+    },
+    "thanks": {
+      "face": {
+        "type": "RewardSmile",
+        "level": 2
+      },
+      "bow": {
+        "enabled": true,
+        "kind": "small"
+      },
+      "between_gaze": {
+        "type": "d",
+        "level": 0.5
+      },
+      "end_gaze_return": true
+    },
+    "apology": {
+      "face": {
+        "type": "WaitSmile",
+        "level": 1
+      },
+      "bow": {
+        "enabled": true,
+        "kind": "deep"
+      },
+      "between_gaze": {
+        "type": "ld",
+        "level": 0.6
+      },
+      "end_gaze_return": true
+    },
+    "explanation": {
+      "face": {
+        "type": "neutral",
+        "level": 1
+      },
+      "bow": {
+        "enabled": false,
+        "kind": "none"
+      },
+      "between_gaze": {
+        "type": "l",
+        "level": 0.3
+      },
+      "end_gaze_return": true
+    }
+  }
+}
