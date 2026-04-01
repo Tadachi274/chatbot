@@ -1,0 +1,742 @@
+[AudioPlayer] finish playing 20336.578
+[Chatbot] play: ご予約のお名前をお伺いしてもよろしいでしょうか？
+[robot_client] b'/look 776 -65 1111 0.5 0.5 0 4 1500'
+[AudioPlayer] playstart 20336.687 duration=4.778s
+[tick] now:20336.703
+[tick_result] speak
+[tick] now:20337.203
+[tick_result] speak
+[tick] now:20337.703
+[tick_result] speak
+[tick] now:20338.203
+[tick_result] speak
+[robot_client] b'/emotion AffiliativeSmile 2 2 1000'
+[tick] now:20338.703
+[tick_result] speak
+[tick] now:20339.203
+[tick_result] speak
+[robot_client] b'/look 776 -62 1112 0.5 0.5 0 4 1500'
+[tick] now:20339.703
+[tick_result] speak
+[tick] now:20340.203
+[tick_result] speak
+[robot_client] b'/emotion AffiliativeSmile 2 2 1000'
+[tick] now:20340.703
+[tick_result] speak
+[tick] now:20341.203
+[tick_result] speak
+[AudioPlayer] finish playing 20341.468
+[tts finish]
+[Chatbot] planned TTS playback done
+[tick] now:20341.703
+[tick] now:20342.203
+[tick] now:20342.703
+[tick_result] face_listen
+[robot_client] b'/emotion AffiliativeSmileOpenEyes 3 2 1000'
+[filler_motion_nod] last_nod_best_clean
+[filler_motion_nod] 20342.703 don't progress meaning
+[tick] now:20343.203
+[tick_result] face_listen
+[filler_motion_nod] last_nod_best_clean
+[filler_motion_nod] 20343.203 don't progress meaning
+[tick] now:20343.703
+[tick_result] face_listen
+[filler_motion_nod] last_nod_best_clean
+[filler_motion_nod] 20343.703 don't progress meaning
+[tick] now:20344.203
+[tick_result] face_listen
+[filler_motion_nod] last_nod_best_clean
+[filler_motion_nod] 20344.203 don't progress meaning
+[interium]
+[interium]best_clean ただ
+[Chatbot] ASR interim at 2026-04-01 19:34:21.187075: ただ
+[tick] now:20344.703
+[tick_result] else
+[robot_client] b'/nod 7 400 1 3'
+[AudioPlayer] playstart 20344.703 duration=1.078s
+[interium]
+[interium]best_clean ただちょっと
+[Chatbot] ASR interim at 2026-04-01 19:34:21.554814: ただちょっと
+[robot_client] b'/blink 360.0'
+[robot_client] b'/emotion  RewardSmile 2 2 1000'
+[interium]
+[interium]best_clean ただちょっと 申し
+[Chatbot] ASR interim at 2026-04-01 19:34:21.771097: ただちょっと 申し
+{'type': 'd', 'level': 0.5}
+   [create_lookaway] d 0.5
+[robot_client] b'/lookaway d 4 1500 0.5'        
+[robot_client] b'/emotion  WaitSmile 3 2 1000'  
+[interium]
+[interium]best_clean ただちょっと申します       
+[Chatbot] ASR interim at 2026-04-01 19:34:21.967299: ただちょっと申します
+[tick] now:20345.609
+[tick_result] else
+[AudioPlayer] finish playing 20345.765
+{'type': 'd', 'level': 0.5}
+   [create_lookaway] d 0.5
+[robot_client] b'/lookaway d 4 1500 0.5'        
+[final]
+{'type': 'd', 'level': 0.5}
+   [create_lookaway] d 0.5
+[robot_client] b'/lookaway d 4 1500 0.5'        
+[Chatbot] ASR result (0.93) at 2026-04-01 19:34:22.933551: ただちょっと申します
+[tick] now:20346.406
+[tick_result] else
+{'type': 'd', 'level': 0.5}
+   [create_lookaway] d 0.5
+[robot_client] b'/lookaway d 4 1500 0.5'        
+[Chatbot] Send at 2026-04-01 19:34:23.616353: かしこまりました。どうぞお申し付けくださいませ。  
+
+[before_tts]
+[robot_client] b'/look 783 -67 1109 0.5 0.5 0 4 1500'
+[robot_client] b'/emotion AffiliativeSmile 2 2 1000'
+[tick] now:20347.218
+[tick_result] speak
+[tick] now:20347.718
+[tick_result] speak
+[Chatbot] prepared:[{'text': 'かしこまりました。', 'label': 'explanation', 'motion': {'face': {'type': 'neutral', 'level': 1}, 'bow': {'enabled': False, 'kind': 'none'}, 'between_gaze': {'type': 'l', 'level': 0.3}, 'end_gaze_return': True}, 'wav_path': WindowsPath('C:/tadachi/chatbot/tts/temp_audio/tts_nikola_default_20260401-193424.wav'), 'is_last': False}, {'text': 'どうぞお申し 付けくださいませ。', 'label': 'explanation', 'motion': {'face': {'type': 'neutral', 'level': 1}, 'bow': {'enabled': False, 'kind': 'none'}, 'between_gaze': {'type': 'l', 'level': 0.3}, 'end_gaze_return': True}, 'wav_path': WindowsPath('C:/tadachi/chatbot/tts/temp_audio/tts_nikola_default_20260401-193424.wav'), 'is_last': True}]       
+[Chatbot] play: かしこまりました。
+[robot_client] b'/look 780 -68 1110 0.5 0.5 0 4 1500'
+[AudioPlayer] playstart 20348.203 duration=3.479s
+[tick] now:20348.218
+[tick_result] speak
+[tick] now:20348.718
+[tick_result] speak
+[tick] now:20349.218
+[tick_result] speak
+[robot_client] b'/emotion AffiliativeSmile 2 2 1000'
+[tick] now:20349.718
+[tick_result] speak
+[tick] now:20350.218
+[tick_result] speak
+[tick] now:20350.718
+[tick_result] speak
+   [create_lookaway] l 0.3
+[robot_client] b'/look 782 -186.0 1110 1.0 0 0 4 1500'
+[tick] now:20351.218
+[tick_result] speak
+[robot_client] b'/emotion AffiliativeSmile 2 2 1000'
+[AudioPlayer] finish playing 20351.671
+[Chatbot] play: どうぞお申し付けくださいませ。  
+[robot_client] b'/look 784 -64 1110 0.5 0.5 0 4 1500'
+[tick] now:20351.718
+[tick_result] speak
+[AudioPlayer] playback error: [Errno 2] No such file or directory: 'C:\\tadachi\\chatbot\\tts\\temp_audio\\tts_nikola_default_20260401-193424.wav'
+[tts finish]
+[Chatbot] planned TTS playback done
+[tick] now:20352.218
+[tick] now:20352.718
+[tick_result] face_listen
+[robot_client] b'/emotion AffiliativeSmileOpenEyes 3 2 1000'
+[filler_motion_nod] last_nod_best_clean
+[filler_motion_nod] 20352.718 don't progress meaning
+[tick] now:20353.218
+[tick_result] face_listen
+[filler_motion_nod] last_nod_best_clean
+[filler_motion_nod] 20353.218 don't progress meaning
+[tick] now:20353.718
+[tick_result] face_listen
+[filler_motion_nod] last_nod_best_clean
+[filler_motion_nod] 20353.718 don't progress meaning
+[tick] now:20354.218
+[tick_result] face_listen
+[filler_motion_nod] last_nod_best_clean
+[filler_motion_nod] 20354.218 don't progress meaning
+[tick] now:20354.718
+[robot_client] b'/emotion sorry 1 2 1000'       
+[tick_result] act>=1 face_cant_hear
+[AudioPlayer] playstart 20354.718 duration=4.393s
+[interium]
+[interium]best_clean ただ
+[Chatbot] ASR interim at 2026-04-01 19:34:31.517860: ただ
+[interium]
+[interium]best_clean ただち
+[Chatbot] ASR interim at 2026-04-01 19:34:31.822657: ただち
+[interium]
+[interium]best_clean ただちと
+[Chatbot] ASR interim at 2026-04-01 19:34:31.922156: ただちと
+[tick] now:20355.218
+[tick_result] else
+[robot_client] b'/nod 7 400 1 3'
+[robot_client] b'/blink 360.0'
+[robot_client] b'/emotion  RewardSmile 2 2 1000'
+[interium]
+[interium]best_clean ただちと申し
+[Chatbot] ASR interim at 2026-04-01 19:34:32.130729: ただちと申し
+[interium]
+[interium]best_clean ただちと申します
+[Chatbot] ASR interim at 2026-04-01 19:34:32.214861: ただちと申します
+{'type': 'd', 'level': 0.5}
+   [create_lookaway] d 0.5
+[robot_client] b'/lookaway d 4 1500 0.5'        
+[robot_client] b'/emotion  WaitSmile 3 2 1000'  
+[tick] now:20356.125
+[final]
+{'type': 'd', 'level': 0.5}
+   [create_lookaway] d 0.5
+[robot_client] b'/lookaway d 4 1500 0.5'        
+[Chatbot] ASR result (0.92) at 2026-04-01 19:34:33.209032: ただちと申します
+[tick] now:20356.625
+[tick_result] else
+{'type': 'd', 'level': 0.5}
+   [create_lookaway] d 0.5
+[robot_client] b'/lookaway d 4 1500 0.5'        
+[tick] now:20357.421
+[tick_result] else
+{'type': 'd', 'level': 0.5}
+   [create_lookaway] d 0.5
+[robot_client] b'/lookaway d 4 1500 0.5'        
+[robot_client] b'/emotion  WaitSmile 3 2 1000'  
+[Chatbot] Send at 2026-04-01 19:34:34.603394: ただち様でいらっしゃいますね。ありがとうございます。ご予約内容を確認いたしますので、少々お待ちくださいませ。
+
+[before_tts]
+[robot_client] b'/look 772 -70 1111 0.5 0.5 0 4 1500'
+[robot_client] b'/emotion AffiliativeSmile 2 2 1000'
+[tick] now:20358.234
+[tick_result] speak
+[tick] now:20358.734
+[tick_result] speak
+[AudioPlayer] finish playing 20359.109
+[AudioPlayer] playstart 20359.109 duration=1.382s
+[tick] now:20359.234
+[tick_result] speak
+[Chatbot] prepared:[{'text': 'ただち様でいらっしゃいますね。', 'label': 'explanation', 'motion': {'face': {'type': 'neutral', 'level': 1}, 'bow': {'enabled': False, 'kind': 'none'}, 'between_gaze': {'type': 'l', 'level': 0.3}, 'end_gaze_return': True}, 'wav_path': WindowsPath('C:/tadachi/chatbot/tts/temp_audio/tts_nikola_default_20260401-193435.wav'), 'is_last': False}, {'text': ' ありがとうございます。', 'label': 'thanks', 'motion': {'face': {'type': 'RewardSmile', 'level': 2}, 'bow': {'enabled': True, 'kind': 'small'}, 'between_gaze': {'type': 'd', 'level': 0.5}, 'end_gaze_return': True}, 'wav_path': WindowsPath('C:/tadachi/chatbot/tts/temp_audio/tts_nikola_20260401-193435_rate0.98_pitch1.03_emphasis1.05_joy0.12.wav'), 'is_last': False}, {'text': 'ご予約内容を確認いたしますので、少々お待ちくださいませ。', 'label': 'explanation', 'motion': {'face': {'type': 'neutral', 'level': 1}, 'bow': {'enabled': False, 'kind': 'none'}, 'between_gaze': {'type': 'l', 'level': 0.3}, 'end_gaze_return': True}, 'wav_path': WindowsPath('C:/tadachi/chatbot/tts/temp_audio/tts_nikola_default_20260401-193436.wav'), 'is_last': True}]
+[Chatbot] play: ただち様でいらっしゃいますね。  
+[robot_client] b'/look 770 -73 1111 0.5 0.5 0 4 1500'
+[AudioPlayer] playstart 20359.421 duration=3.342s
+[tick] now:20359.734
+[tick_result] speak
+[tick] now:20360.234
+[tick_result] speak
+[robot_client] b'/emotion AffiliativeSmile 2 2 1000'
+[tick] now:20360.734
+[tick_result] speak
+[tick] now:20361.234
+[tick_result] speak
+[tick] now:20361.734
+[tick_result] speak
+   [create_lookaway] l 0.3
+[robot_client] b'/look 777 -194.0 1107 1.0 0 0 4 1500'
+[tick] now:20362.234
+[tick_result] speak
+[robot_client] b'/emotion AffiliativeSmile 2 2 1000'
+[tick] now:20362.734
+[tick_result] speak
+[AudioPlayer] finish playing 20362.765
+[AudioPlayer] finish playing 20362.796
+[Chatbot] play: ありがとうございます。
+[robot_client] b'/look 775 -71 1109 0.5 0.5 0 4 1500'
+[robot_client] b'/emotion RewardSmile 2 2 1000'
+[robot_client] b'/bow 200 500 3'
+[AudioPlayer] playstart 20363.093 duration=2.874s
+[tick] now:20363.234
+[tick_result] speak
+[tick] now:20363.734
+[tick_result] speak
+[tick] now:20364.234
+[tick_result] speak
+[robot_client] b'/emotion AffiliativeSmile 2 2 1000'
+[tick] now:20364.734
+[tick_result] speak
+[tick] now:20365.234
+[tick_result] speak
+   [create_lookaway] d 0.5
+[robot_client] b'/lookaway d 4 1500 0.5'        
+[tick] now:20365.734
+[tick_result] speak
+[AudioPlayer] finish playing 20365.968
+[Chatbot] play: ご予約内容を確認いたしますので、少々お待ちくださいませ。
+[robot_client] b'/look 774 -71 1112 0.5 0.5 0 4 1500'
+[AudioPlayer] playstart 20366.062 duration=6.139s
+[tick] now:20366.234
+[tick_result] speak
+[robot_client] b'/emotion AffiliativeSmile 2 2 1000'
+[tick] now:20366.734
+[tick_result] speak
+[tick] now:20367.234
+[tick_result] speak
+[tick] now:20367.75
+[tick_result] speak
+[tick] now:20368.25
+[tick_result] speak
+[robot_client] b'/emotion AffiliativeSmile 2 2 1000'
+[tick] now:20368.75
+[tick_result] speak
+[tick] now:20369.25
+[tick_result] speak
+[tick] now:20369.75
+[tick_result] speak
+[robot_client] b'/look 771 -72 1112 0.5 0.5 0 4 1500'
+[tick] now:20370.25
+[tick_result] speak
+[robot_client] b'/emotion AffiliativeSmile 2 2 1000'
+[tick] now:20370.75
+[tick_result] speak
+[tick] now:20371.25
+[tick_result] speak
+[tick] now:20371.75
+[tick_result] speak
+[AudioPlayer] finish playing 20372.203
+[tts finish]
+[Chatbot] planned TTS playback done
+[tick] now:20372.25
+[tick] now:20372.75
+[tick] now:20373.25
+[tick] now:20373.75
+[tick] now:20374.25
+[tick] now:20374.75
+[tick] now:20375.25
+[tick] now:20375.75
+[tick] now:20376.25
+[tick] now:20376.75
+
+[Chatbot] internal event: next
+[tick] now:20377.25
+[tick] now:20377.75
+[tick] now:20378.25
+[tick] now:20378.75
+[Chatbot] Send at 2026-04-01 19:34:55.893392: お待たせいたしました、ご予約の確認が取れましたので、チェックインのお手続きを進めさせていただきます。
+
+[before_tts]
+[robot_client] b'/look 805 -126 1113 0.5 0.5 0 4 1500'
+[robot_client] b'/emotion AffiliativeSmile 2 2 1000'
+[tick] now:20379.25
+[tick_result] speak
+[tick] now:20379.765
+[tick_result] speak
+[tick] now:20380.265
+[tick_result] speak
+[Chatbot] prepared:[{'text': 'お待たせいたしました、ご予約の確認が取れましたので、チェックインのお手続きを進めさせていただきます。', 'label': 'explanation', 'motion': {'face': {'type': 'neutral', 'level': 1}, 'bow': {'enabled': False, 'kind': 'none'}, 'between_gaze': {'type': 'l', 'level': 0.3}, 'end_gaze_return': True}, 'wav_path': WindowsPath('C:/tadachi/chatbot/tts/temp_audio/tts_nikola_default_20260401-193457.wav'), 'is_last': True}]
+[Chatbot] play: お待たせいたしました、ご予約の確認が取れましたので、チェックインのお手続きを進めさせていただきます。
+[robot_client] b'/look 783 -108 1112 0.5 0.5 0 4 1500'
+[AudioPlayer] playstart 20380.562 duration=8.662s
+[tick] now:20380.765
+[tick_result] speak
+[tick] now:20381.265
+[tick_result] speak
+[robot_client] b'/emotion AffiliativeSmile 2 2 1000'
+[tick] now:20381.765
+[tick_result] speak
+[tick] now:20382.265
+[tick_result] speak
+[tick] now:20382.765
+[tick_result] speak
+[tick] now:20383.265
+[tick_result] speak
+[robot_client] b'/emotion AffiliativeSmile 2 2 1000'
+[tick] now:20383.765
+[tick_result] speak
+[tick] now:20384.265
+[tick_result] speak
+[tick] now:20384.765
+[tick_result] speak
+[tick] now:20385.265
+[tick_result] speak
+[robot_client] b'/emotion AffiliativeSmile 2 2 1000'
+[tick] now:20385.765
+[tick_result] speak
+[tick] now:20386.265
+[tick_result] speak
+[tick] now:20386.765
+[tick_result] speak
+[robot_client] b'/look 763 -114 1108 0.5 0.5 0 4 1500'
+[tick] now:20387.265
+[tick_result] speak
+[robot_client] b'/emotion AffiliativeSmile 2 2 1000'
+[tick] now:20387.765
+[tick_result] speak
+[tick] now:20388.265
+[tick_result] speak
+[tick] now:20388.765
+[tick_result] speak
+[AudioPlayer] finish playing 20389.218
+[tts finish]
+[Chatbot] planned TTS playback done
+[tick] now:20389.265
+[tick] now:20389.765
+[tick] now:20390.265
+[tick] now:20390.765
+[tick] now:20391.265
+[tick] now:20391.765
+[tick_result] face_listen
+[robot_client] b'/emotion AffiliativeSmileOpenEyes 3 2 1000'
+[filler_motion_nod] last_nod_best_clean
+[filler_motion_nod] 20391.781 don't progress meaning
+[tick] now:20392.281
+[tick_result] face_listen
+[filler_motion_nod] last_nod_best_clean
+[filler_motion_nod] 20392.281 don't progress meaning
+[tick] now:20392.781
+[tick_result] face_listen
+[filler_motion_nod] last_nod_best_clean
+[filler_motion_nod] 20392.781 don't progress meaning
+[interium]
+[interium]best_clean お願い
+[Chatbot] ASR interim at 2026-04-01 19:35:09.545258: お願い
+[interium]
+[interium]best_clean お願いし
+[Chatbot] ASR interim at 2026-04-01 19:35:09.770713: お願いし
+[interium]
+[interium]best_clean お願いします
+[Chatbot] ASR interim at 2026-04-01 19:35:09.856555: お願いします
+[tick] now:20393.281
+[tick_result] else
+[robot_client] b'/nod 7 400 1 3'
+[AudioPlayer] playstart 20393.281 duration=1.078s
+[robot_client] b'/blink 360.0'
+[robot_client] b'/emotion  RewardSmile 2 2 1000'
+{'type': 'd', 'level': 0.5}
+   [create_lookaway] d 0.5
+[robot_client] b'/lookaway d 4 1500 0.5'        
+[robot_client] b'/emotion  WaitSmile 3 2 1000'  
+[interium]
+[Chatbot] ASR interim at 2026-04-01 19:35:10.430479: お願いします
+[tick] now:20394.171
+[tick_result] else
+[final]
+{'type': 'd', 'level': 0.5}
+   [create_lookaway] d 0.5
+[robot_client] b'/lookaway d 4 1500 0.5'        
+[Chatbot] ASR result (0.87) at 2026-04-01 19:35:11.025288: お願いします
+[AudioPlayer] finish playing 20394.328
+{'type': 'd', 'level': 0.5}
+   [create_lookaway] d 0.5
+[robot_client] b'/lookaway d 4 1500 0.5'        
+[tick] now:20394.984
+[tick_result] else
+{'type': 'd', 'level': 0.5}
+   [create_lookaway] d 0.5
+[robot_client] b'/lookaway d 4 1500 0.5'        
+[tick] now:20395.781
+[tick_result] else
+[robot_client] b'/emotion  RewardSmile 2 2 1000'
+{'type': 'd', 'level': 0.5}
+   [create_lookaway] d 0.5
+[robot_client] b'/lookaway d 4 1500 0.5'        
+[robot_client] b'/emotion  WaitSmile 3 2 1000'  
+[tick] now:20396.578
+[tick_result] else
+{'type': 'd', 'level': 0.5}
+   [create_lookaway] d 0.5
+[robot_client] b'/lookaway d 4 1500 0.5'        
+[tick] now:20397.39
+[Chatbot] Send at 2026-04-01 19:35:14.194123: かしこまりました。それでは、こちらのご宿泊カードにご記入をお願いいたします。
+
+[before_tts]
+[robot_client] b'/look 756 -110 1105 0.5 0.5 0 4 1500'
+[robot_client] b'/emotion AffiliativeSmile 2 2 1000'
+[tick] now:20397.89
+[tick_result] speak
+[tick] now:20398.39
+[tick_result] speak
+[Chatbot] prepared:[{'text': 'かしこまりました。', 'label': 'explanation', 'motion': {'face': {'type': 'neutral', 'level': 1}, 'bow': {'enabled': False, 'kind': 'none'}, 'between_gaze': {'type': 'l', 'level': 0.3}, 'end_gaze_return': True}, 'wav_path': WindowsPath('C:/tadachi/chatbot/tts/temp_audio/tts_nikola_default_20260401-193515.wav'), 'is_last': False}, {'text': 'それでは、こ ちらのご宿泊カードにご記入をお願いいたします。', 'label': 'explanation', 'motion': {'face': {'type': 'neutral', 'level': 1}, 'bow': {'enabled': False, 'kind': 'none'}, 'between_gaze': {'type': 'l', 'level': 0.3}, 'end_gaze_return': True}, 'wav_path': WindowsPath('C:/tadachi/chatbot/tts/temp_audio/tts_nikola_default_20260401-193515.wav'), 'is_last': True}]
+[Chatbot] play: かしこまりました。
+[robot_client] b'/look 759 -111 1105 0.5 0.5 0 4 1500'
+[AudioPlayer] playstart 20398.875 duration=6.055s
+[tick] now:20398.89
+[tick_result] speak
+[tick] now:20399.39
+[tick_result] speak
+[tick] now:20399.89
+[tick_result] speak
+[robot_client] b'/emotion AffiliativeSmile 2 2 1000'
+[tick] now:20400.39
+[tick_result] speak
+[tick] now:20400.89
+[tick_result] speak
+[tick] now:20401.39
+[tick_result] speak
+[tick] now:20401.89
+[tick_result] speak
+[robot_client] b'/emotion AffiliativeSmile 2 2 1000'
+[tick] now:20402.39
+[tick_result] speak
+[tick] now:20402.89
+[tick_result] speak
+[tick] now:20403.39
+[tick_result] speak
+[tick] now:20403.89
+[tick_result] speak
+[robot_client] b'/emotion AffiliativeSmile 2 2 1000'
+   [create_lookaway] l 0.3
+[robot_client] b'/look 760 -228.0 1104 1.0 0 0 4 1500'
+[tick] now:20404.39
+[tick_result] speak
+[tick] now:20404.89
+[tick_result] speak
+[AudioPlayer] finish playing 20404.921
+[Chatbot] play: それでは、こちらのご宿泊カードにご記入をお願いいたします。
+[robot_client] b'/look 752 -109 1105 0.5 0.5 0 4 1500'
+[AudioPlayer] playback error: [Errno 2] No such file or directory: 'C:\\tadachi\\chatbot\\tts\\temp_audio\\tts_nikola_default_20260401-193515.wav'
+[tts finish]
+[Chatbot] planned TTS playback done
+[tick] now:20405.39
+[tick] now:20405.89
+[tick] now:20406.39
+[tick] now:20406.89
+[tick] now:20407.39
+[tick_result] face_listen
+[robot_client] b'/emotion AffiliativeSmileOpenEyes 3 2 1000'
+[filler_motion_nod] last_nod_best_clean
+[filler_motion_nod] 20407.39 don't progress meaning
+[tick] now:20407.89
+[tick_result] face_listen
+[filler_motion_nod] last_nod_best_clean
+[filler_motion_nod] 20407.89 don't progress meaning
+[tick] now:20408.39
+[tick_result] face_listen
+[filler_motion_nod] last_nod_best_clean
+[filler_motion_nod] 20408.39 don't progress meaning
+[interium]
+[interium]best_clean 書き
+[Chatbot] ASR interim at 2026-04-01 19:35:25.437370: 書き
+[interium]
+[interium]best_clean 書きました
+[Chatbot] ASR interim at 2026-04-01 19:35:25.632727: 書きました
+[tick] now:20408.89
+[tick_result] else
+[robot_client] b'/nod 7 400 1 3'
+[AudioPlayer] playstart 20408.89 duration=1.260s
+[robot_client] b'/blink 360.0'
+[robot_client] b'/emotion  RewardSmile 2 2 1000'
+{'type': 'd', 'level': 0.5}
+   [create_lookaway] d 0.5
+[robot_client] b'/lookaway d 4 1500 0.5'        
+[robot_client] b'/emotion  WaitSmile 3 2 1000'  
+[interium]
+[Chatbot] ASR interim at 2026-04-01 19:35:26.127152: 書きました
+[tick] now:20409.796
+[tick_result] else
+[final]
+{'type': 'd', 'level': 0.5}
+   [create_lookaway] d 0.5
+[robot_client] b'/lookaway d 4 1500 0.5'        
+[Chatbot] ASR result (0.93) at 2026-04-01 19:35:26.815823: 書きました
+{'type': 'd', 'level': 0.5}
+   [create_lookaway] d 0.5
+[robot_client] b'/lookaway d 4 1500 0.5'        
+[AudioPlayer] finish playing 20410.156
+[tick] now:20410.593
+[tick_result] else
+{'type': 'd', 'level': 0.5}
+   [create_lookaway] d 0.5
+[robot_client] b'/lookaway d 4 1500 0.5'        
+[tick] now:20411.406
+[tick_result] else
+[robot_client] b'/emotion  RewardSmile 2 2 1000'
+{'type': 'd', 'level': 0.5}
+   [create_lookaway] d 0.5
+[robot_client] b'/lookaway d 4 1500 0.5'        
+[robot_client] b'/emotion  WaitSmile 3 2 1000'  
+[Chatbot] Send at 2026-04-01 19:35:28.640907: ありがとうございます。確認いたしますね。はい、問題ございません。それではお部屋へご案内いたします。
+
+[before_tts]
+[robot_client] b'/look 771 -105 1101 0.5 0.5 0 4 1500'
+[robot_client] b'/emotion AffiliativeSmile 2 2 1000'
+[tick] now:20412.203
+[tick_result] speak
+[tick] now:20412.703
+[tick_result] speak
+[tick] now:20413.203
+[tick_result] speak
+[Chatbot] prepared:[{'text': 'ありがとうございます。', 'label': 'thanks', 'motion': {'face': {'type': 'RewardSmile', 'level': 2}, 'bow': {'enabled': True, 'kind': 'small'}, 'between_gaze': {'type': 'd', 'level': 0.5}, 'end_gaze_return': True}, 'wav_path': WindowsPath('C:/tadachi/chatbot/tts/temp_audio/tts_nikola_20260401-193529_rate0.98_pitch1.03_emphasis1.05_joy0.12.wav'), 'is_last': False}, {'text': '確認いたしますね。', 'label': 'explanation', 'motion': {'face': {'type': 'neutral', 'level': 1}, 'bow': {'enabled': False, 'kind': 'none'}, 'between_gaze': {'type': 'l', 'level': 0.3}, 'end_gaze_return': True}, 'wav_path': WindowsPath('C:/tadachi/chatbot/tts/temp_audio/tts_nikola_default_20260401-193529.wav'), 'is_last': False}, {'text': 'はい、問題ございませ ん。', 'label': 'explanation', 'motion': {'face': {'type': 'neutral', 'level': 1}, 'bow': {'enabled': False, 'kind': 'none'}, 'between_gaze': {'type': 'l', 'level': 0.3}, 'end_gaze_return': True}, 'wav_path': WindowsPath('C:/tadachi/chatbot/tts/temp_audio/tts_nikola_default_20260401-193529.wav'), 'is_last': False}, {'text': 'それでは お部屋へご案内いたします。', 'label': 'explanation', 'motion': {'face': {'type': 'neutral', 'level': 1}, 'bow': {'enabled': False, 'kind': 'none'}, 'between_gaze': {'type': 'l', 'level': 0.3}, 'end_gaze_return': True}, 'wav_path': WindowsPath('C:/tadachi/chatbot/tts/temp_audio/tts_nikola_default_20260401-193530.wav'), 'is_last': True}]
+[Chatbot] play: ありがとうございます。
+[robot_client] b'/look 766 -110 1103 0.5 0.5 0 4 1500'
+[robot_client] b'/emotion RewardSmile 2 2 1000'
+[robot_client] b'/bow 200 500 3'
+[AudioPlayer] playstart 20413.687 duration=2.874s
+[tick] now:20413.703
+[tick_result] speak
+[tick] now:20414.203
+[tick_result] speak
+[robot_client] b'/emotion AffiliativeSmile 2 2 1000'
+[tick] now:20414.703
+[tick_result] speak
+[tick] now:20415.203
+[tick_result] speak
+[tick] now:20415.703
+[tick_result] speak
+   [create_lookaway] d 0.5
+[robot_client] b'/lookaway d 4 1500 0.5'        
+[tick] now:20416.203
+[tick_result] speak
+[robot_client] b'/emotion AffiliativeSmile 2 2 1000'
+[AudioPlayer] finish playing 20416.562
+[Chatbot] play: 確認いたしますね。
+[robot_client] b'/look 771 -109 1101 0.5 0.5 0 4 1500'
+[AudioPlayer] playstart 20416.656 duration=3.413s
+[tick] now:20416.703
+[tick_result] speak
+[tick] now:20417.203
+[tick_result] speak
+[tick] now:20417.703
+[tick_result] speak
+[tick] now:20418.203
+[tick_result] speak
+[robot_client] b'/emotion AffiliativeSmile 2 2 1000'
+[tick] now:20418.718
+[tick_result] speak
+[tick] now:20419.218
+[tick_result] speak
+   [create_lookaway] l 0.3
+[robot_client] b'/look 765 -231.0 1102 1.0 0 0 4 1500'
+[tick] now:20419.718
+[tick_result] speak
+[AudioPlayer] finish playing 20420.078
+[Chatbot] play: はい、問題ございません。        
+[robot_client] b'/look 765 -111 1103 0.5 0.5 0 4 1500'
+[AudioPlayer] playback error: [Errno 2] No such file or directory: 'C:\\tadachi\\chatbot\\tts\\temp_audio\\tts_nikola_default_20260401-193529.wav'
+[Chatbot] play: それではお部屋へご案内いたします。
+[robot_client] b'/look 764 -110 1104 0.5 0.5 0 4 1500'
+[tick] now:20420.218
+[tick_result] speak
+[robot_client] b'/emotion AffiliativeSmile 2 2 1000'
+[AudioPlayer] playstart 20420.281 duration=3.781s
+[tick] now:20420.718
+[tick_result] speak
+[tick] now:20421.218
+[tick_result] speak
+[tick] now:20421.718
+[tick_result] speak
+[robot_client] b'/look 762 -112 1104 0.5 0.5 0 4 1500'
+[tick] now:20422.218
+[tick_result] speak
+[robot_client] b'/emotion AffiliativeSmile 2 2 1000'
+[tick] now:20422.718
+[tick_result] speak
+[tick] now:20423.218
+[tick_result] speak
+[tick] now:20423.718
+[tick_result] speak
+[AudioPlayer] finish playing 20424.062
+[tts finish]
+[Chatbot] planned TTS playback done
+[tick] now:20424.218
+[tick] now:20424.718
+[tick] now:20425.218
+[tick] now:20425.718
+[tick_result] face_listen
+[robot_client] b'/emotion AffiliativeSmileOpenEyes 3 2 1000'
+[filler_motion_nod] last_nod_best_clean
+[filler_motion_nod] 20425.718 don't progress meaning
+[tick] now:20426.218
+[tick_result] face_listen
+[filler_motion_nod] last_nod_best_clean
+[filler_motion_nod] 20426.218 don't progress meaning
+[tick] now:20426.718
+[tick_result] face_listen
+[filler_motion_nod] last_nod_best_clean
+[filler_motion_nod] 20426.718 don't progress meaning
+[tick] now:20427.218
+[tick_result] face_listen
+[filler_motion_nod] last_nod_best_clean
+[filler_motion_nod] 20427.218 don't progress meaning
+[interium]
+[interium]best_clean ありがとう
+[Chatbot] ASR interim at 2026-04-01 19:35:44.042400: ありがとう
+[interium]
+[interium]best_clean ありがとうござい
+[Chatbot] ASR interim at 2026-04-01 19:35:44.136940: ありがとうござい
+[interium]
+[interium]best_clean ありがとうございました     
+[Chatbot] ASR interim at 2026-04-01 19:35:44.438072: ありがとうございました
+[tick] now:20427.718
+[tick_result] else
+[robot_client] b'/nod 7 400 1 3'
+[AudioPlayer] playstart 20427.718 duration=1.260s
+[robot_client] b'/blink 360.0'
+[robot_client] b'/emotion  RewardSmile 2 2 1000'
+{'type': 'd', 'level': 0.5}
+   [create_lookaway] d 0.5
+[robot_client] b'/lookaway d 4 1500 0.5'        
+[robot_client] b'/emotion  WaitSmile 3 2 1000'  
+[interium]
+[Chatbot] ASR interim at 2026-04-01 19:35:45.017864: ありがとうございました
+[tick] now:20428.625
+[tick_result] else
+{'type': 'd', 'level': 0.5}
+   [create_lookaway] d 0.5
+[robot_client] b'/lookaway d 4 1500 0.5'        
+[final]
+{'type': 'd', 'level': 0.5}
+   [create_lookaway] d 0.5
+[robot_client] b'/lookaway d 4 1500 0.5'        
+[Chatbot] ASR result (0.93) at 2026-04-01 19:35:45.720393: ありがとうございました
+[AudioPlayer] finish playing 20428.984
+[tick] now:20429.421
+[tick_result] else
+{'type': 'd', 'level': 0.5}
+   [create_lookaway] d 0.5
+[robot_client] b'/lookaway d 4 1500 0.5'        
+[Chatbot] Send at 2026-04-01 19:35:46.520992: こちらこそ、ありがとうございます。ごゆっくりお過ごしくださいませ。
+
+[before_tts]
+[robot_client] b'/look 755 -116 1104 0.5 0.5 0 4 1500'
+[robot_client] b'/emotion AffiliativeSmile 2 2 1000'
+[tick] now:20430.234
+[tick_result] speak
+[tick] now:20430.734
+[tick_result] speak
+[Chatbot] prepared:[{'text': 'こちらこそ、ありがとうございます。', 'label': 'thanks', 'motion': {'face': {'type': 'RewardSmile', 'level': 2}, 'bow': {'enabled': True, 'kind': 'small'}, 'between_gaze': {'type': 'd', 'level': 0.5}, 'end_gaze_return': True}, 'wav_path': WindowsPath('C:/tadachi/chatbot/tts/temp_audio/tts_nikola_20260401-193547_rate0.98_pitch1.03_emphasis1.05_joy0.12.wav'), 'is_last': False}, {'text': 'ごゆっくりお過ごしくださいませ。', 'label': 'explanation', 'motion': {'face': {'type': 'neutral', 'level': 1}, 'bow': {'enabled': False, 'kind': 'none'}, 'between_gaze': {'type': 'l', 'level': 0.3}, 'end_gaze_return': True}, 'wav_path': WindowsPath('C:/tadachi/chatbot/tts/temp_audio/tts_nikola_default_20260401-193547.wav'), 'is_last': True}]       
+[Chatbot] play: こちらこそ、ありがとうございます。
+[robot_client] b'/look 758 -114 1104 0.5 0.5 0 4 1500'
+[robot_client] b'/emotion RewardSmile 2 2 1000'
+[tick] now:20431.234
+[tick_result] speak
+[robot_client] b'/bow 200 500 3'
+[AudioPlayer] playstart 20431.359 duration=4.011s
+[tick] now:20431.734
+[tick_result] speak
+[tick] now:20432.234
+[tick_result] speak
+[robot_client] b'/emotion AffiliativeSmile 2 2 1000'
+[tick] now:20432.734
+[tick_result] speak
+[tick] now:20433.234
+[tick_result] speak
+[tick] now:20433.734
+[tick_result] speak
+[tick] now:20434.234
+[tick_result] speak
+[robot_client] b'/emotion AffiliativeSmile 2 2 1000'
+   [create_lookaway] d 0.5
+[robot_client] b'/lookaway d 4 1500 0.5'        
+[tick] now:20434.734
+[tick_result] speak
+[tick] now:20435.234
+[tick_result] speak
+[AudioPlayer] finish playing 20435.39
+[Chatbot] play: ごゆっくりお過ごしくださいませ。
+[robot_client] b'/look 764 -112 1103 0.5 0.5 0 4 1500'
+[AudioPlayer] playstart 20435.484 duration=3.563s
+[tick] now:20435.734
+[tick_result] speak
+[tick] now:20436.234
+[tick_result] speak
+[robot_client] b'/emotion AffiliativeSmile 2 2 1000'
+[tick] now:20436.734
+[tick_result] speak
+[robot_client] b'/look 769 -114 1104 0.5 0.5 0 4 1500'
+[tick] now:20437.234
+[tick_result] speak
+[tick] now:20437.734
+[tick_result] speak
+[tick] now:20438.234
+[tick_result] speak
+[robot_client] b'/emotion AffiliativeSmile 2 2 1000'
+[tick] now:20438.734
+[tick_result] speak
+[AudioPlayer] finish playing 20439.062
+[tts finish]
+[Chatbot] planned TTS playback done
+[tick] now:20439.234
+[tick] now:20439.734
+[tick] now:20440.234
+[tick] now:20440.734
+[tick] now:20441.234
+[tick] now:20442.234
+[tick] now:20442.734
+[tick] now:20443.234
+
+[Chatbot] Ctrl+C を検知しました。サーバーを終了します。
+[tick] now:20443.734
