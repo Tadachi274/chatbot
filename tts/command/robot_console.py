@@ -36,6 +36,10 @@ FILLER_FACE_STATE_PATH = (Path(__file__).resolve().parents[1]
     / "filler"
     / "filler_face_state.json"
 )
+FILLER_VOICE_STATE_PATH = (Path(__file__).resolve().parents[1]       
+    / "filler"
+    / "filler_voice_state.json"
+)
 SPEAKING_STYLE_STATE_PATH = Path(__file__).with_name("speaking_style_state.json")
 VOICE_STATE_EMO_PATH = Path(__file__).with_name("voice_state_emo.json")
 MOTION_STATE_PATH = Path(__file__).with_name("motion_state.json")
@@ -123,10 +127,38 @@ FILLER_EMOTIONS = [
 ]
 
 CANT_HEAR_VOICE =[
-    "もう一度よろしいでしょうか",
-    "えーっとー",
+    "すみません。もう一度よろしいでしょうか？",
+    "なんて言ったの？",
     "んーー？",
+    "んー？"
+    "もう一回言って",
 ]
+
+FILLER_CANDIDATES = [
+    "ん",
+    "はい",
+    "ええ",
+    "えっと",
+    "あの",
+    "ああ",
+    "えっとー",
+    "そうですね",
+    "そうですねー",
+    "そうなんですね",
+    "そうなんですねー",
+    "なるほど",
+    "ちょっとまってくださいね",
+    "少々お待ちください",
+    "承知いたしました",
+]
+
+DEFAULT_SELECTED_FILLERS = {
+    "ん",
+    "はい",
+    "ええ",
+    "えっと",
+    "あの",
+}
 
 class RobotConsole(tk.Tk):
     def __init__(self):
@@ -199,7 +231,7 @@ class RobotConsole(tk.Tk):
         self.nod_duration = tk.DoubleVar(value=0.4) 
         self.nod_times    = tk.IntVar(value=1)      # 1-3
         self.nod_priority = tk.IntVar(value=2)
-        self.nod_lang = tk.BooleanVar(value=True)
+        self.nod_lang = tk.BooleanVar(value=False)
         self.nod_emo = tk.BooleanVar(value=True)
         self.nod_facial_emotion_before = tk.StringVar(value="AffiliativeSmile")
         self.nod_emotion_level_before = tk.IntVar(value=2)
@@ -207,9 +239,15 @@ class RobotConsole(tk.Tk):
         self.nod_emotion_level_after = tk.IntVar(value=2)
         self._player = AudioPlayer(autoremove=False)
 
+        self.filler_vars = {
+            filler: tk.BooleanVar(value=(filler in DEFAULT_SELECTED_FILLERS))
+            for filler in FILLER_CANDIDATES
+        }
+        self.fillers_rate = tk.DoubleVar(value=0.7)
+
         self.filler_cant_hear_type = tk.StringVar(value="sorry")
         self.filler_cant_hear_level = tk.IntVar(value=1)
-        self.filler_cant_hear_voice_type = tk.StringVar(value="もう一度よろしいでしょうか")
+        self.filler_cant_hear_voice_type = tk.StringVar(value="すみません。もう一度よろしいでしょうか？")
         self.filler_cant_hear_voice_level = tk.IntVar(value=1) #0:notSpeaking, 1:Speaking
 
         self.filler_listen_type = tk.StringVar(value="AffiliativeSmileOpenEyes")
@@ -217,7 +255,7 @@ class RobotConsole(tk.Tk):
         self.filler_listen_nod_type = tk.StringVar(value="small")
         self.filler_listen_nod_time = tk.IntVar(value=1)
         self.filler_listen_voice_type = tk.StringVar(value="うん")
-        self.filler_listen_voice_level = tk.IntVar(value=1)
+        self.filler_listen_voice_level = tk.IntVar(value=0)
         self.filler_listen_emotion_type = tk.StringVar(value="AffiliativeSmile")
         self.filler_listen_emotion_level = tk.IntVar(value=2)
 
@@ -347,6 +385,9 @@ class RobotConsole(tk.Tk):
         for v in (self.volume, self.rate, self.pitch, self.emphasis, self.joy, self.anger, self.sadness):
             v.trace_add("write", lambda *args: self._write_voice_state())
 
+        for var in list(self.filler_vars.values()) + [self.fillers_rate]:
+            var.trace_add("write", lambda *args: self._write_filler_state())
+
         for v in (
             self.filler_cant_hear_type, self.filler_cant_hear_level, 
             self.filler_cant_hear_voice_type, self.filler_cant_hear_voice_level,
@@ -402,6 +443,13 @@ class RobotConsole(tk.Tk):
             "tts_emo_angry": round(self.anger.get(), 2),
             "tts_emo_sad": round(self.sadness.get(), 2),
         }
+    
+    def _get_selected_fillers(self) -> set[str]:
+        return {
+            filler
+            for filler, var in self.filler_vars.items()
+            if var.get()
+        }
 
     def _write_voice_state(self):
         """chatbot_tcp_tts.py が読む voice_state.json を更新する。"""
@@ -414,6 +462,20 @@ class RobotConsole(tk.Tk):
         except Exception as e:
             # UIは止めない
             self._log(f"! voice_state.json write error: {e}")
+
+    def _write_filler_state(self):
+        try:
+            payload = {
+                "updated_at": datetime.datetime.now().isoformat(timespec="seconds"),
+                "fillers": sorted(self._get_selected_fillers()),
+                "rate": round(self.fillers_rate.get(),2)
+            }
+            FILLER_VOICE_STATE_PATH.write_text(
+                json.dumps(payload, ensure_ascii=False, indent=2),
+                encoding="utf-8"
+            )
+        except Exception as e:
+            self._log(f"! filler_state.json write error: {e}")
 
     def _current_voice_state_emo(self) -> dict:
         voices = {}
@@ -655,9 +717,14 @@ class RobotConsole(tk.Tk):
         row3.columnconfigure(0, weight=1)
         row3.columnconfigure(1, weight=1)
 
-        nod_card = self._card(row3, "うなずき")
+        colum1 = ttk.Frame(row3)
+        colum1.grid(row=0, column=0, sticky="nsew", padx=(0, 6))
+        nod_card = self._card(colum1, "うなずき")
         nod_card.grid(row=0, column=0, sticky="nsew", padx=(0, 6))
         self._nod_panel(nod_card)
+        filler_card = self._card(colum1, "フィラー")
+        filler_card.grid(row=1, column=0, sticky="nsew", padx=(0, 6))
+        self._filler_panel(filler_card)
 
         gaze_card = self._card(row3, "視線・頭向き")
         gaze_card.grid(row=0, column=1, sticky="nsew")
@@ -1126,6 +1193,23 @@ class RobotConsole(tk.Tk):
                             })
                     ).grid(row=i, column=j, padx=4, pady=2)
 
+    def _filler_panel(self,parent):
+        filler_frame = ttk.LabelFrame(parent, text="待ち時間フィラー")
+        filler_frame.pack(fill="x", pady=8)
+
+        for i, filler in enumerate(FILLER_CANDIDATES):
+            col = i // 3
+            row = i % 3
+            cb = ttk.Checkbutton(
+                filler_frame,
+                text=filler,
+                variable=self.filler_vars[filler]
+            )
+            cb.grid(row=row, column=col, sticky="w", padx=8, pady=4)
+
+        self._slider_row(parent, "割合", self.fillers_rate, 0.0, 1.0)
+
+        
 
     def _filler_face_panel(self, parent):
         def one_row(title, type_var, level_var, test_key: str):
@@ -1145,6 +1229,8 @@ class RobotConsole(tk.Tk):
             
             if test_key == "cant_hear":
                 ttk.Label(row, text="音声").pack(side="left")
+                nod_combo = ttk.Combobox(row, values=CANT_HEAR_VOICE, width=20,textvariable=self.filler_cant_hear_voice_type)
+                nod_combo.pack(side="left", padx=6)
                 ttk.Radiobutton(row, text="有",
                                 value=1, variable=self.filler_cant_hear_voice_level).pack(side="left", padx=4)
                 ttk.Radiobutton(row, text="無",
