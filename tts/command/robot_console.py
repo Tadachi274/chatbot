@@ -211,21 +211,38 @@ class RobotConsole(tk.Tk):
         self.speech_text  = tk.StringVar(value="こんにちは！いらっしゃいませ。今日はどのようなご用件でしょうか？何かお手伝いできることがあれば教えてくださいね。")
         self.speech_save = tk.BooleanVar(value=False)
         self.style_neutral = tk.IntVar(value=0)
-        self.style_formality = tk.IntVar(value=0)
-        self.style_intimacy = tk.IntVar(value=0)
-        self.style_difficult = tk.IntVar(value=0) 
-        self.style_easy = tk.IntVar(value=0) 
-        self.style_complex = tk.IntVar(value=0)
+
+        # 話し方（上位要素: -1/0/1）
+        self.style_politeness = tk.IntVar(value=0)
+        self.style_length = tk.IntVar(value=0)
+        self.style_vocabulary = tk.IntVar(value=0)
+        self.style_friendliness = tk.IntVar(value=0)
+        self.style_emotion_strength = tk.IntVar(value=0)
+        self.style_positivity = tk.IntVar(value=0)
+        self.style_initiative = tk.IntVar(value=0)
+
+        # 話し方（テクニック: 0/1）
+        self.style_empathy = tk.IntVar(value=0)
         self.style_consideration = tk.IntVar(value=0)
-        self.style_directness = tk.IntVar(value=0) 
-        self.style_hedging = tk.IntVar(value=0)
-        self.style_framing = tk.IntVar(value=0)
-        self.style_choice = tk.IntVar(value=0)
-        self.style_empathic = tk.IntVar(value=0)
-        self.style_comprehensibility = tk.IntVar(value=0)
+        self.style_seasonal_topic = tk.IntVar(value=0)
+        self.style_time_topic = tk.IntVar(value=0)
+        self.style_self_disclosure = tk.IntVar(value=0)
+        self.style_evidence = tk.IntVar(value=0)
+        self.style_expertise = tk.IntVar(value=0)
         self.style_paraphrase = tk.IntVar(value=0)
-        self.style_repeat = tk.IntVar(value=0)
-        self.style_duration = tk.IntVar(value=0)
+        self.style_summary = tk.IntVar(value=0)
+        self.style_step_by_step = tk.IntVar(value=0)
+        self.style_confirmation = tk.IntVar(value=0)
+        self.style_clarification_question = tk.IntVar(value=0)
+        self.style_hypothesis = tk.IntVar(value=0)
+        self.style_options = tk.IntVar(value=0)
+        self.style_proactive = tk.IntVar(value=0)
+        self.style_goal_clarity = tk.IntVar(value=0)
+        self.style_permission = tk.IntVar(value=0)
+        self.style_alternative = tk.IntVar(value=0)
+        self.style_positive_reframe = tk.IntVar(value=0)
+        self.style_name_call = tk.IntVar(value=0)
+        self.style_closing = tk.IntVar(value=0)
 
         self.nod_amplitude = tk.IntVar(value=100) 
         self.nod_duration = tk.DoubleVar(value=0.4) 
@@ -403,18 +420,39 @@ class RobotConsole(tk.Tk):
             self.filler_speak_face_type, self.filler_speak_face_level,
             self.filler_speak_gaze_type, self.filler_speak_gaze_amount,
             self.filler_speak_gaze_matchtime, self.filler_speak_gaze_averttime,
-            self.person, self.style_formality,
+            self.person,
         ):
             v.trace_add("write", lambda *args: self._write_filler_face_state())
 
         for v in (
-            self.style_neutral, 
-            self.style_formality, self.style_intimacy,
-            self.style_difficult, self.style_easy, self.style_complex,
-            self.style_consideration, self.style_directness, self.style_hedging,
-            self.style_framing, self.style_choice, self.style_empathic,
-            self.style_comprehensibility, self.style_paraphrase,self.style_repeat,
-            self.style_duration
+            self.style_politeness,
+            self.style_length,
+            self.style_vocabulary,
+            self.style_friendliness,
+            self.style_emotion_strength,
+            self.style_positivity,
+            self.style_initiative,
+            self.style_empathy,
+            self.style_consideration,
+            self.style_seasonal_topic,
+            self.style_time_topic,
+            self.style_self_disclosure,
+            self.style_evidence,
+            self.style_expertise,
+            self.style_paraphrase,
+            self.style_summary,
+            self.style_step_by_step,
+            self.style_confirmation,
+            self.style_clarification_question,
+            self.style_hypothesis,
+            self.style_options,
+            self.style_proactive,
+            self.style_goal_clarity,
+            self.style_permission,
+            self.style_alternative,
+            self.style_positive_reframe,
+            self.style_name_call,
+            self.style_closing,
         ):
             v.trace_add("write", lambda *args: self._write_speaking_style_state())
 
@@ -536,22 +574,38 @@ class RobotConsole(tk.Tk):
 
     def _current_speaking_style_state(self) -> dict:
         return {
-            "neutral": int(self.style_neutral.get()),
-            "formality": int(self.style_formality.get()),
-            "intimacy": int(self.style_intimacy.get()),
-            "difficult": int(self.style_difficult.get()),
-            "easy": int(self.style_easy.get()),
-            "complex": int(self.style_complex.get()),
-            "consideration": int(self.style_consideration.get()),
-            "directness": int(self.style_directness.get()),
-            "hedging": int(self.style_hedging.get()),
-            "framing": int(self.style_framing.get()),
-            "choice": int(self.style_choice.get()),
-            "empathic_phrasing": int(self.style_empathic.get()),
-            "comprehensibility": int(self.style_comprehensibility.get()),
-            "paraphrase_check":int(self.style_paraphrase.get()),
-            "echo_repeat":int(self.style_repeat.get()),
-            "duration": int(self.style_duration.get()),
+            "base_style": {
+                "politeness": int(self.style_politeness.get()),
+                "length": int(self.style_length.get()),
+                "vocabulary": int(self.style_vocabulary.get()),
+                "friendliness": int(self.style_friendliness.get()),
+                "emotion_strength": int(self.style_emotion_strength.get()),
+                "positivity": int(self.style_positivity.get()),
+                "initiative": int(self.style_initiative.get()),
+            },
+            "techniques": {
+                "empathy": int(self.style_empathy.get()),
+                "consideration": int(self.style_consideration.get()),
+                "seasonal_topic": int(self.style_seasonal_topic.get()),
+                "time_topic": int(self.style_time_topic.get()),
+                "self_disclosure": int(self.style_self_disclosure.get()),
+                "evidence": int(self.style_evidence.get()),
+                "expertise": int(self.style_expertise.get()),
+                "paraphrase": int(self.style_paraphrase.get()),
+                "summary": int(self.style_summary.get()),
+                "step_by_step": int(self.style_step_by_step.get()),
+                "confirmation": int(self.style_confirmation.get()),
+                "clarification_question": int(self.style_clarification_question.get()),
+                "hypothesis": int(self.style_hypothesis.get()),
+                "options": int(self.style_options.get()),
+                "proactive": int(self.style_proactive.get()),
+                "goal_clarity": int(self.style_goal_clarity.get()),
+                "permission": int(self.style_permission.get()),
+                "alternative": int(self.style_alternative.get()),
+                "positive_reframe": int(self.style_positive_reframe.get()),
+                "name_call": int(self.style_name_call.get()),
+                "closing": int(self.style_closing.get()),
+            }
         }
 
     def _write_speaking_style_state(self):
@@ -628,7 +682,7 @@ class RobotConsole(tk.Tk):
             },
             "speak_person":{
                 "type":self.person.get(),
-                "level": int(self.style_formality.get()),
+                "level": 0,
             },
         }
 
@@ -1019,43 +1073,59 @@ class RobotConsole(tk.Tk):
         ).pack(side="left", padx=8)
     
     def _style_panel(self, parent):
-        self._tri_row(parent, "スタイル設定", self.style_neutral)
-
-        self._tri_row_4(parent, [
-            ("敬語", self.style_formality),
-            ("親しさ", self.style_intimacy),
-            ("専門性", self.style_difficult),
-            ("語彙の易しさ", self.style_easy),
+        # 上位要素（-1 / 0 / 1）
+        self._tri_row_multi(parent, [
+            ("敬語", self.style_politeness),
+            ("長さ", self.style_length),
+            ("語彙", self.style_vocabulary),
+            ("親しさ", self.style_friendliness),
         ])
-        self._tri_row_4(parent, [
-            ("複雑さ", self.style_complex),
+
+        self._tri_row_multi(parent, [
+            ("感情の強さ", self.style_emotion_strength),
+            ("ポジティブさ", self.style_positivity),
+            ("主導性", self.style_initiative),
+        ])
+
+        ttk.Separator(parent).pack(fill="x", pady=6)
+
+        # テクニック（0 / 1）
+        self._binary_row_multi(parent, [
+            ("共感", self.style_empathy),
             ("配慮", self.style_consideration),
-            ("直接性", self.style_directness),
-            ("根拠提示", self.style_hedging),
+            ("季節の話", self.style_seasonal_topic),
+            ("時刻にまつわる話", self.style_time_topic),
+            ("自分の経験談", self.style_self_disclosure),
         ])
-        self._tri_row_4(parent, [
-            ("代替提示", self.style_framing),
-            ("選択肢の提示", self.style_choice),
-            ("共感", self.style_empathic),
-            ("わかりやすさ", self.style_comprehensibility),
-        ])
-        self._tri_row_4(parent, [
+
+        self._binary_row_multi(parent, [
+            ("根拠提示", self.style_evidence),
+            ("専門知識", self.style_expertise),
             ("言い換え", self.style_paraphrase),
-            ("反復確認", self.style_repeat),
-            ("長さ", self.style_duration),
+            ("要約", self.style_summary),
+            ("スモールステップ化", self.style_step_by_step),
+        ])
+
+        self._binary_row_multi(parent, [
+            ("反復確認", self.style_confirmation),
+            ("曖昧さ解消質問", self.style_clarification_question),
+            ("意図の補完", self.style_hypothesis),
+            ("選択肢の提示", self.style_options),
+            ("先回り提案", self.style_proactive),
+            ("ゴール明示", self.style_goal_clarity),
+        ])
+
+        self._binary_row_multi(parent, [
+            ("許可取り", self.style_permission),
+            ("代替提示", self.style_alternative),
+            ("ポジティブ変換", self.style_positive_reframe),
+            ("クロージング", self.style_closing),
+            ("名前呼び", self.style_name_call),
         ])
 
 
-    def _tri_row(self, parent, label, var):
-        row = ttk.Frame(parent)
-        row.pack(fill="x", pady=2)
 
-        ttk.Label(row, text=label, width=10).pack(side="left")
-
-        ttk.Radiobutton(row, text="有", value=0,  variable=var).pack(side="left", padx=2)
-        ttk.Radiobutton(row, text="無", value=1,  variable=var).pack(side="left", padx=2)
-
-    def _tri_row_4(self, parent, items):
+    def _tri_row_multi(self, parent, items):
         row = ttk.Frame(parent)
         row.pack(fill="x", pady=2)
 
@@ -1063,11 +1133,22 @@ class RobotConsole(tk.Tk):
             cell = ttk.Frame(row)
             cell.grid(row=0, column=col, padx=10, sticky="w")
 
-            ttk.Label(cell, text=label, width=10).grid(row=0, column=0, sticky="w")
-
+            ttk.Label(cell, text=label, width=12).grid(row=0, column=0, sticky="w")
             ttk.Radiobutton(cell, text="-1", value=-1, variable=var).grid(row=0, column=1)
-            ttk.Radiobutton(cell, text=" 0", value=0,  variable=var).grid(row=0, column=2)
-            ttk.Radiobutton(cell, text="+1", value=1,  variable=var).grid(row=0, column=3)
+            ttk.Radiobutton(cell, text="0", value=0, variable=var).grid(row=0, column=2)
+            ttk.Radiobutton(cell, text="+1", value=1, variable=var).grid(row=0, column=3)
+
+    def _binary_row_multi(self, parent, items):
+        row = ttk.Frame(parent)
+        row.pack(fill="x", pady=2)
+
+        for col, (label, var) in enumerate(items):
+            cell = ttk.Frame(row)
+            cell.grid(row=0, column=col, padx=10, sticky="w")
+
+            ttk.Label(cell, text=label, width=12).grid(row=0, column=0, sticky="w")
+            ttk.Radiobutton(cell, text="無", value=0, variable=var).grid(row=0, column=1)
+            ttk.Radiobutton(cell, text="有", value=1, variable=var).grid(row=0, column=2)    
     
     def _nod_panel(self, parent):
     # 時間スライダー
