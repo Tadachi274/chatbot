@@ -46,7 +46,7 @@ class AudioPlayer:
 
             try:
                 duration = self._get_wav_duration(wav_path)
-                print(f"[AudioPlayer] playstart {time.monotonic()} duration={duration:.3f}s")
+                print(f"[AudioPlayer] playstart {wav_path} duration={duration:.3f}s")
 
                 # 終了2秒前通知
                 if near_end_callback is not None and near_end_sec is not None:

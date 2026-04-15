@@ -7,8 +7,25 @@ import atexit
 import requests 
 from tts_audioplayer import AudioPlayer
 
-AUTO_REMOVE = True
-print(f"AUTO_REMOVE:{AUTO_REMOVE}")
+DEFAULT_AUTOREMOVE = True
+_player = None
+_player_autoremove = None
+print(f"AUTO_REMOVE:{DEFAULT_AUTOREMOVE}")
+
+def _get_player(autoremove: bool):
+    global _player, _player_autoremove
+
+    if _player is None or _player_autoremove != autoremove:
+        if _player is not None:
+            try:
+                _player.stop()
+            except Exception:
+                pass
+
+        _player = AudioPlayer(autoremove=autoremove)
+        _player_autoremove = autoremove
+
+    return _player
 
 ## 非同期音声合成
 def speak_async(
@@ -16,6 +33,7 @@ def speak_async(
     *,
     config_path: str | None = None,
     instructions: dict | None = None,
+    autoremove: bool = DEFAULT_AUTOREMOVE,
     url: str,
     play: bool = True,
     near_end_sec: float = 2.0,
@@ -29,6 +47,7 @@ def speak_async(
             "config_path": config_path,
             "instructions" : instructions,
             "url": url,
+            "autoremove":autoremove,
             "play": play,
             "done_event": done_event,
             "near_end_sec": near_end_sec,
@@ -46,12 +65,14 @@ def _synthesize_and_enqueue(
     config_path: str,
     instructions: str,
     url: str,
+    autoremove:bool,
     play: bool = True,
     done_event=None,
     near_end_sec: float = 2.0,
     near_end_callback=None,
 ):
     wav_path = synthesize_to_wav(text, config_path, instructions, url)
+    _get_player(autoremove)
     if play:
         _player.play_later(
             wav_path,
@@ -64,10 +85,12 @@ def _synthesize_and_enqueue(
 def play_wav(
     wav_path: Path,
     *,
+    autoremove: bool= DEFAULT_AUTOREMOVE,
     done_event=None,
     near_end_sec: float = 2.0,
     near_end_callback=None,
 ):
+    _get_player(autoremove)
     _player.play_later(
         wav_path,
         done_event=done_event,
@@ -104,15 +127,15 @@ def synthesize_to_wav(
 
     return wav_path
 
-## グローバルなプレイヤー（プロセス中1つ）
-_player = AudioPlayer(autoremove=AUTO_REMOVE)
 
 @atexit.register
 def _shutdown_audio():
-    try:
-        _player.stop()
-    except Exception:
-        pass
+    global _player
+    if _player is not None:
+        try:
+            _player.stop()
+        except Exception:
+            pass
 
 ## 
 DEFAULTS = {
@@ -129,7 +152,7 @@ def make_tts_filename(instructions: dict, prefix="tts")-> Path:
     BASE_DIR = Path(__file__).parent.resolve()
     temp_dir = (BASE_DIR / "temp_audio")
     temp_dir.mkdir(exist_ok=True)
-    ts = datetime.now().strftime("%Y%m%d-%H%M%S")
+    ts = datetime.now().strftime("%Y%m%d-%H%M%S%f")
     parts = []
 
     for k,v in instructions.items():
