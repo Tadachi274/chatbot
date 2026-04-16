@@ -1,24 +1,24 @@
 {
+  "neutral": 1,
   "base_style": {
-    "politeness": 1,
+    "politeness": 0,
     "length": 0,
     "vocabulary": 0,
     "friendliness": 0,
-    "emotion_strength": 1,
-    "positivity": 0,
-    "initiative": 0
+    "emotion_strength": 0
   },
   "techniques": {
     "empathy": 0,
     "consideration": 0,
-    "seasonal_topic": 0,
-    "time_topic": 0,
-    "self_disclosure": 0,
-    "evidence": 0,
+    "seasonal_topic": 1,
+    "time_topic": 1,
+    "self_disclosure": 1,
+    "evidence": 1,
     "expertise": 0,
     "paraphrase": 0,
     "summary": 0,
     "step_by_step": 0,
+    "initiative": 0,
     "confirmation": 0,
     "clarification_question": 0,
     "hypothesis": 0,

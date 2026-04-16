@@ -135,7 +135,7 @@ CANT_HEAR_VOICE =[
 ]
 
 FILLER_CANDIDATES = [
-    "ん",
+    "んん",
     "はい",
     "ええ",
     "えっと",
@@ -153,7 +153,7 @@ FILLER_CANDIDATES = [
 ]
 
 DEFAULT_SELECTED_FILLERS = {
-    "ん",
+    "んん",
     "はい",
     "ええ",
     "えっと",
@@ -212,14 +212,16 @@ class RobotConsole(tk.Tk):
         self.speech_save = tk.BooleanVar(value=False)
         self.style_neutral = tk.IntVar(value=0)
 
+
         # 話し方（上位要素: -1/0/1）
+        self.style_neutral = tk.IntVar(value=0) #(0/1)
         self.style_politeness = tk.IntVar(value=0)
         self.style_length = tk.IntVar(value=0)
         self.style_vocabulary = tk.IntVar(value=0)
         self.style_friendliness = tk.IntVar(value=0)
         self.style_emotion_strength = tk.IntVar(value=0)
         self.style_positivity = tk.IntVar(value=0)
-        self.style_initiative = tk.IntVar(value=0)
+        
 
         # 話し方（テクニック: 0/1）
         self.style_empathy = tk.IntVar(value=0)
@@ -232,6 +234,7 @@ class RobotConsole(tk.Tk):
         self.style_paraphrase = tk.IntVar(value=0)
         self.style_summary = tk.IntVar(value=0)
         self.style_step_by_step = tk.IntVar(value=0)
+        self.style_initiative = tk.IntVar(value=0)
         self.style_confirmation = tk.IntVar(value=0)
         self.style_clarification_question = tk.IntVar(value=0)
         self.style_hypothesis = tk.IntVar(value=0)
@@ -425,12 +428,12 @@ class RobotConsole(tk.Tk):
             v.trace_add("write", lambda *args: self._write_filler_face_state())
 
         for v in (
+            self.style_neutral,
             self.style_politeness,
             self.style_length,
             self.style_vocabulary,
             self.style_friendliness,
             self.style_emotion_strength,
-            self.style_positivity,
             self.style_initiative,
             self.style_empathy,
             self.style_consideration,
@@ -574,14 +577,14 @@ class RobotConsole(tk.Tk):
 
     def _current_speaking_style_state(self) -> dict:
         return {
+            "neutral":int(self.style_neutral.get()),
             "base_style": {
                 "politeness": int(self.style_politeness.get()),
                 "length": int(self.style_length.get()),
                 "vocabulary": int(self.style_vocabulary.get()),
                 "friendliness": int(self.style_friendliness.get()),
                 "emotion_strength": int(self.style_emotion_strength.get()),
-                "positivity": int(self.style_positivity.get()),
-                "initiative": int(self.style_initiative.get()),
+                
             },
             "techniques": {
                 "empathy": int(self.style_empathy.get()),
@@ -594,6 +597,7 @@ class RobotConsole(tk.Tk):
                 "paraphrase": int(self.style_paraphrase.get()),
                 "summary": int(self.style_summary.get()),
                 "step_by_step": int(self.style_step_by_step.get()),
+                "initiative": int(self.style_initiative.get()),
                 "confirmation": int(self.style_confirmation.get()),
                 "clarification_question": int(self.style_clarification_question.get()),
                 "hypothesis": int(self.style_hypothesis.get()),
@@ -1073,19 +1077,24 @@ class RobotConsole(tk.Tk):
         ).pack(side="left", padx=8)
     
     def _style_panel(self, parent):
+        self._binary_row_multi(parent, [
+            ("話し方の変化",self.style_neutral),
+        ])
+
+        ttk.Separator(parent).pack(fill="x", pady=6)
+
         # 上位要素（-1 / 0 / 1）
         self._tri_row_multi(parent, [
             ("敬語", self.style_politeness),
             ("長さ", self.style_length),
             ("語彙", self.style_vocabulary),
+        ])
+        
+        self._tri_row_multi(parent, [
             ("親しさ", self.style_friendliness),
+            ("感情の強さ", self.style_emotion_strength),
         ])
 
-        self._tri_row_multi(parent, [
-            ("感情の強さ", self.style_emotion_strength),
-            ("ポジティブさ", self.style_positivity),
-            ("主導性", self.style_initiative),
-        ])
 
         ttk.Separator(parent).pack(fill="x", pady=6)
 
@@ -1104,6 +1113,7 @@ class RobotConsole(tk.Tk):
             ("言い換え", self.style_paraphrase),
             ("要約", self.style_summary),
             ("スモールステップ化", self.style_step_by_step),
+            ("主導性",self.style_initiative),
         ])
 
         self._binary_row_multi(parent, [

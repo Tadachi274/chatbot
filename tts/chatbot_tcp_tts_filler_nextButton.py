@@ -38,7 +38,7 @@ CONFIG_PATH_MOTION = "command/motion_state.json"
 
 MAX_TURNS = 3  # 直近3往復を保持
 SCENARIO = "hotel"
-STSTEM_CONTENT = system_content_file.hotel
+STSTEM_CONTENT = system_content_file.souvenir
 
 
 def start_tick_thread(controller: FillerController):
@@ -376,6 +376,8 @@ class StyleChangeServer(object):
     def prefetch_short_affirm_reply(self, assistant_text):
         def _worker():
             try:
+                self.clear_prefetch_reply("replace with newer prefetch")
+
                 messages = self.build_base_messages()
                 messages = self.append_recent_history(messages)
 
@@ -384,7 +386,7 @@ class StyleChangeServer(object):
                     "role": "system",
                     "content": (
                         "直前のロボット発話に対して、客が『はい』『うん』『お願いします』"
-                        "のような短い承諾だけを返した場合の、次のロボット発話を1文で生成してください。"
+                        "のような短い承諾だけを返した場合の、次のロボット発話を2文生成してください。"
                         "会話を自然に一歩進めてください。"
                         "確認待ちだった場合は、承諾されたものとして次の案内に進んでください。"
                     )
@@ -424,6 +426,8 @@ class StyleChangeServer(object):
             print(f"[Chatbot] prefetched reply matched: {utterance}")
             filler.on_fixed()
             return prefetched
+        
+        self.clear_prefetch_reply("prefetch not used")
 
         fixed_item = fixed_reply.find_fixed_response(utterance, SCENARIO)
         if fixed_item is not None:
@@ -467,6 +471,7 @@ class StyleChangeServer(object):
         self.prefetch_reply = None
 
         self.play_prepared_speech(cached["prepared"], filler=filler)
+        self.prefetch_short_affirm_reply(cached["reply_text"])
 
         self.addFile.add(utterance, cached["reply_text"])
         self.history.append({
@@ -480,26 +485,63 @@ class StyleChangeServer(object):
 
     ### Enter入力に対する処理
     def handle_internal_event_next(self, filler=None):
-        internal_prompt = (
-            "内部イベント: 次へ進む。"
-            "ロボットは自分の発話権を保持しています。"
-            "直前までの会話文脈を踏まえて、次に客へ伝える自然な一言を1文で生成してください。"
-            "直前の会話が確認を待つように指示した場合、確認を終わらせ、在庫や空きがあったとして会話を進めてください"
-            "客の返答を必須としない、自然な案内・説明・つなぎの発話にしてください。"
-            "直前の会話がない場合は、挨拶を行ってください"
-        )
+        if self.prefetch_reply is not None:
+            print("[Chatbot] use prefetched reply for next")
 
+            cached = self.prefetch_reply
+            self.prefetch_reply = None
+
+            self.play_prepared_speech(cached["prepared"], filler=filler)
+            self.prefetch_short_affirm_reply(cached["reply_text"])
+
+            self.history.append({
+                "user": None,
+                "assistant": cached["reply_text"]
+            })
+
+            return cached["reply_text"]
+
+        # fallback（万が一）
         return self.generate_reply(
-            new_message={"role": "system", "content": internal_prompt},
+            new_message={"role": "system", "content": "次に進めてください"},
             filler=filler,
             save_user_text=None
         )
+    
+    ### 未使用wavを消す
+    def _cleanup_prepared_wavs(self, prepared):
+        if not prepared:
+            return
+
+        for item in prepared:
+            try:
+                wav_path = item.get("wav_path")
+                if wav_path is None:
+                    continue
+                Path(wav_path).unlink(missing_ok=True)
+                print(f"[Chatbot] removed unused wav: {wav_path}")
+            except Exception as e:
+                logging.warning(f"unused wav cleanup error: {e}")
+
+    def clear_prefetch_reply(self, reason=""):
+        if self.prefetch_reply is None:
+            return
+
+        cached = self.prefetch_reply
+        self.prefetch_reply = None
+
+        self._cleanup_prepared_wavs(cached.get("prepared"))
+
+        if reason:
+            print(f"[Chatbot] discard prefetched reply: {reason}")
+        else:
+            print("[Chatbot] discard prefetched reply")
 
 #### ---- メインで動かす関数　---- ####
     def run(self):
         try:
             system_content, system_content2 = self.load_prompt_config()
-            print(f"[Chatbot] system_content1: {system_content}")
+            # print(f"[Chatbot] system_content1: {system_content}")
 
             xyz = XYZClient()
             xyz.start()
@@ -551,6 +593,7 @@ class StyleChangeServer(object):
 
         except KeyboardInterrupt:
             filler.on_interrupt()
+            self.clear_prefetch_reply("prefetch not used")
             print("\n[Chatbot] Ctrl+C を検知しました。サーバーを終了します。")
             try:
                 tts._player.stop()

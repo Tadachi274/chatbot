@@ -1,12 +1,12 @@
 {
-  "updated_at": "2026-04-01T19:32:36",
+  "updated_at": "2026-04-16T17:45:02",
   "faces": {
     "cant_hear": {
       "type": "sorry",
       "level": 1
     },
     "cant_hear_voice": {
-      "type": "もう一度よろしいでしょうか",
+      "type": "すみません。もう一度よろしいでしょうか？",
       "level": 1
     },
     "listen": {
@@ -19,7 +19,7 @@
     },
     "listen_voice": {
       "type": "うん",
-      "level": 1
+      "level": 0
     },
     "listen_emotion": {
       "type": "AffiliativeSmile",
