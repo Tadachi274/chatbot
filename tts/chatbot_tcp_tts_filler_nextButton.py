@@ -22,6 +22,7 @@ import fixed_reply
 from filler.asr_stream import iter_asr_events
 from filler.robot_client import RobotCommandClient
 from filler.filler_controller import FillerController
+from interrupt_handler import InterruptHandler
 from command.xyz_server import XYZClient
 import utterance_planner as ut
 
@@ -38,7 +39,7 @@ CONFIG_PATH_MOTION = "command/motion_state.json"
 
 MAX_TURNS = 3  # 直近3往復を保持
 SCENARIO = "hotel"
-STSTEM_CONTENT = system_content_file.souvenir
+STSTEM_CONTENT = system_content_file.hotel
 
 
 def start_tick_thread(controller: FillerController):
@@ -64,6 +65,61 @@ def guess_near_end_sec(sent: str) -> float:
     return 1.0
 
 
+DA_TYPES = {
+        "OPENING",
+        "STATEMENT",
+        "OPINION",
+        "QUESTION",
+        "APOLOGY",
+        "THANKING",
+        "CLOSING",
+        "ACCEPT",
+    }
+
+def extract_json_text(text: str) -> str:
+    text = text.strip()
+    if text.startswith("```"):
+        text = re.sub(r"^```(?:json)?\s*", "", text)
+        text = re.sub(r"\s*```$", "", text)
+    return text.strip()
+
+def parse_reply_json(raw_text: str) -> list[dict]:
+    raw_text = extract_json_text(raw_text)
+    data = json.loads(raw_text)
+
+    if not isinstance(data, list):
+        raise ValueError("reply JSON must be a list")
+
+    parsed = []
+    for i, item in enumerate(data):
+        if not isinstance(item, dict):
+            raise ValueError(f"item {i} must be dict")
+
+        utterance = item.get("utterance")
+        da_type = item.get("type")
+
+        if not isinstance(utterance, str) or not utterance.strip():
+            raise ValueError(f"item {i} utterance is invalid")
+        if da_type not in DA_TYPES:
+            raise ValueError(f"item {i} type is invalid: {da_type}")
+
+        parsed.append({
+            "utterance": utterance.strip(),
+            "type": da_type
+        })
+
+    if not parsed:
+        raise ValueError("reply JSON is empty")
+
+    return parsed
+
+def reply_json_to_text(reply_items: list[dict]) -> str:
+    return "".join(item["utterance"] for item in reply_items)
+
+def normalize_history_assistant_content(reply_items: list[dict]) -> str:
+    return json.dumps(reply_items, ensure_ascii=False)
+
+
 class StyleChangeServer(object):
     def __init__(self, port=13204):
         self.addFile = StringFile(1)
@@ -73,6 +129,16 @@ class StyleChangeServer(object):
         self.last_style_mtime = None
         self.cached_style_prompt = ""
         self.prefetch_reply = None
+        self.interrupt_handler = InterruptHandler(
+            openai_client=openai,
+            model_name=OPENAI_MODEL,
+        )
+        self.current_prepared = []
+        self.current_sentence_index = -1
+        self.stop_requested = False
+        self.stop_after_sentence = False
+        self.opening_prefetch = {}
+        self.skip_next_final_text = None
 
     def load_prompt_config(self):
         system_content = STSTEM_CONTENT
@@ -103,14 +169,15 @@ class StyleChangeServer(object):
         return self.cached_style_prompt
 
     def append_recent_history(self, messages):
-        # 直近 MAX_TURNS 往復を追加
         recent = self.history[-MAX_TURNS:]
         for turn in recent:
             if turn.get("user"):
                 messages.append({"role": "user", "content": f"「{turn['user']}」"})
             if turn.get("assistant"):
-                messages.append({"role": "assistant", "content": f"「{turn['assistant']}」"})
+                messages.append({"role": "assistant", "content": turn["assistant"]})
         return messages
+    
+   
     
 
 #### ----- 行動や発言を制御　-----　####
@@ -188,13 +255,24 @@ class StyleChangeServer(object):
     def play_prepared_speech(self, prepared, filler=None):
         def _run():
             self.is_speaking = True
+            self.current_prepared = prepared
+            self.current_sentence_index = -1
+            self.stop_requested = False
+            self.stop_after_sentence = False
+
             try:
                 if filler is not None:
                     filler.on_gpt_done_before_tts()
                     filler.scripted_speech_mode = True
                     time.sleep(0.1)
 
-                for item in prepared:
+                for idx, item in enumerate(prepared):
+                    if self.stop_requested:
+                        print("[Chatbot] stop_requested -> break playback loop")
+                        break
+
+                    self.current_sentence_index = idx
+
                     sent = item["text"]
                     motion = item["motion"]
 
@@ -217,8 +295,18 @@ class StyleChangeServer(object):
                         near_end_callback=near_end_cb,
                     )
                     done_event.wait()
+
+                    if self.stop_after_sentence:
+                        print("[Chatbot] stop_after_sentence -> break after current sentence")
+                        break
+
             finally:
                 self.is_speaking = False
+                self.current_prepared = []
+                self.current_sentence_index = -1
+                self.stop_requested = False
+                self.stop_after_sentence = False
+
                 if filler is not None:
                     filler.scripted_speech_mode = False
                     filler.on_tts_done_after_playback()
@@ -332,14 +420,47 @@ class StyleChangeServer(object):
             filler.scripted_speech_mode = True
             time.sleep(0.1)
 
-    ### 返答をgptを用いて生成する関数
-    def generate_reply(self, new_message, filler=None, save_user_text=None):
-        with self.lock:
+    ### 一言目を生成する関数
+    def prefetch_opening_reply(self, mode: str):
+        try:
             messages = self.build_base_messages()
-            messages = self.append_recent_history(messages)
-            messages.append(new_message)
 
-            gpt_response = openai.chat.completions.create(
+            if mode == "greeting":
+                user_text = "こんにちは"
+                system_text = (
+                    "お客様の最初の発話は挨拶です。"
+                    "ホテル受付として自然な最初の応答を生成してください。"
+                    "最初の1文は必ず type='OPENING' の挨拶文にしてください。"
+                    "挨拶から始め、その後に用件確認へ進んでください。"
+                )
+            elif mode == "call":
+                user_text = "すみません"
+                system_text = (
+                    "お客様の最初の発話は呼びかけです。"
+                    "ホテル受付として自然な最初の応答を生成してください。"
+                   "最初の1文は呼びかけへの応答とし、type='ACCEPT' または type='OPENING' のどちらか自然な方を使ってください。"
+                    "まず呼びかけに応じ、その後に用件を尋ねてください。"
+                )
+            else:
+                return
+
+            messages.append({
+                "role": "system",
+                "content": (
+                    system_text
+                    + " 応答は必ずJSON配列で出力してください。"
+                    + " 複数文になる場合は、1文ごとに分割し、それぞれを1要素として配列に入れてください。"
+                    + ' 各要素は {"utterance": string, "type": string} の形式にしてください。'
+                    + " type は OPENING, STATEMENT, OPINION, QUESTION, APOLOGY, THANKING, CLOSING, ACCEPT のいずれかのみ使ってください。"
+                    + " 1つの要素に複数の文を含めてはいけません。"
+                    + " 1つの文に対して1つのtypeのみ付与してください。"
+                    + " 説明文、補足、Markdown、コードブロックは禁止です。"
+                    + " 必ずJSON配列のみを出力してください。"
+                )
+            })
+            messages.append({"role": "user", "content": f"「{user_text}」"})
+
+            resp = openai.chat.completions.create(
                 model=OPENAI_MODEL,
                 messages=messages,
                 temperature=0,
@@ -349,28 +470,59 @@ class StyleChangeServer(object):
                 presence_penalty=0
             )
 
-            pol_msg = gpt_response.choices[0].message.content
-            gpt_response_text = remove_quotes(pol_msg)
+            reply_text = resp.choices[0].message.content.strip()
+            prepared = self.prepare_planned_speech(reply_text)
 
-            self.speak_text_planned(gpt_response_text, filler=filler)
-            self.prefetch_short_affirm_reply(gpt_response_text)
+            self.opening_prefetch[mode] = {
+                "reply_text": reply_text,
+                "prepared": prepared,
+            }
+
+            print(f"[Chatbot] prefetched opening ({mode}): {reply_text}")
+
+        except Exception as e:
+            logging.warning(f"prefetch opening error ({mode}): {e}")
+
+    ### 返答をgptを用いて生成する関数
+    def generate_reply(self, new_message, filler=None, save_user_text=None):
+        with self.lock:
+            messages = self.build_base_messages()
+            messages = self.append_recent_history(messages)
+            messages.append(new_message)
+            print(f"[Chatbot] new_messages {new_message}" )
+
+            gpt_response = openai.chat.completions.create(
+                model=OPENAI_MODEL,
+                messages=messages,
+                temperature=0,
+                max_tokens=256,
+                top_p=1,
+                frequency_penalty=0,
+                presence_penalty=0
+            )
+
+            reply_text = gpt_response.choices[0].message.content.strip()
+            print(f"[Chatbot] reply{reply_text}")
+
+            self.speak_text_planned(reply_text, filler=filler)
+            self.prefetch_short_affirm_reply(reply_text)
 
             if save_user_text is not None:
-                self.addFile.add(save_user_text, gpt_response_text)
+                self.addFile.add(save_user_text, reply_text)
                 self.history.append({
                     "user": save_user_text,
-                    "assistant": gpt_response_text
+                    "assistant": reply_text
                 })
             else:
                 self.history.append({
                     "user": None,
-                    "assistant": gpt_response_text
+                    "assistant": reply_text
                 })
 
             if len(self.history) > 20:
                 self.history = self.history[-20:]
 
-            return gpt_response_text
+            return reply_text
     
     ### 一つ先の返答を生成する関数
     def prefetch_short_affirm_reply(self, assistant_text):
@@ -381,14 +533,35 @@ class StyleChangeServer(object):
                 messages = self.build_base_messages()
                 messages = self.append_recent_history(messages)
 
-                messages.append({"role": "assistant", "content": f"「{assistant_text}」"})
+                messages.append({
+                    "role": "assistant",
+                    "content": assistant_text
+                })
                 messages.append({
                     "role": "system",
                     "content": (
                         "直前のロボット発話に対して、客が『はい』『うん』『お願いします』"
-                        "のような短い承諾だけを返した場合の、次のロボット発話を2文生成してください。"
-                        "会話を自然に一歩進めてください。"
-                        "確認待ちだった場合は、承諾されたものとして次の案内に進んでください。"
+                        "のような短い承諾だけを返した場合の、次のロボット発話を生成してください。"
+
+                        "応答は必ずJSON配列で出力してください。"
+                        "複数文になる場合は、1文ごとに分割し、それぞれを1要素として配列に入れてください。"
+
+                        '各要素は {"utterance": string, "type": string} の形式にしてください。'
+
+                        "type は以下のいずれか1つのみ使用してください："
+                        "OPENING, STATEMENT, OPINION, QUESTION, APOLOGY, THANKING, CLOSING, ACCEPT。"
+
+                        "1つの要素に複数の文を含めてはいけません。"
+                        "1つの文に対して1つのtypeのみ付与してください。"
+
+                        "例："
+                        '['
+                        '{"utterance": "いらっしゃいませ。", "type": "OPENINIG"},'
+                        '{"utterance": "今日はどのようなご用件でしょうか？", "type": "QUESTION"}'
+                        ']'
+
+                        "説明文、補足、Markdown、コードブロックは禁止です。"
+                        "必ずJSON配列のみを出力してください。"
                     )
                 })
                 messages.append({"role": "user", "content": "「はい」"})
@@ -403,7 +576,7 @@ class StyleChangeServer(object):
                     presence_penalty=0
                 )
 
-                reply_text = remove_quotes(resp.choices[0].message.content)
+                reply_text = resp.choices[0].message.content.strip()
                 prepared = self.prepare_planned_speech(reply_text)
 
                 self.prefetch_reply = {
@@ -429,11 +602,12 @@ class StyleChangeServer(object):
         
         self.clear_prefetch_reply("prefetch not used")
 
-        fixed_item = fixed_reply.find_fixed_response(utterance, SCENARIO)
+        prev_type = self.get_last_assistant_da_type()
+        fixed_item = fixed_reply.find_fixed_response(utterance, SCENARIO, prev_type) 
         if fixed_item is not None:
             print(f"[Chatbot] fixed response matched: {utterance}")
             filler.on_fixed()
-            return self.handle_fixed_response(utterance, fixed_item, filler=filler)
+            return self.handle_fixed_response_thanks(utterance, fixed_item, filler=filler)
 
         return self.generate_reply(
             new_message={"role": "user", "content": f"「{utterance}」"},
@@ -442,7 +616,26 @@ class StyleChangeServer(object):
         )                   
     
     ### 固定された返答(挨拶)の処理
-    def handle_fixed_response(self, utterance, fixed_item, filler=None):
+    def handle_fixed_response_greeting(self, utterance, opening_key, filler=None):
+        cached = self.opening_prefetch.get(opening_key)
+
+        if cached is not None:
+            print(f"[Chatbot] opening matched (interim): {utterance} -> {opening_key}")
+            filler.on_fixed()
+
+            self.play_prepared_speech(cached["prepared"], filler=filler)
+            self.prefetch_short_affirm_reply(cached["reply_text"])
+
+            self.addFile.add(utterance, cached["reply_text"])
+            self.history.append({
+                "user": utterance,
+                "assistant": cached["reply_text"]
+            })
+
+            self.skip_next_final_text = fixed_reply.normalize_utterance(utterance)
+
+    ### 固定された返答(感謝)の処理
+    def handle_fixed_response_thanks(self, utterance, fixed_item, filler=None):
         reply_text = fixed_item["reply_text"]
 
         self.play_fixed_response(fixed_item, filler=filler)
@@ -458,6 +651,20 @@ class StyleChangeServer(object):
             self.history = self.history[-20:]
 
         return reply_text
+    
+    def get_last_assistant_da_type(self) -> str | None:
+        if not self.history:
+            return None
+
+        last = self.history[-1].get("assistant")
+        if not last:
+            return None
+
+        try:
+            items = parse_reply_json(last)
+            return items[-1]["type"]  # ← 最後の文
+        except Exception:
+            return None
     
     ### 固定された返答(承諾)への処理
     def try_handle_prefetched_reply(self, utterance, filler=None):
@@ -508,6 +715,141 @@ class StyleChangeServer(object):
             save_user_text=None
         )
     
+    ### 割り込みに対する処理
+    def get_current_robot_sentence_text(self) -> str:
+        if not self.current_prepared:
+            return ""
+        if self.current_sentence_index < 0:
+            return ""
+        if self.current_sentence_index >= len(self.current_prepared):
+            return ""
+        return self.current_prepared[self.current_sentence_index].get("text", "")
+    
+    def get_current_robot_sentence_type(self) -> str:
+        if not self.current_prepared:
+            return ""
+        if self.current_sentence_index < 0:
+            return ""
+        if self.current_sentence_index >= len(self.current_prepared):
+            return ""
+        return self.current_prepared[self.current_sentence_index].get("type", "")
+
+    def current_sentence_is_last(self) -> bool:
+        if not self.current_prepared:
+            return False
+        if self.current_sentence_index < 0:
+            return False
+        if self.current_sentence_index >= len(self.current_prepared):
+            return False
+        return bool(self.current_prepared[self.current_sentence_index].get("is_last", False))
+
+    def request_stop_now(self, filler=None):
+        print("[Chatbot] request_stop_now")
+        self.stop_requested = True
+
+        try:
+            tts._player.stop_current()
+        except Exception as e:
+            logging.warning(f"interrupt stop error: {e}")
+
+        self.is_speaking = False
+        if filler is not None:
+            filler.on_tts_done_after_playback()
+
+    def request_stop_after_sentence(self):
+        print("[Chatbot] request_stop_after_sentence")
+        self.stop_after_sentence = True
+
+    def handle_interrupt_interim(self, utterance, filler=None):
+        decision = self.interrupt_handler.decide(
+            text=utterance,
+            current_robot_text=self.get_current_robot_sentence_text(),
+            current_robot_type=self.get_current_robot_sentence_type(),
+            is_last_sentence=self.current_sentence_is_last(),
+        )
+
+        print(
+            f"[Chatbot] interrupt interim decision: "
+            f"da={decision.da}, policy={decision.policy}, source={decision.source}"
+        )
+
+        if decision.policy == "continue":
+            # 軽い反応だけして継続
+            if filler is not None:
+                filler.on_fixed()
+            return "continue"
+
+        if decision.policy == "stop_now":
+            self.request_stop_now(filler=filler)
+            return "stop_now"
+
+        if decision.policy == "stop_after_sentence":
+            self.request_stop_after_sentence()
+            return "stop_after_sentence"
+
+        return None
+
+    def handle_interrupt_final(self, utterance, filler=None):
+        decision = self.interrupt_handler.decide(
+            text=utterance,
+            current_robot_text=self.get_current_robot_sentence_text(),
+            current_robot_type=self.get_current_robot_sentence_type(),
+            is_last_sentence=self.current_sentence_is_last(),
+        )
+
+        print(
+            f"[Chatbot] interrupt final decision: "
+            f"da={decision.da}, policy={decision.policy}, source={decision.source}"
+        )
+
+        if decision.policy == "continue":
+            # 相槌・感謝はそのまま流す
+            if filler is not None:
+                filler.on_fixed()
+            return None
+
+        if decision.policy == "stop_now":
+            self.request_stop_now(filler=filler)
+
+            # 割り込み内容を優先して新規応答
+            return self.generate_reply(
+                new_message={
+                    "role": "system",
+                    "content": (
+                        "ロボットの発話中にお客様が割り込みました。"
+                        f"割り込み内容は「{utterance}」です。"
+                        "直前の案内を中断し、お客様の発話を優先して自然に応答してください。"
+                        "必要なら最初に短く謝罪してください。"
+                    )
+                },
+                filler=filler,
+                save_user_text=utterance
+            )
+
+        if decision.policy == "stop_after_sentence":
+            self.request_stop_after_sentence()
+
+            # 最小差分版なので、いったん現在文の後で即応答生成
+            # ここは本来キュー化した方がきれいだが、まずは簡易に少し待つ
+            def _delayed_reply():
+                time.sleep(0.2)
+                self.generate_reply(
+                    new_message={
+                        "role": "system",
+                        "content": (
+                            "ロボットの発話中にお客様が割り込みました。"
+                            f"割り込み内容は「{utterance}」です。"
+                            "ロボットは現在の文だけ話し終えてから、お客様の発話に自然に応答してください。"
+                        )
+                    },
+                    filler=filler,
+                    save_user_text=utterance
+                )
+
+            threading.Thread(target=_delayed_reply, daemon=True).start()
+            return None
+
+        return None
     ### 未使用wavを消す
     def _cleanup_prepared_wavs(self, prepared):
         if not prepared:
@@ -551,6 +893,9 @@ class StyleChangeServer(object):
             filler = FillerController(xyz, robot)
             start_tick_thread(filler)
 
+            self.prefetch_opening_reply("greeting")
+            self.prefetch_opening_reply("call")
+
             # Enterだけで「次へ進む」を呼ぶ
             def next_button_listener():
                 while True:
@@ -570,25 +915,51 @@ class StyleChangeServer(object):
                 confidence = ev.conf
                 ts = ev.ts
 
+                speaking_now = self.is_speaking or filler.tts_playing
+
                 if ev.kind == "interim":
                     filler.on_interim(utterance)
+                    if speaking_now:
+                        result = self.handle_interrupt_interim(utterance, filler=filler)
+                        print(f"[Chatbot] ASR interrupt interim at {ts}: {utterance} -> {result}")
+                        continue
+
+                    if not self.history:
+                        opening_key = fixed_reply.find_opening_prefetch_key(utterance, SCENARIO)
+                        if opening_key is not None:
+                            self.handle_fixed_response_greeting(utterance,opening_key=opening_key, filler=filler)
+                        continue
+
                     prefetched = fixed_reply.is_short_affirm(utterance)
                     if prefetched:
                         print(f"[Chatbot] is_short_affirm matched (interium): {utterance}")
                         filler.on_fixed()
-                    fixed_item = fixed_reply.find_fixed_response(utterance, SCENARIO)
+
+                    prev_type = self.get_last_assistant_da_type()
+                    fixed_item = fixed_reply.find_fixed_response(utterance, SCENARIO, prev_type)
                     if fixed_item is not None:
                         print(f"[Chatbot] fixed response matched (interium): {utterance}")
                         filler.on_fixed()
                     print(f"[Chatbot] ASR interim at {ts}: {utterance}")
                     continue
 
-                filler.on_final()
+                
                 if confidence is not None:
                     print(f"[Chatbot] ASR result ({confidence:.2f}) at {ts}: {utterance}")
                 else:
                     print(f"[Chatbot] ASR result at {ts}: {utterance}")
 
+                norm_final = fixed_reply.normalize_utterance(utterance)
+                if self.skip_next_final_text is not None and norm_final == self.skip_next_final_text:
+                    print(f"[Chatbot] skip final because already handled by interim: {utterance}")
+                    self.skip_next_final_text = None
+                    continue
+
+                if speaking_now:
+                    self.handle_interrupt_final(utterance, filler=filler)
+                    continue
+
+                filler.on_final()
                 self.handle_user_utterance(utterance, filler=filler)
 
         except KeyboardInterrupt:

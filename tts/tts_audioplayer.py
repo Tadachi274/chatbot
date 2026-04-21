@@ -79,6 +79,16 @@ class AudioPlayer:
                         logging.warning(f"unlink error: {e}")
                 self.q.task_done()
 
+    def stop_current(self):
+        try:
+            pygame.mixer.music.stop()
+            try:
+                pygame.mixer.music.unload()
+            except pygame.error:
+                pass
+        except Exception as e:
+            logging.warning(f"stop_current error: {e}")
+
     def stop(self):
         """アプリ終了時に呼ぶ。キュー消化後に停止"""
         self.q.join()

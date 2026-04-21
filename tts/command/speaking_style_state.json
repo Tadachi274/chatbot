@@ -1,5 +1,5 @@
 {
-  "neutral": 1,
+  "neutral": 0,
   "base_style": {
     "politeness": 0,
     "length": 0,
@@ -7,28 +7,48 @@
     "friendliness": 0,
     "emotion_strength": 0
   },
-  "techniques": {
-    "empathy": 0,
-    "consideration": 0,
-    "seasonal_topic": 1,
-    "time_topic": 1,
-    "self_disclosure": 1,
-    "evidence": 1,
-    "expertise": 0,
-    "paraphrase": 0,
-    "summary": 0,
-    "step_by_step": 0,
-    "initiative": 0,
-    "confirmation": 0,
-    "clarification_question": 0,
-    "hypothesis": 0,
-    "options": 0,
-    "proactive": 0,
-    "goal_clarity": 0,
-    "permission": 0,
-    "alternative": 0,
-    "positive_reframe": 0,
-    "name_call": 0,
-    "closing": 0
+  "da_techniques": {
+    "OPENING": {
+      "seasonal_topic": 0,
+      "time_topic": 0,
+      "consideration": 0
+    },
+    "STATEMENT": {
+      "empathy": 0,
+      "evidence": 0,
+      "expertise": 0,
+      "paraphrase": 0,
+      "summary": 0,
+      "step_by_step": 0,
+      "proactive": 0,
+      "goal_clarity": 0,
+      "permission": 0
+    },
+    "OPINION": {
+      "self_disclosure": 0,
+      "positive_reframe": 0,
+      "hedge": 0,
+      "expertise": 0
+    },
+    "QUESTION": {
+      "options": 0
+    },
+    "APOLOGY": {
+      "alternative": 0
+    },
+    "THANKING": {
+      "name_call": 1
+    },
+    "CLOSING": {
+      "seasonal_topic": 0,
+      "time_topic": 0,
+      "consideration": 0,
+      "name_call": 0
+    },
+    "ACCEPT": {
+      "confirmation": 0,
+      "clarification_question": 0,
+      "hypothesis": 0
+    }
   }
 }
