@@ -85,12 +85,16 @@ VOICE_RANGE = {
     "sadness":  (0.0, 1.0),
 }
 
-SMILES = [
+EMOTIONS = [
     "AffiliativeSmile", 
     "RewardSmile", 
     "WaitSmile", 
     "AffiliativeSmileOpenEyes", 
-    "WaitSmileOpenEyes"
+    "WaitSmileOpenEyes",
+    "PositiveSurprise",
+    "WarmSmile",
+    "CoolSmile",
+    "Thinking",
 ] 
 
 PERSON = [
@@ -124,6 +128,10 @@ FILLER_EMOTIONS = [
     "AffiliativeSmile",
     "RewardSmile",
     "neutral",
+    "PositiveSurprise",
+    "WarmSmile",
+    "CoolSmile",
+    "Thinking"
 ]
 
 CANT_HEAR_VOICE =[
@@ -195,9 +203,7 @@ class RobotConsole(tk.Tk):
         self.smile_level = tk.IntVar(value=1)    # 1-3
         self.smile_priority = tk.IntVar(value=1) 
 
-        self.facial_emotions = [
-            "TadachiSmile", "AffiliativeSmile", "RewardSmile"
-        ]
+        self.facial_emotions = EMOTIONS
         self.emotion_buttons = {}
         
         self.facial_emotion = tk.StringVar(value="TadachiSmile")
@@ -953,9 +959,11 @@ class RobotConsole(tk.Tk):
         self.emotion_button_0=self._emotion_button(grid, self.facial_emotion.get())
         self.emotion_button_0.grid(row=0, column=0, padx=6, pady=6, sticky="ew")
         self.emotion_buttons["facial"] = self.emotion_button_0
-        for col, payload in enumerate(SMILES, start=1):
+        for col, payload in enumerate(EMOTIONS, start=1):
+            i = col % 2
+            col = col // 2
             b = self._emotion_button(grid, payload)
-            b.grid(row=0, column=col, padx=6, pady=6, sticky="ew")
+            b.grid(row=i, column=col, padx=6, pady=6, sticky="ew")
             self.emotion_buttons[payload] = b
 
         self.emotion_button_n=self._emotion_button(grid, "neutral")
