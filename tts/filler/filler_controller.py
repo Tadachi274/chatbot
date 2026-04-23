@@ -16,7 +16,7 @@ TAIL_Q      = ("ですか", "ますか", "でしょうか", "ですかね", "ま
 TAIL_CONT   = ("ですけど", "ますけど", "けど", "けども", "ですが", "ですけどね")
 
 DEFAULT_FILLERS = ("んん","はい","ええ","えっと","あの")
-DEFAULT_CANTHEAR = ("もう一度よろしいでしょうか")
+DEFAULT_CANTHEAR = ("すみませんもう一度よろしいでしょうか")
 FILLER_RATE = 0.3
 
 class FillerController:
@@ -149,9 +149,10 @@ class FillerController:
         p = self._faces["speak_person"]
         dir_path = Path(__file__).resolve().parent.parent / "filler" / f"{p['type']}"
         wav_name = random.choice(self._fillers)
+
         if canthear:
             dir_path = dir_path / "canthear" 
-            wav_name = random.choice(DEFAULT_CANTHEAR)
+            wav_name = DEFAULT_CANTHEAR
         
         wav_path = next(dir_path.glob(f"{wav_name}.wav"))
 
@@ -169,6 +170,8 @@ class FillerController:
             self._player.play_later(wav_path)
         else:
             print(f"[FillerController] filler don't play")
+
+        return wav_path
     
     def create_lookaway(self,payload,level):
         delta = 400 * round(level,2)
@@ -273,11 +276,11 @@ class FillerController:
         v = self._faces["cant_hear_voice"]
         if v['level'] == 1:
             wave_path = self._filler_choice(True)
+            with wave.open(str(wave_path),'rb') as wav_file:
+                duration = wav_file.getnframes() / wav_file.getframerate()
+            time.sleep(duration)
  
         self._last_fail_t = now
-        with wave.open(str(wave_path),'rb') as wav_file:
-            duration = wav_file.getnframes() / wav_file.getframerate()
-        time.sleep(duration)
         self.robot.send(f"/emotion neutral 1 5 1000") 
 
 
@@ -339,9 +342,9 @@ class FillerController:
 
     def do_bow(self, kind: str):
         if kind == "small":
-            self.robot.send("/bow 200 500 3")
+            self.robot.send("/bow 10 500 3")
         elif kind == "deep":
-            self.robot.send("/bow 400 1000 3")
+            self.robot.send("/bow 20 1000 3")
 
     def do_between_sentence_gaze(self, gaze_type: str, level: float):
         cmd = self.create_lookaway(gaze_type, level)

@@ -3,36 +3,30 @@ import json
 import re
 from pathlib import Path
 
-APOLOGY_KEYWORDS = ["すみません", "申し訳", "失礼しました", "ごめんなさい"]
-THANKS_KEYWORDS = ["ありがとう", "ありがとうございます", "感謝"]
-GREETING_KEYWORDS = ["こんにちは", "こんばんは", "おはようございます", "いらっしゃいませ", "ようこそ"]
+VALID_TYPES = {
+    "OPENING", "STATEMENT", "OPINION", "QUESTION",
+    "APOLOGY", "THANKING", "CLOSING", "ACCEPT"
+}
 
-def split_sentences(text: str) -> list[str]:
-    text = text.strip()
-    if not text:
-        return []
-    parts = re.split(r'(?<=[。！？!?])\s*', text)
-    return [p.strip() for p in parts if p.strip()]
 
-def classify_sentence(text: str) -> str:
-    s = text.strip()
-    if any(k in s for k in APOLOGY_KEYWORDS):
-        return "apology"
-    if any(k in s for k in THANKS_KEYWORDS):
-        return "thanks"
-    if any(k in s for k in GREETING_KEYWORDS):
-        return "greeting"
-    return "explanation"
+def build_plan(data) -> list[dict]:
+    if isinstance(data, str):
+        data = json.loads(data)
 
-def build_plan(text: str) -> list[dict]:
-    sentences = split_sentences(text)
     plan = []
-    for i, sent in enumerate(sentences):
-        label = classify_sentence(sent)
+    for i, item in enumerate(data):
+        utterance = item.get("utterance", "").strip()
+        label = item.get("type", "")
+
+        if not utterance:
+            continue
+        if label not in VALID_TYPES:
+            label = "STATEMENT"
+
         plan.append({
-            "text": sent,
+            "text": utterance,
             "label": label,
-            "is_last": i == len(sentences) - 1
+            "is_last": i == len(data) - 1
         })
     return plan
 

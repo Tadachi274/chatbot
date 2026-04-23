@@ -19,6 +19,7 @@ import tts_nikola_data as tts
 from tts_audioplayer import AudioPlayer
 from xyz_server import XYZClient
 import time
+from PIL import Image, ImageTk
 
 
 # ====== 設定 ======
@@ -43,6 +44,9 @@ FILLER_VOICE_STATE_PATH = (Path(__file__).resolve().parents[1]
 SPEAKING_STYLE_STATE_PATH = Path(__file__).with_name("speaking_style_state.json")
 VOICE_STATE_EMO_PATH = Path(__file__).with_name("voice_state_emo.json")
 MOTION_STATE_PATH = Path(__file__).with_name("motion_state.json")
+FACE_CONFIG_DIR = Path(r"C:\carlos\svtools\config")
+# FACE_CONFIG_DIR = Path(r"C:\tadachi\chatbot\tts\command")
+FACE_CONFIG_FILE = FACE_CONFIG_DIR / "config-motionpattern.txt"
 # =================
 
 FRIENDLY_MAP = {
@@ -85,12 +89,16 @@ VOICE_RANGE = {
     "sadness":  (0.0, 1.0),
 }
 
-SMILES = [
+EMOTIONS = [
     "AffiliativeSmile", 
     "RewardSmile", 
     "WaitSmile", 
     "AffiliativeSmileOpenEyes", 
-    "WaitSmileOpenEyes"
+    "WaitSmileOpenEyes",
+    "PositiveSurprise",
+    "WarmSmile",
+    "CoolSmile",
+    "Thinking",
 ] 
 
 PERSON = [
@@ -124,6 +132,10 @@ FILLER_EMOTIONS = [
     "AffiliativeSmile",
     "RewardSmile",
     "neutral",
+    "PositiveSurprise",
+    "WarmSmile",
+    "CoolSmile",
+    "Thinking"
 ]
 
 CANT_HEAR_VOICE =[
@@ -135,7 +147,7 @@ CANT_HEAR_VOICE =[
 ]
 
 FILLER_CANDIDATES = [
-    "ん",
+    "んん",
     "はい",
     "ええ",
     "えっと",
@@ -153,18 +165,39 @@ FILLER_CANDIDATES = [
 ]
 
 DEFAULT_SELECTED_FILLERS = {
-    "ん",
+    "んん",
     "はい",
     "ええ",
     "えっと",
-    "あの",
+}
+
+DA_TYPES = (
+    "OPENING",
+    "STATEMENT",
+    "OPINION",
+    "QUESTION",
+    "APOLOGY",
+    "THANKING",
+    "CLOSING",
+    "ACCEPT",
+)
+
+DA_LABELS = {
+    "OPENING": "OPENING",
+    "STATEMENT": "STATEMENT",
+    "OPINION": "OPINION",
+    "QUESTION": "QUESTION",
+    "APOLOGY": "APOLOGY",
+    "THANKING": "THANKING",
+    "CLOSING": "CLOSING",
+    "ACCEPT": "ACCEPT",
 }
 
 class RobotConsole(tk.Tk):
     def __init__(self):
         super().__init__()
         self.title("ロボット操作コンソール (Python)")
-        self.geometry("2200x1200")
+        self.geometry("1700x1200")
 
         # ---- 状態（既定値）----
         self.default_keeptime = tk.IntVar(value=1000) 
@@ -174,9 +207,7 @@ class RobotConsole(tk.Tk):
         self.smile_level = tk.IntVar(value=1)    # 1-3
         self.smile_priority = tk.IntVar(value=1) 
 
-        self.facial_emotions = [
-            "TadachiSmile", "AffiliativeSmile", "RewardSmile"
-        ]
+        self.facial_emotions = EMOTIONS
         self.emotion_buttons = {}
         
         self.facial_emotion = tk.StringVar(value="TadachiSmile")
@@ -210,39 +241,63 @@ class RobotConsole(tk.Tk):
 
         self.speech_text  = tk.StringVar(value="こんにちは！いらっしゃいませ。今日はどのようなご用件でしょうか？何かお手伝いできることがあれば教えてくださいね。")
         self.speech_save = tk.BooleanVar(value=False)
-        self.style_neutral = tk.IntVar(value=0)
+
 
         # 話し方（上位要素: -1/0/1）
+        self.style_neutral = tk.IntVar(value=0) #(0/1)
         self.style_politeness = tk.IntVar(value=0)
         self.style_length = tk.IntVar(value=0)
         self.style_vocabulary = tk.IntVar(value=0)
         self.style_friendliness = tk.IntVar(value=0)
         self.style_emotion_strength = tk.IntVar(value=0)
         self.style_positivity = tk.IntVar(value=0)
-        self.style_initiative = tk.IntVar(value=0)
+        
 
         # 話し方（テクニック: 0/1）
-        self.style_empathy = tk.IntVar(value=0)
-        self.style_consideration = tk.IntVar(value=0)
-        self.style_seasonal_topic = tk.IntVar(value=0)
-        self.style_time_topic = tk.IntVar(value=0)
-        self.style_self_disclosure = tk.IntVar(value=0)
-        self.style_evidence = tk.IntVar(value=0)
-        self.style_expertise = tk.IntVar(value=0)
-        self.style_paraphrase = tk.IntVar(value=0)
-        self.style_summary = tk.IntVar(value=0)
-        self.style_step_by_step = tk.IntVar(value=0)
-        self.style_confirmation = tk.IntVar(value=0)
-        self.style_clarification_question = tk.IntVar(value=0)
-        self.style_hypothesis = tk.IntVar(value=0)
-        self.style_options = tk.IntVar(value=0)
-        self.style_proactive = tk.IntVar(value=0)
-        self.style_goal_clarity = tk.IntVar(value=0)
-        self.style_permission = tk.IntVar(value=0)
-        self.style_alternative = tk.IntVar(value=0)
-        self.style_positive_reframe = tk.IntVar(value=0)
-        self.style_name_call = tk.IntVar(value=0)
-        self.style_closing = tk.IntVar(value=0)
+        self.style_da_vars = {
+            "OPENING": {
+                "seasonal_topic": tk.IntVar(value=0),
+                "time_topic": tk.IntVar(value=0),
+                "consideration": tk.IntVar(value=0),
+            },
+            "STATEMENT": {
+                "empathy": tk.IntVar(value=0),
+                "evidence": tk.IntVar(value=0),
+                "expertise": tk.IntVar(value=0),
+                "paraphrase": tk.IntVar(value=0),
+                "summary": tk.IntVar(value=0),
+                "step_by_step": tk.IntVar(value=0),
+                "proactive": tk.IntVar(value=0),
+                "goal_clarity": tk.IntVar(value=0),
+                "permission": tk.IntVar(value=0),
+            },
+            "OPINION": {
+                "self_disclosure": tk.IntVar(value=0),
+                "positive_reframe": tk.IntVar(value=0),
+                "hedge": tk.IntVar(value=0),
+                "expertise": tk.IntVar(value=0),
+            },
+            "QUESTION": {
+                "options": tk.IntVar(value=0),
+            },
+            "APOLOGY": {
+                "alternative": tk.IntVar(value=0),
+            },
+            "THANKING": {
+                "name_call": tk.IntVar(value=0),
+            },
+            "CLOSING": {
+                "seasonal_topic": tk.IntVar(value=0),
+                "time_topic": tk.IntVar(value=0),
+                "consideration": tk.IntVar(value=0),
+                "name_call": tk.IntVar(value=0),
+            },
+            "ACCEPT": {
+                "confirmation": tk.IntVar(value=0),
+                "clarification_question": tk.IntVar(value=0),
+                "hypothesis": tk.IntVar(value=0),
+            },
+        }
 
         self.nod_amplitude = tk.IntVar(value=100) 
         self.nod_duration = tk.DoubleVar(value=0.4) 
@@ -306,15 +361,73 @@ class RobotConsole(tk.Tk):
         self._gaze_code_to_name = {code: name for name, code in GAZE_DIRS}
         self._gaze_names = [name for name, _ in GAZE_DIRS]
 
+        # ===== 表情エディタ =====
+        self.face_preset_name = tk.StringVar(value="neutral")
+        self.face_selected_name = tk.StringVar(value="")
+        self.face_selected_level = tk.IntVar(value=1)
+        self.face_presets = {}
+
+        self.face_velocity = tk.IntVar(value=2000)
+        self.face_priority = tk.IntVar(value=3)
+        self.face_keeptime = tk.IntVar(value=3000)
+        self.face_ms1 = tk.IntVar(value=200)
+        self.face_ms2 = tk.IntVar(value=1000)
+        self.face_ms3 = tk.IntVar(value=4000)
+
+        # 仮の軸名。あとで対応表が来たら差し替え
+        self.face_axis_names = [f"{i}" for i in range(1, 36)]
+
+        self.face_default_values = [
+            64, 64, 128, 128, 128,
+            0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+            0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+            0, 32, 128, 128, 128
+        ]
+
+        self.face_params = [
+            tk.IntVar(value=v) for v in self.face_default_values
+        ]
+
+        self.img = Image.open("nikola_axis.jpg").transpose(Image.ROTATE_90)
+        self.img = self.img.resize((200*3, 150*3))
+
         # ===== 感情別 voice_state_emo.json 用 =====
-        self.emo_voice_keys = ("greeting", "thanks", "apology", "explanation")
+        self.emo_voice_keys = DA_TYPES
         self.emo_voice_vars = {}
 
         voice_defaults = {
-            "greeting":    {"volume": 1.3, "rate": 1.02, "pitch": 1.0,  "emphasis": 1.08, "joy": 0.8,  "anger": 0.0, "sadness": 0.0},
-            "thanks":      {"volume": 1.3, "rate": 0.98, "pitch": 1.03, "emphasis": 1.05, "joy": 0.12, "anger": 0.0, "sadness": 0.0},
-            "apology":     {"volume": 1.2, "rate": 0.92, "pitch": 0.96, "emphasis": 0.95, "joy": 0.0,  "anger": 0.0, "sadness": 0.18},
-            "explanation": {"volume": 1.3, "rate": 1.0,  "pitch": 1.0,  "emphasis": 1.0,  "joy": 0.0,  "anger": 0.0, "sadness": 0.0},
+            "OPENING": {
+                "volume": 1.3, "rate": 1.02, "pitch": 1.02,
+                "emphasis": 1.08, "joy": 0.50, "anger": 0.0, "sadness": 0.0
+            },
+            "STATEMENT": {
+                "volume": 1.3, "rate": 1.00, "pitch": 1.00,
+                "emphasis": 1.00, "joy": 0.00, "anger": 0.0, "sadness": 0.0
+            },
+            "OPINION": {
+                "volume": 1.3, "rate": 0.98, "pitch": 1.00,
+                "emphasis": 1.03, "joy": 0.10, "anger": 0.0, "sadness": 0.0
+            },
+            "QUESTION": {
+                "volume": 1.3, "rate": 1.00, "pitch": 1.03,
+                "emphasis": 1.05, "joy": 0.05, "anger": 0.0, "sadness": 0.0
+            },
+            "APOLOGY": {
+                "volume": 1.2, "rate": 0.92, "pitch": 0.96,
+                "emphasis": 0.95, "joy": 0.0, "anger": 0.0, "sadness": 0.18
+            },
+            "THANKING": {
+                "volume": 1.3, "rate": 0.98, "pitch": 1.03,
+                "emphasis": 1.05, "joy": 0.15, "anger": 0.0, "sadness": 0.0
+            },
+            "CLOSING": {
+                "volume": 1.25, "rate": 0.97, "pitch": 1.00,
+                "emphasis": 1.03, "joy": 0.10, "anger": 0.0, "sadness": 0.0
+            },
+            "ACCEPT": {
+                "volume": 1.3, "rate": 0.97, "pitch": 0.99,
+                "emphasis": 1.02, "joy": 0.05, "anger": 0.0, "sadness": 0.0
+            },
         }
 
         for key in self.emo_voice_keys:
@@ -330,11 +443,11 @@ class RobotConsole(tk.Tk):
             }
 
         # ===== 感情別 motion_state.json 用 =====
-        self.emo_motion_keys = ("greeting", "thanks", "apology", "explanation")
+        self.emo_motion_keys = DA_TYPES
         self.emo_motion_vars = {}
 
         motion_defaults = {
-            "greeting": {
+            "OPENING": {
                 "face_type": "AffiliativeSmile",
                 "face_level": 2,
                 "bow_enabled": False,
@@ -343,16 +456,34 @@ class RobotConsole(tk.Tk):
                 "between_gaze_level": 0.4,
                 "end_gaze_return": True,
             },
-            "thanks": {
-                "face_type": "RewardSmile",
-                "face_level": 2,
-                "bow_enabled": True,
-                "bow_kind": "small",
-                "between_gaze_type": "d",
-                "between_gaze_level": 0.5,
+            "STATEMENT": {
+                "face_type": "neutral",
+                "face_level": 1,
+                "bow_enabled": False,
+                "bow_kind": "none",
+                "between_gaze_type": "l",
+                "between_gaze_level": 0.3,
                 "end_gaze_return": True,
             },
-            "apology": {
+            "OPINION": {
+                "face_type": "AffiliativeSmile",
+                "face_level": 1,
+                "bow_enabled": False,
+                "bow_kind": "none",
+                "between_gaze_type": "ld",
+                "between_gaze_level": 0.3,
+                "end_gaze_return": True,
+            },
+            "QUESTION": {
+                "face_type": "AffiliativeSmileOpenEyes",
+                "face_level": 2,
+                "bow_enabled": False,
+                "bow_kind": "none",
+                "between_gaze_type": "f",
+                "between_gaze_level": 0.2,
+                "end_gaze_return": True,
+            },
+            "APOLOGY": {
                 "face_type": "WaitSmile",
                 "face_level": 1,
                 "bow_enabled": True,
@@ -361,13 +492,31 @@ class RobotConsole(tk.Tk):
                 "between_gaze_level": 0.6,
                 "end_gaze_return": True,
             },
-            "explanation": {
-                "face_type": "neutral",
+            "THANKING": {
+                "face_type": "RewardSmile",
+                "face_level": 2,
+                "bow_enabled": True,
+                "bow_kind": "small",
+                "between_gaze_type": "d",
+                "between_gaze_level": 0.5,
+                "end_gaze_return": True,
+            },
+            "CLOSING": {
+                "face_type": "AffiliativeSmile",
+                "face_level": 2,
+                "bow_enabled": True,
+                "bow_kind": "small",
+                "between_gaze_type": "d",
+                "between_gaze_level": 0.4,
+                "end_gaze_return": True,
+            },
+            "ACCEPT": {
+                "face_type": "WaitSmileOpenEyes",
                 "face_level": 1,
                 "bow_enabled": False,
                 "bow_kind": "none",
-                "between_gaze_type": "l",
-                "between_gaze_level": 0.3,
+                "between_gaze_type": "f",
+                "between_gaze_level": 0.2,
                 "end_gaze_return": True,
             },
         }
@@ -388,13 +537,19 @@ class RobotConsole(tk.Tk):
         self.sock: socket.socket | None = None
         self._terminator = self._eol_bytes(TCP_EOL)
 
-        self._build_ui()
+        self._load_face_presets_from_file()
+
+        # UI表示
+        self._build_main_ui()
+        self._build_sub_window()
 
         if USE_TCP:
             self._connect_tcp()
             self._log(f"TCP接続モード: {TCP_HOST}:{TCP_PORT} terminator={self._terminator!r}")
         else:
             self._log("HTTP送信モード")
+
+        
 
         # 終了時処理
         self.protocol("WM_DELETE_WINDOW", self._on_close)
@@ -424,37 +579,20 @@ class RobotConsole(tk.Tk):
         ):
             v.trace_add("write", lambda *args: self._write_filler_face_state())
 
+                # speaking style の trace
         for v in (
+            self.style_neutral,
             self.style_politeness,
             self.style_length,
             self.style_vocabulary,
             self.style_friendliness,
             self.style_emotion_strength,
-            self.style_positivity,
-            self.style_initiative,
-            self.style_empathy,
-            self.style_consideration,
-            self.style_seasonal_topic,
-            self.style_time_topic,
-            self.style_self_disclosure,
-            self.style_evidence,
-            self.style_expertise,
-            self.style_paraphrase,
-            self.style_summary,
-            self.style_step_by_step,
-            self.style_confirmation,
-            self.style_clarification_question,
-            self.style_hypothesis,
-            self.style_options,
-            self.style_proactive,
-            self.style_goal_clarity,
-            self.style_permission,
-            self.style_alternative,
-            self.style_positive_reframe,
-            self.style_name_call,
-            self.style_closing,
         ):
             v.trace_add("write", lambda *args: self._write_speaking_style_state())
+
+        for techs in self.style_da_vars.values():
+            for v in techs.values():
+                v.trace_add("write", lambda *args: self._write_speaking_style_state())
 
         for key in self.emo_voice_keys:
             for var in self.emo_voice_vars[key].values():
@@ -470,6 +608,66 @@ class RobotConsole(tk.Tk):
         self._write_voice_state_emo()
         self._write_motion_state()
 
+    def _load_face_presets_from_file(self):
+        self.face_presets = {}
+
+        if not FACE_CONFIG_FILE.exists():
+            return
+
+        try:
+            lines = FACE_CONFIG_FILE.read_text(encoding="utf-8").splitlines()
+
+            i = 0
+            while i < len(lines):
+                line = lines[i].strip()
+
+                # [name]
+                if line.startswith("[") and line.endswith("]"):
+                    name = line[1:-1].strip()
+
+                    ms1 = ms2 = ms3 = None
+                    values = []
+
+                    # 次行: <...>
+                    if i + 1 < len(lines):
+                        header_line = lines[i + 1].strip()
+                        if header_line.startswith("<") and header_line.endswith(">"):
+                            header_text = header_line[1:-1]
+                            parts = [p.strip() for p in header_text.split(",")]
+                            if len(parts) == 3:
+                                ms1, ms2, ms3 = map(int, parts)
+
+                    # その次以降: { ... } を閉じるまで読む
+                    j = i + 2
+                    value_text_parts = []
+                    while j < len(lines):
+                        part = lines[j].strip()
+                        if not part:
+                            j += 1
+                            continue
+
+                        value_text_parts.append(part)
+
+                        if "}" in part:
+                            break
+                        j += 1
+
+                    merged = " ".join(value_text_parts)
+                    merged = merged.replace("{", "").replace("}", "").replace(" ", "")
+                    if merged:
+                        values = [int(x) for x in merged.split(",") if x != ""]
+
+                    if ms1 is not None and len(values) == 35:
+                        self.face_presets[name] = {
+                            "header": (ms1, ms2, ms3),
+                            "values": values,
+                        }
+
+                    i = j
+                i += 1
+
+        except Exception as e:
+            self._log(f"! face preset load error: {e}")
 
     def _current_tts_instructions(self) -> dict:
         return {
@@ -573,39 +771,23 @@ class RobotConsole(tk.Tk):
             self._log(f"! motion_state.json write error: {e}")
 
     def _current_speaking_style_state(self) -> dict:
+        da_techniques = {}
+        for da, techs in self.style_da_vars.items():
+            da_techniques[da] = {
+                name: int(var.get())
+                for name, var in techs.items()
+            }
+
         return {
+            "neutral": int(self.style_neutral.get()),
             "base_style": {
                 "politeness": int(self.style_politeness.get()),
                 "length": int(self.style_length.get()),
                 "vocabulary": int(self.style_vocabulary.get()),
                 "friendliness": int(self.style_friendliness.get()),
                 "emotion_strength": int(self.style_emotion_strength.get()),
-                "positivity": int(self.style_positivity.get()),
-                "initiative": int(self.style_initiative.get()),
             },
-            "techniques": {
-                "empathy": int(self.style_empathy.get()),
-                "consideration": int(self.style_consideration.get()),
-                "seasonal_topic": int(self.style_seasonal_topic.get()),
-                "time_topic": int(self.style_time_topic.get()),
-                "self_disclosure": int(self.style_self_disclosure.get()),
-                "evidence": int(self.style_evidence.get()),
-                "expertise": int(self.style_expertise.get()),
-                "paraphrase": int(self.style_paraphrase.get()),
-                "summary": int(self.style_summary.get()),
-                "step_by_step": int(self.style_step_by_step.get()),
-                "confirmation": int(self.style_confirmation.get()),
-                "clarification_question": int(self.style_clarification_question.get()),
-                "hypothesis": int(self.style_hypothesis.get()),
-                "options": int(self.style_options.get()),
-                "proactive": int(self.style_proactive.get()),
-                "goal_clarity": int(self.style_goal_clarity.get()),
-                "permission": int(self.style_permission.get()),
-                "alternative": int(self.style_alternative.get()),
-                "positive_reframe": int(self.style_positive_reframe.get()),
-                "name_call": int(self.style_name_call.get()),
-                "closing": int(self.style_closing.get()),
-            }
+            "da_techniques": da_techniques,
         }
 
     def _write_speaking_style_state(self):
@@ -702,7 +884,7 @@ class RobotConsole(tk.Tk):
     
 
     # ----------- UI ------------
-    def _build_ui(self):
+    def _build_main_ui(self):
         root = ttk.Frame(self, padding=10)
         root.pack(fill="both", expand=True)
 
@@ -711,9 +893,8 @@ class RobotConsole(tk.Tk):
         style.map("Selected.TButton",
                 background=[("active", "#4488dd")])
 
-        # ===== root を左右2カラムにする =====
-        root.columnconfigure(0, weight=3)   # 左をやや広め
-        root.columnconfigure(1, weight=2)
+        root.columnconfigure(0, weight=1)   # 左をやや広め
+        root.columnconfigure(1, weight=1)
         root.rowconfigure(0, weight=1)
 
         left = ttk.Frame(root)
@@ -725,33 +906,13 @@ class RobotConsole(tk.Tk):
         left.columnconfigure(0, weight=1)
         right.columnconfigure(0, weight=1)
 
-        # =========================
-        # 左側
-        # =========================
-
-        # 1. 笑顔＋表情
-        row1 = ttk.Frame(left)
-        row1.grid(row=0, column=0, sticky="ew", pady=(0, 10))
-        row1.columnconfigure(0, weight=2)
-        row1.columnconfigure(1, weight=1)
-
-        smile_card = self._card(row1, "笑顔")
-        smile_card.grid(row=0, column=0, sticky="ew", padx=(0, 6))
-        self._smile_buttons_pannel(smile_card)
-
-        expr_card = self._card(row1, "表情")
-        expr_card.grid(row=0, column=1, sticky="ew")
-        self._expression_buttons_pannel(expr_card)
-
-        # 2. 声質パラメータ＋声質パラメータ(上位)＋発話内容
+        # 2. 声質＋上位＋発話
         row2 = ttk.Frame(left)
-        row2.grid(row=1, column=0, sticky="w", pady=(0, 10))
+        row2.grid(row=1, column=0, sticky="ew", pady=(0, 10))
 
-        CARD_W = 200
-
-        row2.columnconfigure(0, minsize=CARD_W)
-        row2.columnconfigure(1, minsize=CARD_W)
-        row2.columnconfigure(2, minsize=CARD_W)
+        row2.columnconfigure(0, weight=1)
+        row2.columnconfigure(1, weight=1)
+        row2.columnconfigure(2, weight=1)
 
         voice_card = self._card(row2, "声質パラメータ")
         voice_card.grid(row=0, column=0, sticky="nsew", padx=(0, 6))
@@ -771,14 +932,13 @@ class RobotConsole(tk.Tk):
         row3.columnconfigure(0, weight=1)
         row3.columnconfigure(1, weight=1)
 
-        colum1 = ttk.Frame(row3)
-        colum1.grid(row=0, column=0, sticky="nsew", padx=(0, 6))
-        nod_card = self._card(colum1, "うなずき")
-        nod_card.grid(row=0, column=0, sticky="nsew", padx=(0, 6))
+        column1 = ttk.Frame(row3)
+        column1.grid(row=0, column=0, sticky="nsew", padx=(0, 6))
+        column1.columnconfigure(0, weight=1)
+
+        nod_card = self._card(column1, "うなずき")
+        nod_card.grid(row=0, column=0, sticky="nsew", pady=(0, 6))
         self._nod_panel(nod_card)
-        filler_card = self._card(colum1, "フィラー")
-        filler_card.grid(row=1, column=0, sticky="nsew", padx=(0, 6))
-        self._filler_panel(filler_card)
 
         gaze_card = self._card(row3, "視線・頭向き")
         gaze_card.grid(row=0, column=1, sticky="nsew")
@@ -786,39 +946,74 @@ class RobotConsole(tk.Tk):
 
         # 4. ログ
         log_card = self._card(left, "ログ")
-        log_card.grid(row=3, column=0, sticky="nsew", pady=(0, 0))
-        left.rowconfigure(3, weight=1)
-
+        log_card.grid(row=3, column=0, sticky="nsew")
         self.log = ScrolledText(log_card, height=12)
         self.log.pack(fill="both", expand=True)
 
-        # =========================
-        # 右側
-        # =========================
+        # ===== right 側: 表情調整 =====
 
-        voice_person_card = self._card(right, "話し手")
+        # 1. 笑顔＋表情
+        row1 = ttk.Frame(right)
+        row1.grid(row=0, column=0, sticky="ew")
+        row1.columnconfigure(0, weight=1)
+        row1.columnconfigure(1, weight=1)
+
+        smile_card = self._card(row1, "笑顔")
+        smile_card.grid(row=0, column=0, sticky="ew", padx=(0, 6))
+        self._smile_buttons_pannel(smile_card)
+
+        expr_card = self._card(row1, "表情")
+        expr_card.grid(row=0, column=1, sticky="ew")
+        self._expression_buttons_pannel(expr_card)
+
+        face_editor_card = self._card(right, "表情調整")
+        face_editor_card.grid(row=1, column=0, sticky="nsew")
+        self._face_editor_panel(face_editor_card)
+
+    def _build_sub_window(self):
+        self.sub_window = tk.Toplevel(self)
+        self.sub_window.title("ロボット操作コンソール - 詳細")
+        self.sub_window.geometry("1500x1500")
+
+        root = ttk.Frame(self.sub_window, padding=10)
+        root.pack(fill="both", expand=True)
+
+        root.columnconfigure(0, weight=1)
+
+        voice_person_card = self._card(root, "話し手")
         voice_person_card.grid(row=0, column=0, sticky="ew", pady=(0, 10))
         self._voice_panel_person(voice_person_card)
 
-        emo_voice_card = self._card(right, "感情別 音声設定")
+        emo_voice_card = self._card(root, "感情別 音声設定")
         emo_voice_card.grid(row=1, column=0, sticky="ew", pady=(0, 10))
         self._emo_voice_panel(emo_voice_card)
 
-        emo_motion_card = self._card(right, "感情別 モーション設定")
+        emo_motion_card = self._card(root, "感情別 モーション設定")
         emo_motion_card.grid(row=2, column=0, sticky="ew", pady=(0, 10))
         self._emo_motion_panel(emo_motion_card)
 
-        style_card = self._card(right, "話し方")
+        style_card = self._card(root, "話し方")
         style_card.grid(row=3, column=0, sticky="ew", pady=(0, 10))
         self._style_panel(style_card)
 
-        filler_card = self._card(right, "Filler")
-        filler_card.grid(row=4, column=0, sticky="ew", pady=(0, 10))
-        self._filler_face_panel(filler_card)
+        row4 = ttk.Frame(root)
+        row4.grid(row=4, column=0, sticky="ew", pady=(0, 10))
+        row4.columnconfigure(0, weight=3)
+        row4.columnconfigure(1, weight=1)
 
-        settings_card = self._card(right, "設定保存・読み込み")
+        filler_face_card = self._card(row4, "Filler")
+        filler_face_card.grid(row=0, column=0, sticky="ew", pady=(0, 10))
+        self._filler_face_panel(filler_face_card)
+
+        filler_card = self._card(row4, "フィラー")
+        filler_card.grid(row=0, column=1, sticky="nsew")
+        self._filler_panel(filler_card)
+
+        settings_card = self._card(root, "設定保存・読み込み")
         settings_card.grid(row=5, column=0, sticky="ew")
         self._settings_panel(settings_card)
+
+        self.sub_window.protocol("WM_DELETE_WINDOW", self._on_sub_close)
 
     def _card(self, parent, title):
         frm = ttk.Labelframe(parent, text=title, padding=10)
@@ -856,12 +1051,16 @@ class RobotConsole(tk.Tk):
         self.reset_button.grid(row=1, column=0, padx=6, pady=6, sticky="ew")
 
     def _expression_buttons_pannel(self, parent):
-        # レベル選択（1-3）
         level_row = ttk.Frame(parent)
         level_row.pack(fill="x")
+
+        preset_names = sorted(self.face_presets.keys())
+        if preset_names and not self.face_selected_name.get():
+            self.face_selected_name.set(preset_names[0])
+
         self.expression_combo = ttk.Combobox(
-            level_row, values=self.facial_emotions, width=10,
-            textvariable=self.facial_emotion
+            level_row, values=preset_names, width=10,
+            textvariable=self.face_selected_name,
         )
         self.expression_combo.pack(side="left")
         self.expression_combo.bind("<<ComboboxSelected>>", self._update_emotion_button_text)
@@ -874,12 +1073,14 @@ class RobotConsole(tk.Tk):
 
         grid = ttk.Frame(parent)
         grid.pack(fill="x")
-        self.emotion_button_0=self._emotion_button(grid, self.facial_emotion.get())
+        self.emotion_button_0=self._emotion1_button(grid, self.face_selected_name.get())
         self.emotion_button_0.grid(row=0, column=0, padx=6, pady=6, sticky="ew")
         self.emotion_buttons["facial"] = self.emotion_button_0
-        for col, payload in enumerate(SMILES, start=1):
+        for col, payload in enumerate(EMOTIONS, start=1):
+            i = col % 2
+            col = col // 2
             b = self._emotion_button(grid, payload)
-            b.grid(row=0, column=col, padx=6, pady=6, sticky="ew")
+            b.grid(row=i, column=col, padx=6, pady=6, sticky="ew")
             self.emotion_buttons[payload] = b
 
         self.emotion_button_n=self._emotion_button(grid, "neutral")
@@ -887,7 +1088,26 @@ class RobotConsole(tk.Tk):
         self.emotion_buttons["neutral"] = self.emotion_button_n
 
     def _update_emotion_button_text(self, event=None):
-        self.emotion_button.config(text=self.facial_emotion.get())
+        self.emotion_button_0.config(text=self.face_selected_name.get())
+
+        name = self.face_selected_name.get().strip()
+        preset = self.face_presets.get(name)
+        if not preset:
+            self._log(f"! preset not found: {name}")
+            return
+
+        ms1, ms2, ms3 = preset["header"]
+        values = preset["values"]
+
+        self.face_preset_name.set(name)
+        self.face_ms1.set(ms1)
+        self.face_ms2.set(ms2)
+        self.face_ms3.set(ms3)
+
+        for var, value in zip(self.face_params, values):
+            var.set(value)
+
+        self._log(f"{name} を読み込みました。")
 
     def _voice_panel(self, parent):
         self._slider_row(parent, "音量", self.volume, 0.0, 2.0)
@@ -926,8 +1146,10 @@ class RobotConsole(tk.Tk):
     def _emo_voice_panel(self, parent):
         row = ttk.Frame(parent)
         row.pack(fill="x", pady=4)
+        for i in range(8):
+            row.columnconfigure(i, weight=1)
         for i, key in enumerate(self.emo_voice_keys):
-            box = ttk.Labelframe(row, text=key, padding=8)
+            box = ttk.Labelframe(row, text=key, padding=4)
             box.grid(row=0, column=i, sticky="nsew")
 
             v = self.emo_voice_vars[key]
@@ -944,6 +1166,8 @@ class RobotConsole(tk.Tk):
         bow_kinds = ["none", "small", "deep"]
         row = ttk.Frame(parent)
         row.pack(fill="x", pady=4)
+        for i in range(8):
+            row.columnconfigure(i, weight=1)
         for i,key in enumerate(self.emo_motion_keys):
             box = ttk.Labelframe(row, text=key, padding=8)
             box.grid(row=0, column=i, sticky="nsew")
@@ -953,34 +1177,35 @@ class RobotConsole(tk.Tk):
             row1 = ttk.Frame(box)
             row1.pack(fill="x", pady=2)
 
-            ttk.Label(row1, text="表情", width=8).pack(side="left")
+            ttk.Label(row1, text="表情", width=4).pack(side="left")
             ttk.Combobox(
                 row1,
                 values=FILLER_EMOTIONS,
                 textvariable=m["face_type"],
-                width=22
+                width=15
             ).pack(side="left", padx=4)
 
             row11 = ttk.Frame(box)
             row11.pack(fill="x", pady=2)
 
-            ttk.Label(row11, text="Lv").pack(side="left", padx=(8, 0))
+            ttk.Label(row11, text="Lv").pack(side="left", padx=(4, 0))
             for i in (1, 2, 3):
                 ttk.Radiobutton(row11, text=str(i), value=i, variable=m["face_level"]).pack(side="left", padx=2)
 
-            row2 = ttk.Frame(box)
-            row2.pack(fill="x", pady=2)
+            if key in ("OPENING","APOLOGY","THANKING","CLOSING"):
+                row2 = ttk.Frame(box)
+                row2.pack(fill="x", pady=2)
 
-            ttk.Label(row2, text="お辞儀", width=8).pack(side="left")
-            ttk.Checkbutton(row2, text="有効", variable=m["bow_enabled"]).pack(side="left", padx=4)
-            ttk.Label(row2, text="種類").pack(side="left", padx=(8, 0))
-            ttk.Combobox(
-                row2,
-                values=bow_kinds,
-                textvariable=m["bow_kind"],
-                width=10,
-                state="readonly"
-            ).pack(side="left", padx=4)
+                ttk.Label(row2, text="お辞儀", width=4).pack(side="left")
+                ttk.Checkbutton(row2, variable=m["bow_enabled"]).pack(side="left", padx=1)
+                ttk.Label(row2, text="種類").pack(side="left", padx=(1, 0))
+                ttk.Combobox(
+                    row2,
+                    values=bow_kinds,
+                    textvariable=m["bow_kind"],
+                    width=5,
+                    state="readonly"
+                ).pack(side="left", padx=1)
 
             row3 = ttk.Frame(box)
             row3.pack(fill="x", pady=2)
@@ -1071,58 +1296,165 @@ class RobotConsole(tk.Tk):
             text="save",
             variable=self.speech_save
         ).pack(side="left", padx=8)
+
+    def _face_editor_panel(self, parent):
+        # =========================
+        # 1段目: 上部コントロール
+        # =========================
+        top = ttk.Frame(parent)
+        top.pack(fill="x", pady=(0, 8))
+
+        ttk.Label(top, text="保存名").pack(side="left")
+        ttk.Entry(top, textvariable=self.face_preset_name, width=14).pack(side="left", padx=4)
+
+        ttk.Label(top, text="レベル").pack(side="left", padx=(8, 0))
+        for i in (1, 2, 3):
+            ttk.Radiobutton(top, text=str(i), value=i,
+                            variable=self.face_selected_level).pack(side="left", padx=2)
+        
+        top1 = ttk.Frame(parent)
+        top1.pack(fill="x", pady=(0, 8))
+        ttk.Label(top1, text="header").pack(side="left", padx=(12, 2))
+        ttk.Entry(top1, textvariable=self.face_ms1, width=6).pack(side="left")
+        ttk.Entry(top1, textvariable=self.face_ms2, width=6).pack(side="left", padx=2)
+        ttk.Entry(top1, textvariable=self.face_ms3, width=6).pack(side="left")
+
+        ttk.Button(top1, text="送信", command=self._send_face_axes).pack(side="right", padx=4)
+        ttk.Button(top1, text="保存", command=self._save_face_preset).pack(side="right", padx=4)
+        ttk.Button(top1, text="現在値を基準にする",
+                command=self._update_face_default).pack(side="right", padx=4)
+        ttk.Button(top1, text="neutralに戻す",
+                command=self._reset_face_editor_default).pack(side="right", padx=4)
+
+        # =========================
+        # 2段目: 画像表示
+        # =========================
+        image_frame = ttk.Frame(parent)
+        image_frame.pack(fill="x", pady=(0, 8))
+
+        self.face_preview_img = ImageTk.PhotoImage(self.img)
+        self.face_preview_label = tk.Label(image_frame, image=self.face_preview_img)
+        self.face_preview_label.pack()
+
+        # =========================
+        # 3段目: スライダー領域
+        # =========================
+        body = ttk.Frame(parent)
+        body.pack(fill="both", expand=True)
+
+        for col in range(5):
+            body.columnconfigure(col, weight=1)
+
+        for i, (axis_name, var) in enumerate(zip(self.face_axis_names, self.face_params)):
+            frame = ttk.Frame(body)
+            frame.grid(row=i // 4, column=i % 4, sticky="ew", padx=3, pady=2)
+
+            self._slider_row(frame, f"{axis_name}:", var, 0, 255)
+        
+    def _update_face_default(self):
+        self.face_default_values = [
+            int(v.get()) for v in self.face_params
+        ]
+        self._log("現在の値を新しい基準値として設定しました。")
+
+    def _reset_face_editor_default(self):
+        defaults = [
+            64, 64, 128, 128, 128,
+            0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+            0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+            0, 32, 128, 128, 128
+        ]
+
+        self.face_preset_name.set("neutral")
+        self.face_ms1.set(200)
+        self.face_ms2.set(1000)
+        self.face_ms3.set(4000)
+
+        for var, value in zip(self.face_params, defaults):
+            var.set(value)
+
+        self._log("表情調整をneutral初期値に戻しました。")
     
     def _style_panel(self, parent):
-        # 上位要素（-1 / 0 / 1）
-        self._tri_row_multi(parent, [
-            ("敬語", self.style_politeness),
-            ("長さ", self.style_length),
-            ("語彙", self.style_vocabulary),
-            ("親しさ", self.style_friendliness),
-        ])
-
-        self._tri_row_multi(parent, [
-            ("感情の強さ", self.style_emotion_strength),
-            ("ポジティブさ", self.style_positivity),
-            ("主導性", self.style_initiative),
+        # ===== 上部 =====
+        self._binary_row_multi(parent, [
+            ("話し方の変化", self.style_neutral),
         ])
 
         ttk.Separator(parent).pack(fill="x", pady=6)
 
-        # テクニック（0 / 1）
-        self._binary_row_multi(parent, [
-            ("共感", self.style_empathy),
-            ("配慮", self.style_consideration),
-            ("季節の話", self.style_seasonal_topic),
-            ("時刻にまつわる話", self.style_time_topic),
-            ("自分の経験談", self.style_self_disclosure),
+        # ===== base_style =====
+        base_box = ttk.Labelframe(parent, text="base_style", padding=8)
+        base_box.pack(fill="x", pady=4)
+
+        self._tri_row_multi(base_box, [
+            ("敬語", self.style_politeness),
+            ("長さ", self.style_length),
+            ("語彙", self.style_vocabulary),
+        ])
+        self._tri_row_multi(base_box, [
+            ("親しさ", self.style_friendliness),
+            ("感情の強さ", self.style_emotion_strength),
         ])
 
-        self._binary_row_multi(parent, [
-            ("根拠提示", self.style_evidence),
-            ("専門知識", self.style_expertise),
-            ("言い換え", self.style_paraphrase),
-            ("要約", self.style_summary),
-            ("スモールステップ化", self.style_step_by_step),
+        ttk.Separator(parent).pack(fill="x", pady=6)
+
+        # ===== DA 横並びエリア =====
+        grid = ttk.Frame(parent)
+        grid.pack(fill="x", pady=4)
+        for i in range(8):
+            grid.columnconfigure(i, weight=1)
+
+        # ===== 各DA =====
+        self._style_da_group_grid(grid, 0, "OPENING", [
+            ("季節", self.style_da_vars["OPENING"]["seasonal_topic"]),
+            ("時刻", self.style_da_vars["OPENING"]["time_topic"]),
+            ("配慮", self.style_da_vars["OPENING"]["consideration"]),
         ])
 
-        self._binary_row_multi(parent, [
-            ("反復確認", self.style_confirmation),
-            ("曖昧さ解消質問", self.style_clarification_question),
-            ("意図の補完", self.style_hypothesis),
-            ("選択肢の提示", self.style_options),
-            ("先回り提案", self.style_proactive),
-            ("ゴール明示", self.style_goal_clarity),
+        self._style_da_group_grid(grid, 1, "STATEMENT", [
+            ("共感", self.style_da_vars["STATEMENT"]["empathy"]),
+            ("根拠", self.style_da_vars["STATEMENT"]["evidence"]),
+            ("専門", self.style_da_vars["STATEMENT"]["expertise"]),
+            ("言換", self.style_da_vars["STATEMENT"]["paraphrase"]),
+            ("要約", self.style_da_vars["STATEMENT"]["summary"]),
+            ("段階", self.style_da_vars["STATEMENT"]["step_by_step"]),
+            ("先回り", self.style_da_vars["STATEMENT"]["proactive"]),
+            ("ゴール", self.style_da_vars["STATEMENT"]["goal_clarity"]),
+            ("許可", self.style_da_vars["STATEMENT"]["permission"]),
         ])
 
-        self._binary_row_multi(parent, [
-            ("許可取り", self.style_permission),
-            ("代替提示", self.style_alternative),
-            ("ポジティブ変換", self.style_positive_reframe),
-            ("クロージング", self.style_closing),
-            ("名前呼び", self.style_name_call),
+        self._style_da_group_grid(grid, 2, "OPINION", [
+            ("経験", self.style_da_vars["OPINION"]["self_disclosure"]),
+            ("ポジ", self.style_da_vars["OPINION"]["positive_reframe"]),
+            ("ヘッジ", self.style_da_vars["OPINION"]["hedge"]),
+            ("専門", self.style_da_vars["OPINION"]["expertise"]),
         ])
 
+        self._style_da_group_grid(grid, 3, "QUESTION", [
+            ("選択肢", self.style_da_vars["QUESTION"]["options"]),
+        ])
+
+        self._style_da_group_grid(grid, 4, "APOLOGY", [
+            ("代替", self.style_da_vars["APOLOGY"]["alternative"]),
+        ])
+
+        self._style_da_group_grid(grid, 5, "THANKING", [
+            ("名前", self.style_da_vars["THANKING"]["name_call"]),
+        ])
+
+        self._style_da_group_grid(grid, 6, "CLOSING", [
+            ("季節", self.style_da_vars["CLOSING"]["seasonal_topic"]),
+            ("時刻", self.style_da_vars["CLOSING"]["time_topic"]),
+            ("配慮", self.style_da_vars["CLOSING"]["consideration"]),
+            ("名前", self.style_da_vars["CLOSING"]["name_call"]),
+        ])
+
+        self._style_da_group_grid(grid, 7, "ACCEPT", [
+            ("確認", self.style_da_vars["ACCEPT"]["confirmation"]),
+            ("質問", self.style_da_vars["ACCEPT"]["clarification_question"]),
+            ("補完", self.style_da_vars["ACCEPT"]["hypothesis"]),
+        ])
 
 
     def _tri_row_multi(self, parent, items):
@@ -1142,13 +1474,19 @@ class RobotConsole(tk.Tk):
         row = ttk.Frame(parent)
         row.pack(fill="x", pady=2)
 
-        for col, (label, var) in enumerate(items):
+        for i, (label, var) in enumerate(items):
             cell = ttk.Frame(row)
-            cell.grid(row=0, column=col, padx=10, sticky="w")
+            cell.grid(row=i, column=0, padx=5, sticky="w")
 
-            ttk.Label(cell, text=label, width=12).grid(row=0, column=0, sticky="w")
+            ttk.Label(cell, text=label, width=8).grid(row=0, column=0, sticky="w")
             ttk.Radiobutton(cell, text="無", value=0, variable=var).grid(row=0, column=1)
-            ttk.Radiobutton(cell, text="有", value=1, variable=var).grid(row=0, column=2)    
+            ttk.Radiobutton(cell, text="有", value=1, variable=var).grid(row=0, column=2)  
+
+    def _style_da_group_grid(self, parent, col, title, items):
+        box = ttk.Labelframe(parent, text=title, )
+        box.grid(row=0, column=col, sticky="nsew",)
+
+        self._binary_row_multi(box, items) 
     
     def _nod_panel(self, parent):
     # 時間スライダー
@@ -1515,6 +1853,68 @@ class RobotConsole(tk.Tk):
             self._log(text=f"ファイルを更新しました")
 
 
+    # 表情の保存
+    def _current_face_values(self):
+        return [int(v.get()) for v in self.face_params]
+
+    def _save_face_preset(self):
+        try:
+            FACE_CONFIG_DIR.mkdir(parents=True, exist_ok=True)
+
+            # 最新状態を読み直す
+            self._load_face_presets_from_file()
+
+            base_name = self.face_preset_name.get().strip() or "noname"
+            level = int(self.face_selected_level.get())
+            name = f"{base_name}{level}"
+
+            if name in self.face_presets:
+                self._log(f"! [{name}] は既に存在します。別の名前に変更してください。")
+                return
+
+            ms1 = int(self.face_ms1.get())
+            ms2 = int(self.face_ms2.get())
+            ms3 = int(self.face_ms3.get())
+            values = self._current_face_values()
+
+            lines = []
+            lines.append(f"[{name}]")
+            lines.append(f"<{ms1}, {ms2}, {ms3}>")
+
+            chunks = [
+                values[:5],
+                values[5:15],
+                values[15:25],
+                values[25:35],
+            ]
+
+            value_lines = []
+            for i, chunk in enumerate(chunks):
+                text = ",".join(map(str, chunk))
+                if i == 0:
+                    value_lines.append("{ " + text + ",")
+                elif i == len(chunks) - 1:
+                    value_lines.append(text + " }")
+                else:
+                    value_lines.append(text + ",")
+
+            lines.extend(value_lines)
+            lines.append("")
+
+            with open(FACE_CONFIG_FILE, "a", encoding="utf-8") as f:
+                f.write("\n".join(lines))
+
+            self._log(f"{name} を {FACE_CONFIG_FILE} に保存しました。")
+
+            # 保存後に一覧更新
+            self._load_face_presets_from_file()
+            if hasattr(self, "expression_combo"):
+                self.expression_combo["values"] = sorted(self.face_presets.keys())
+
+        except Exception as e:
+            self._log(f"! face preset save error: {e}")
+
+
     # ----------- コンポーネント -----------
     def _emotion_button(self, grid, text):
         button = ttk.Button(
@@ -1525,22 +1925,31 @@ class RobotConsole(tk.Tk):
         )
         return button
 
+    def _emotion1_button(self, grid, text):
+        button = ttk.Button(
+            grid,
+            text=text,
+            width=12,
+            command=lambda: self._on_button("emotion1", text)
+        )
+        return button
+
     def _slider_row(self, parent, label, var, vmin, vmax):
         row = ttk.Frame(parent); row.pack(fill="x", pady=3)
 
-        ttk.Label(row, text=label, width=6).pack(side="left")
+        ttk.Label(row, text=label, width=3).pack(side="left")
 
         # 表示ラベル
         val = ttk.Label(row, text=f"{var.get():.2f}")
-        val.pack(side="left", padx=6)
+        val.pack(side="left", padx=1)
 
-        ttk.Label(row, text=f"{vmin:.2f}").pack(side="left")
+        # ttk.Label(row, text=f"{vmin:.2f}").pack(side="left")
 
         # スライダー本体
         s = ttk.Scale(row, variable=var, from_=vmin, to=vmax, orient="horizontal")
-        s.pack(side="left", fill="x", expand=True, padx=8)
+        s.pack(side="left", fill="x",)
 
-        ttk.Label(row, text=f"{vmax:.2f}").pack(side="left")
+        # ttk.Label(row, text=f"{vmax:.2f}").pack(side="left")
 
         # 手動で動かしたときの更新
         def on_move(_):
@@ -1552,7 +1961,7 @@ class RobotConsole(tk.Tk):
         # ★ プログラム側で値が変わっても表示更新されるようにする
         var.trace_add("write", lambda *args: val.config(text=f"{var.get():.2f}"))
 
-    def _mini_slider(self, parent, label_text, var, vmin=0.0, vmax=1.0, length=110):
+    def _mini_slider(self, parent, label_text, var, vmin=0.0, vmax=1.0, length=50):
         frame = ttk.Frame(parent)
         frame.pack(side="left", fill="x", padx=4)
 
@@ -1741,6 +2150,16 @@ class RobotConsole(tk.Tk):
                 self.emotion_flag.set(False)
             else:
                 self.emotion_flag.set(True)
+        elif(cmd_type=="emotion1"):
+            type = self.face_selected_name.get()
+            level = self.emotion_level.get()
+            priority = self.emotion_priority.get()
+            keeptime = self.default_keeptime.get()
+            command = f"/emotion {type} {level} {priority} {keeptime}"
+            if payload=="neutral":
+                self.emotion_flag.set(False)
+            else:
+                self.emotion_flag.set(True)
         elif(cmd_type=="gaze"):
             priority = self.gaze_priority.get()
             keeptime = round(self.gaze_keeptime.get(),2)*1000
@@ -1852,11 +2271,41 @@ class RobotConsole(tk.Tk):
             except Exception as e:
                 self._log(f"! 送信エラー: {e}")
             return
+        
+    def _send_face_axes(self):
+        velocity = int(self.face_velocity.get())   # 1000
+        priority = int(self.face_priority.get())   # 3
+        keeptime = int(self.face_keeptime.get())   # 3000
+
+        changed_count = 0
+
+        for axis, var, default in zip(
+            self.face_axis_names,
+            self.face_params,
+            self.face_default_values
+        ):
+            value = int(var.get())
+
+            # ★ここが今回のポイント
+            if value == default:
+                continue
+
+            command = f"/movemulti5 {axis} {value} {velocity} {priority} {keeptime}"
+            self._send_command(command)
+            changed_count += 1
+
+        if changed_count == 0:
+            self._log("変更されたパラメータはありません。")
+        else:
+            self._log(f"{changed_count}個の軸を送信しました（差分のみ）。")
 
     def _on_close(self):
         self._close_tcp()
         self.xyz_client.stop()
         self.destroy()
+
+    def _on_sub_close(self):
+        self.sub_window.withdraw()
 
     def _log(self, text: str):
         self.log.insert("end", text + "\n")
