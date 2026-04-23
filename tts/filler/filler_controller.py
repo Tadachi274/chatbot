@@ -153,9 +153,6 @@ class FillerController:
         if canthear:
             dir_path = dir_path / "canthear" 
             wav_name = DEFAULT_CANTHEAR
-
-        print(f"[Filler_contoroller] dir{dir_path}")
-        print(f"[Filler_contoroller] wavname{wav_name}")
         
         wav_path = next(dir_path.glob(f"{wav_name}.wav"))
 
@@ -345,9 +342,9 @@ class FillerController:
 
     def do_bow(self, kind: str):
         if kind == "small":
-            self.robot.send("/bow 200 500 3")
+            self.robot.send("/bow 10 500 3")
         elif kind == "deep":
-            self.robot.send("/bow 400 1000 3")
+            self.robot.send("/bow 20 1000 3")
 
     def do_between_sentence_gaze(self, gaze_type: str, level: float):
         cmd = self.create_lookaway(gaze_type, level)

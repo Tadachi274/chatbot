@@ -148,10 +148,19 @@ class StyleChangeServer(object):
     def build_base_messages(self):
         system_content, system_content2 = self.load_prompt_config()
 
+        if SCENARIO == "hotel":
+            system_content2 = system_content2 + """
+        CLOSING はチェックイン手続き完了後の締めの案内として使ってください。
+        具体的には以下のような内容がCLOSINGに含まれます：
+        ・お部屋への案内（例：「それではお部屋までご案内いたします」）
+        CLOSING を使う場合は、必ず『チェックインが完了した文脈』でのみ使用してください。
+        それ以外の場面では CLOSING を使ってはいけません。"""
+
         messages = [
             {"role": "system", "content": system_content},
             {"role": "system", "content": f"話し方の要望は以下の通りです。{system_content2}"}
         ]
+
         return messages
 
     def refresh_style_prompt_if_needed(self):
@@ -502,7 +511,6 @@ class StyleChangeServer(object):
             )
 
             reply_text = gpt_response.choices[0].message.content.strip()
-            print(f"[Chatbot] reply{reply_text}")
 
             self.speak_text_planned(reply_text, filler=filler)
             self.prefetch_short_affirm_reply(reply_text)

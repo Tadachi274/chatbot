@@ -58,7 +58,7 @@ class AudioPlayer:
                 pygame.mixer.music.load(str(wav_path))
                 pygame.mixer.music.play()
                 while pygame.mixer.music.get_busy():
-                    time.sleep(0.05)
+                    time.sleep(0.01)
                 print(f"[AudioPlayer] finish playing {time.monotonic()}")
                 pygame.mixer.music.stop()
                 try:

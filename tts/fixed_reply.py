@@ -10,7 +10,7 @@ FIXED_RESPONSES = {
             "label": "OPENING",
         },
         {
-            "patterns": ["ありがとう", "ありがとうございます"],
+            "patterns": ["ありがとう", "ありがとうございます","ありがとうございました"],
             "reply_text": "こちらこそありがとうございます。どうぞごゆっくりおくつろぎください。",
             "wav_path": Path("reply_audio/hotel/thanks/こちらこそありがとうございます。どうぞごゆっくりおくつろぎくださいませ。_rate1.04_joy0.4_sad0.4.wav"),
             "label": "CLOSING",
@@ -56,8 +56,9 @@ def is_short_affirm(text: str) -> bool:
 
 def find_fixed_response(utterance: str, scenario: str, prev_da_type: str | None = None):
     norm = normalize_utterance(utterance)
+    print(f"[fixed reply] utterance {utterance}")
 
-    if norm in {normalize_utterance("ありがとう"), normalize_utterance("ありがとうございます")}:
+    if norm in {"ありがとう", "ありがとうございます"}:
         if prev_da_type in {"CLOSING", "THANKING"}:
             for item in FIXED_RESPONSES[scenario]:
                 if item.get("intent") == "final_thanks":
