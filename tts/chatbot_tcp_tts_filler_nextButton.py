@@ -38,8 +38,8 @@ CONFIG_PATH_TTS = "command/voice_state_emo.json"
 CONFIG_PATH_MOTION = "command/motion_state.json"
 
 MAX_TURNS = 3  # 直近3往復を保持
-SCENARIO = "hotel"
-STSTEM_CONTENT = system_content_file.hotel
+SCENARIO = "hotel" # "hotel" "market" "electronics_store" "restaurant"
+STSTEM_CONTENT = getattr(system_content_file, SCENARIO)
 
 
 def start_tick_thread(controller: FillerController):
@@ -433,22 +433,27 @@ class StyleChangeServer(object):
     def prefetch_opening_reply(self, mode: str):
         try:
             messages = self.build_base_messages()
+            cfg = fixed_reply.get_scenario_config(SCENARIO)
+            role = cfg["role"]
+            first_task = cfg["first_task"]
 
             if mode == "greeting":
                 user_text = "こんにちは"
                 system_text = (
                     "お客様の最初の発話は挨拶です。"
-                    "ホテル受付として自然な最初の応答を生成してください。"
+                    f"あなたは{role}です。"
+                    "自然な最初の応答を生成してください。"
                     "最初の1文は必ず type='OPENING' の挨拶文にしてください。"
-                    "挨拶から始め、その後に用件確認へ進んでください。"
+                    f"挨拶から始め、その後に{first_task}"
                 )
             elif mode == "call":
                 user_text = "すみません"
                 system_text = (
                     "お客様の最初の発話は呼びかけです。"
-                    "ホテル受付として自然な最初の応答を生成してください。"
-                   "最初の1文は呼びかけへの応答とし、type='ACCEPT' または type='OPENING' のどちらか自然な方を使ってください。"
-                    "まず呼びかけに応じ、その後に用件を尋ねてください。"
+                    f"あなたは{role}です。"
+                    "自然な最初の応答を生成してください。"
+                    "最初の1文は呼びかけへの応答とし、type='ACCEPT' または type='OPENING' のどちらか自然な方を使ってください。"
+                    f"まず呼びかけに応じ、その後に{first_task}"
                 )
             else:
                 return
