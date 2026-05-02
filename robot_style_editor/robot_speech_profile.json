@@ -1,0 +1,34 @@
+{
+  "speaker": "kenta_emo_22_standard",
+  "speaker_test_text": "話し手が変更されました",
+  "updated_at": "2026-05-02T18:21:12",
+  "politeness": {
+    "id": "formal",
+    "label": "軽い尊敬語",
+    "example1": "本日はどのようなご用件でしょうか。",
+    "example2": "ご本人様確認のため、身分証明書を確認させていただいてもよろしいでしょうか。",
+    "prompt": "軽い尊敬語を使い、丁寧だが堅すぎない自然な話し方にしてください。例：「本日はどのようなご用件でしょうか。」「ご本人様確認のため、身分証明書を確認させていただいてもよろしいでしょうか。」"
+  },
+  "politeness_test_text": "今日はどのようなご用件でしょうか。",
+  "intimacy": {
+    "id": "middle",
+    "label": "中",
+    "person": "kenta",
+    "politeness": "formal",
+    "example1": "今日はどのようなご用件でしょうかね。",
+    "example2": "確認のため、身分証明書を見せていただけますかね。",
+    "prompt": "親しみは中程度にしてください。丁寧さを保ちながら、少し話しかけやすい表現にしてください。"
+  },
+  "intimacy_test_text": "今日はどのようなご用件でしょうか。",
+  "vocabulary": {
+    "id": "middle",
+    "label": "中",
+    "person": "kenta",
+    "politeness": "formal",
+    "intimacy": "middle",
+    "example1": "こちらは、甘味が強く、口に入れるとふわっと溶けるようなお菓子ですね。",
+    "example2": "入口から見て右側の棚にありますね。",
+    "prompt": "語彙は中程度にしてください。一般的な接客で自然に使われる、少し具体的な表現にしてください。"
+  },
+  "vocabulary_test_text": "こちらは、甘味が強く、口に入れるとふわっと溶けるようなお菓子です。"
+}

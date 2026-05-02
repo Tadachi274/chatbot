@@ -1,11 +1,9 @@
 import threading
 from pathlib import Path
-from datetime import datetime
 from queue import Queue, Empty
 import pygame
 import logging 
 import time
-import simpleaudio as sa
 import wave
 
 class AudioPlayer:
