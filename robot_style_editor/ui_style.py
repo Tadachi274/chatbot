@@ -241,3 +241,21 @@ def radio(parent, text, variable, value, command=None, bg="card", **kwargs):
         selectcolor=COLORS["card"],
         **kwargs,
     )
+
+def scale(parent, variable, from_, to, command=None, orient="horizontal", **kwargs):
+    return tk.Scale(
+        parent,
+        variable=variable,
+        from_=from_,
+        to=to,
+        resolution=0.05,
+        orient=orient,
+        command=command,
+        showvalue=False,
+        bg=COLORS["panel"],
+        fg=COLORS["text"],
+        troughcolor=COLORS["soft_border"],
+        highlightthickness=0,
+        bd=0,
+        **kwargs,
+    )

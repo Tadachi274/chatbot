@@ -7,3 +7,5 @@ dotenv
 requests
 pygame
 watchdog
+ffmpeg
+sounddevice

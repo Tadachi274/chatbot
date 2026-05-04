@@ -2,7 +2,7 @@ import tkinter as tk
 from tkinter import ttk
 
 from .profile_store import ProfileStore
-from .tts_client import TTSClient
+from .clients.tts_client import TTSClient
 from . import ui_style as ui
 
 from .tabs.speaker_tab import SpeakerTab
@@ -10,6 +10,13 @@ from .tabs.politeness_tab import PolitenessTab
 from .tabs.intimacy_tab import IntimacyTab
 from .tabs.vocabulary_tab import VocabularyTab
 from .tabs.length_tab import LengthTab
+from .tabs.greeting_tab import GreetingTab
+from .tabs.speed_tab import SpeedTab
+from .tabs.sentence_pause_tab import SentencePauseTab
+from .tabs.response_delay_tab import ResponseDelayTab
+from .tabs.thinking_pose_tab import ThinkingPoseTab
+from .tabs.listening_pose_tab import ListeningPoseTab
+from .tabs.understanding_pose_tab import UnderstandingPoseTab
 
 class RobotStyleEditorApp(tk.Tk):
     def __init__(self):
@@ -123,11 +130,74 @@ class RobotStyleEditorApp(tk.Tk):
             on_saved=self.go_next_tab,
         )
 
+        greeting_tab = GreetingTab(
+            self.notebook,
+            profile_store=self.profile_store,
+            tts_client=self.tts_client,
+            status_var=self.status_var,
+            on_saved=self.go_next_tab,
+        )
+
+        speed_tab = SpeedTab(
+            self.notebook,
+            profile_store=self.profile_store,
+            tts_client=self.tts_client,
+            status_var=self.status_var,
+            on_saved=self.go_next_tab,
+        )
+
+        sentence_pause_tab = SentencePauseTab(
+            self.notebook,
+            profile_store=self.profile_store,
+            tts_client=self.tts_client,
+            status_var=self.status_var,
+            on_saved=self.go_next_tab,
+        )
+
+        response_delay_tab = ResponseDelayTab(
+            self.notebook,
+            profile_store=self.profile_store,
+            tts_client=self.tts_client,
+            status_var=self.status_var,
+            on_saved=self.go_next_tab,
+        )
+
+        thinking_pose_tab = ThinkingPoseTab(
+            self.notebook,
+            profile_store=self.profile_store,
+            tts_client=self.tts_client,
+            status_var=self.status_var,
+            on_saved=self.go_next_tab,
+        )
+
+        listening_pose_tab = ListeningPoseTab(
+            self.notebook,
+            profile_store=self.profile_store,
+            tts_client=self.tts_client,
+            status_var=self.status_var,
+            on_saved=self.go_next_tab,
+        )
+
+        understanding_pose_tab = UnderstandingPoseTab(
+            self.notebook,
+            profile_store=self.profile_store,
+            tts_client=self.tts_client,
+            status_var=self.status_var,
+            on_saved=self.go_next_tab,
+        )
+
         self.notebook.add(speaker_tab, text="話者")
         self.notebook.add(politeness_tab, text="敬語")
         self.notebook.add(intimacy_tab, text="親しみ")
         self.notebook.add(vocabulary_tab, text="語彙")
         self.notebook.add(length_tab, text="長さ")
+        self.notebook.add(speed_tab, text="話速")
+        self.notebook.add(sentence_pause_tab, text="文間")
+        self.notebook.add(response_delay_tab, text="返答間")
+        self.notebook.add(thinking_pose_tab, text="考え姿")
+        self.notebook.add(listening_pose_tab, text="聴く姿")
+        self.notebook.add(understanding_pose_tab, text="理解")
+        self.notebook.add(greeting_tab, text="挨拶")
 
     def go_next_tab(self):
         current = self.notebook.index(self.notebook.select())
