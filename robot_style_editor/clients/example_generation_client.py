@@ -111,6 +111,7 @@ class ExampleGenerationClient:
             {
                 "task": "現在のロボット話し方設定に合わせて、接客場面の会話を生成してください。",
                 "rules": self._generation_rules(),
+                "style_prompts": self._style_prompts(profile),
                 "profile": profile,
                 "scene": self._compact_scene(scene),
                 "global_request": global_request,
@@ -124,6 +125,7 @@ class ExampleGenerationClient:
             {
                 "task": "現在表示中の会話を、全体要望に合わせて全体的に再生成してください。",
                 "rules": self._generation_rules(),
+                "style_prompts": self._style_prompts(profile),
                 "profile": profile,
                 "scene": self._compact_scene(scene),
                 "current_dialogue": current_dialogue,
@@ -138,6 +140,7 @@ class ExampleGenerationClient:
             {
                 "task": "指定された店員/スタッフ発話だけを修正してください。他のturnは変更しません。",
                 "rules": self._generation_rules(),
+                "style_prompts": self._style_prompts(profile),
                 "profile": profile,
                 "scene": self._compact_scene(scene),
                 "current_dialogue": current_dialogue,
@@ -176,6 +179,13 @@ class ExampleGenerationClient:
             "profile.special_consideration.text が空でない場合、これは強い制約として扱う。店員/スタッフ発話ではこの条件に反する表現や提案を避け、可能な限り明示的に配慮する。",
             "profile.special_consideration と場面事実が衝突する場合は、場面事実を変えずに、表現・提案・説明方法で配慮する。",
             "カジュアル設定では敬語を使いすぎない。",
+            "profile.politeness.prompt, profile.intimacy.prompt, profile.vocabulary.prompt, profile.length.prompt は必ず全て反映する。",
+            "profile 内の各DAに含まれる prompt も、該当intent_partsの文面を作るときに参照する。",
+            "current_dialogue がある場合は、これを前案として扱う。profile の話者・敬語・親しみ・語彙・長さ・詳細設定・特別考慮・DA設定が前案と異なる場合、店員/スタッフ発話の表現を必ず新しい設定に寄せて変える。",
+            "設定が変わっているのに、前案とほぼ同じ文面を返してはいけない。意味や事実は保ちつつ、語尾、語彙、丁寧さ、文の長さ、距離感のうち少なくとも複数を変更する。",
+            "親しみが高い場合は、話しかけやすさ、柔らかい語尾、相手に近い距離感が文面から分かるようにする。親しみが低い場合は距離感を保つ。",
+            "語彙が簡単な場合は、硬い漢語・専門語・抽象語を避け、日常的で直感的な言葉に置き換える。語彙が難しい場合は、必要な範囲で精密な語を使う。",
+            "長さが短い場合は極端に短く、必要最小限の依頼・説明にする。長い場合は同じ内容を少し余裕のある言い回しにする。",
             "話者は profile.speaker_person を最優先して判断する。",
             "話者がのぞみの場合、敬語がカジュアルでも「っす」「っすか」「っすね」を絶対に使わない。",
             "話者がのぞみでカジュアルな場合は、「だよ」「かな」「ね」など柔らかい語尾にする。",
@@ -187,6 +197,27 @@ class ExampleGenerationClient:
             "場面の意味、商品名、金額、部屋番号などの事実は変えない。",
             "不自然なテクニックの積み上げを避け、1つの自然な店員発話としてまとめる。",
         ]
+
+    def _style_prompts(self, profile):
+        def item(key):
+            data = profile.get(key, {})
+            return {
+                "id": data.get("id", ""),
+                "label": data.get("label", ""),
+                "prompt": data.get("prompt", ""),
+                "example1": data.get("example1", ""),
+                "example2": data.get("example2", ""),
+            }
+
+        return {
+            "speaker_person": profile.get("speaker_person", ""),
+            "politeness": item("politeness"),
+            "intimacy": item("intimacy"),
+            "vocabulary": item("vocabulary"),
+            "length": item("length"),
+            "style_detail_prompt": (profile.get("style_detail", {}) or {}).get("prompt", ""),
+            "special_consideration_prompt": (profile.get("special_consideration", {}) or {}).get("prompt", ""),
+        }
 
     def _scene_schema(self):
         return {

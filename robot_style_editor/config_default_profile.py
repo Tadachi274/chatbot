@@ -95,7 +95,6 @@ def make_intent(intent, label, text, techniques=None, extra=None):
         "voice": deepcopy(NEUTRAL_VOICE),
         "tts_instructions": deepcopy(NEUTRAL_TTS_INSTRUCTIONS),
         "techniques": techniques or [],
-        "style_sources": deepcopy(STYLE_SOURCES),
         "prompt": f"{label}の発話。保存された text を読み上げる。",
     }
     if extra:

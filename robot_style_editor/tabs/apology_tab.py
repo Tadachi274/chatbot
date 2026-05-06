@@ -710,12 +710,6 @@ class ApologyTab(tk.Frame):
             },
             "voice": voice_data,
             "tts_instructions": voice_params_to_tts_instructions(voice_data["params"]),
-            "style_sources": {
-                "politeness": self.profile_store.get_nested("politeness", {}),
-                "intimacy": self.profile_store.get_nested("intimacy", {}),
-                "vocabulary": self.profile_store.get_nested("vocabulary", {}),
-                "length": self.profile_store.get_nested("length", {}),
-            },
             "prompt": "謝罪時の発話。保存された text を読み上げ、必要に応じて謝罪テクニックを自然に反映する。",
         }
 

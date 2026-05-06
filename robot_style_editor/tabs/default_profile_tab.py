@@ -1,10 +1,10 @@
-import copy
 import tkinter as tk
-from tkinter import filedialog, messagebox
+from tkinter import ttk, filedialog, messagebox
 
 from .. import ui_style as ui
 from ..config import SAVE_JSON_DIR
 from ..config_default_profile import build_default_profile
+from .example_scene_tab import ExampleSceneTab
 
 
 class DefaultProfileTab(tk.Frame):
@@ -13,17 +13,28 @@ class DefaultProfileTab(tk.Frame):
         parent,
         profile_store,
         status_var,
-        on_saved=None,
-        on_examples=None,
-        on_applied=None,
+        tts_client=None,
+        on_create_user=None,
+        on_load_user=None,
+        on_continue_user=None,
+        on_finish=None,
+        can_use_default_talk=None,
     ):
         super().__init__(parent, bg=ui.COLORS["main_card"])
         self.profile_store = profile_store
+        self.tts_client = tts_client
         self.status_var = status_var
-        self.on_saved = on_saved
-        self.on_examples = on_examples
-        self.on_applied = on_applied
+        self.on_create_user = on_create_user
+        self.on_load_user = on_load_user
+        self.on_continue_user = on_continue_user
+        self.on_finish = on_finish
+        self.can_use_default_talk = can_use_default_talk
         self.default_profile = build_default_profile()
+        self.filename_var = tk.StringVar()
+        self.saved_message_var = tk.StringVar(value="")
+        self.saved_actions_frame = None
+        self.inner_notebook = None
+        self.default_talk_tab = None
         self.build_ui()
 
     def build_ui(self):
@@ -44,9 +55,100 @@ class DefaultProfileTab(tk.Frame):
             fg="sub_text",
         ).pack(anchor="w", pady=(ui.SPACING["small_gap"], ui.SPACING["section_y"]))
 
-        content = ui.scrollable_frame(page)
+        self.inner_notebook = ttk.Notebook(page, style="Research.TNotebook")
+        self.inner_notebook.pack(fill="both", expand=True)
+        self.inner_notebook.bind("<<NotebookTabChanged>>", self.on_inner_tab_changed)
+
+        settings_tab = ui.frame(self.inner_notebook, bg="main_card")
+        self.settings_tab = settings_tab
+        self.inner_notebook.add(settings_tab, text="デフォルト設定")
+        content = ui.scrollable_frame(settings_tab)
+        self.build_user_area(content)
         self.build_summary_area(content)
-        self.build_bottom_area(page)
+        self.build_bottom_area(settings_tab)
+
+        self.default_talk_tab = ExampleSceneTab(
+            self.inner_notebook,
+            profile_store=self.profile_store,
+            status_var=self.status_var,
+            tts_client=self.tts_client,
+            default_only=True,
+        )
+        self.inner_notebook.add(self.default_talk_tab, text="デフォルトで話す")
+
+    def on_inner_tab_changed(self, _event=None):
+        if self.inner_notebook is None or self.default_talk_tab is None:
+            return
+        if self.inner_notebook.select() != str(self.default_talk_tab):
+            return
+        if self.can_use_default_talk is not None and not self.can_use_default_talk():
+            self.inner_notebook.select(self.settings_tab)
+            self.status_var.set("先にユーザー名を入力してください")
+
+    def build_user_area(self, parent):
+        section = ui.frame(parent, bg="panel")
+        section.pack(fill="x")
+
+        ui.label(section, text="ユーザー開始", font="section_title", bg="panel").pack(
+            anchor="w",
+            padx=ui.SPACING["section_x"],
+            pady=(ui.SPACING["section_y"], ui.SPACING["small_gap"]),
+        )
+
+        card = ui.bordered_frame(section, bg="card", border="border")
+        card.pack(fill="x", padx=ui.SPACING["section_x"], pady=(0, ui.SPACING["section_y"]))
+
+        ui.label(
+            card,
+            text="新しいユーザー名",
+            font="small",
+            bg="card",
+            fg="muted",
+        ).pack(anchor="w", padx=ui.SPACING["card_x"], pady=(ui.SPACING["card_y"], ui.SPACING["small_gap"]))
+
+        row = ui.frame(card, bg="card")
+        row.pack(fill="x", padx=ui.SPACING["card_x"], pady=(0, ui.SPACING["card_y"]))
+
+        ui.entry(row, self.filename_var).pack(side="left", fill="x", expand=True)
+        ui.action_button(
+            row,
+            text="新しいユーザーを開始",
+            command=self.start_new_user,
+        ).pack(side="left", padx=(ui.SPACING["small_gap"], 0))
+        ui.sub_button(
+            row,
+            text="既存ユーザーを変更する",
+            command=self.load_saved_profile,
+        ).pack(side="left", padx=(ui.SPACING["small_gap"], 0))
+
+        self.saved_actions_frame = ui.bordered_frame(section, bg="card", border="border")
+
+        ui.variable_label(
+            self.saved_actions_frame,
+            textvariable=self.saved_message_var,
+            font="body_bold",
+            bg="card",
+            fg="text",
+            justify="left",
+        ).pack(anchor="w", padx=ui.SPACING["card_x"], pady=(ui.SPACING["card_y"], ui.SPACING["small_gap"]))
+
+        action_row = ui.frame(self.saved_actions_frame, bg="card")
+        action_row.pack(fill="x", padx=ui.SPACING["card_x"], pady=(0, ui.SPACING["card_y"]))
+        ui.action_button(
+            action_row,
+            text="同じユーザーで続ける",
+            command=self.continue_user,
+        ).pack(side="left")
+        ui.sub_button(
+            action_row,
+            text="ユーザーを変更する",
+            command=self.reset_user_entry,
+        ).pack(side="left", padx=(ui.SPACING["small_gap"], 0))
+        ui.sub_button(
+            action_row,
+            text="終わる",
+            command=self.finish_app,
+        ).pack(side="left", padx=(ui.SPACING["small_gap"], 0))
 
     def build_summary_area(self, parent):
         section = ui.frame(parent, bg="panel")
@@ -100,40 +202,37 @@ class DefaultProfileTab(tk.Frame):
         bottom = ui.frame(parent, bg="main_card")
         bottom.pack(fill="x", pady=(ui.SPACING["small_gap"], 0))
 
-        ui.sub_button(
+        ui.label(
             bottom,
-            text="デフォルトを適用して次へ",
-            command=self.apply_and_next,
+            text="新規ユーザーは必ずデフォルト設定から開始します。",
+            font="small",
+            bg="main_card",
+            fg="sub_text",
         ).pack(side="left")
 
-        ui.sub_button(
-            bottom,
-            text="保存データを読み込む",
-            command=self.load_saved_profile,
-        ).pack(side="left", padx=(ui.SPACING["small_gap"], 0))
+    def start_new_user(self):
+        filename = self.filename_var.get().strip()
+        if not filename:
+            messagebox.showwarning("確認", "新しいユーザー名を入力してください。")
+            return
 
-        ui.action_button(
-            bottom,
-            text="デフォルトで接客例へ",
-            command=self.apply_and_examples,
-        ).pack(side="right")
+        if self.on_create_user is None:
+            return
 
-    def apply_default_profile(self):
-        self.profile_store.data = copy.deepcopy(self.default_profile)
-        self.profile_store.save()
-        if self.on_applied is not None:
-            self.on_applied()
-        self.status_var.set("デフォルト設定を適用しました")
+        try:
+            self.on_create_user(filename)
+        except FileExistsError as e:
+            messagebox.showerror("作成できません", str(e))
+        except ValueError as e:
+            messagebox.showerror("作成できません", str(e))
+        except Exception as e:
+            messagebox.showerror("作成エラー", str(e))
 
-    def apply_and_next(self):
-        self.apply_default_profile()
-        if self.on_saved is not None:
-            self.on_saved()
-
-    def apply_and_examples(self):
-        self.apply_default_profile()
-        if self.on_examples is not None:
-            self.on_examples()
+    def show_default_talk_tab(self):
+        if self.inner_notebook is not None and self.default_talk_tab is not None:
+            self.inner_notebook.select(self.default_talk_tab)
+            if hasattr(self.default_talk_tab, "refresh_from_profile"):
+                self.default_talk_tab.refresh_from_profile()
 
     def load_saved_profile(self):
         SAVE_JSON_DIR.mkdir(parents=True, exist_ok=True)
@@ -146,9 +245,39 @@ class DefaultProfileTab(tk.Frame):
             return
 
         try:
-            loaded_path = self.profile_store.load_from(path)
-            if self.on_applied is not None:
-                self.on_applied()
-            self.status_var.set(f"保存データを読み込みました: {loaded_path.name}")
+            if self.on_load_user is not None:
+                self.on_load_user(path)
+            else:
+                loaded_path = self.profile_store.load_from(path)
+                self.status_var.set(f"保存データを読み込みました: {loaded_path.name}")
         except Exception as e:
             messagebox.showerror("読み込みエラー", str(e))
+
+    def show_saved_actions(self, saved_path, example_path=None):
+        if self.saved_actions_frame is None:
+            return
+        if self.inner_notebook is not None and hasattr(self, "settings_tab"):
+            self.inner_notebook.select(self.settings_tab)
+
+        if example_path is not None:
+            message = f"保存しました: {saved_path.name}\n接客履歴: {example_path.name}"
+        else:
+            message = f"保存しました: {saved_path.name}"
+        self.saved_message_var.set(message)
+        self.saved_actions_frame.pack(fill="x", padx=ui.SPACING["section_x"], pady=(0, ui.SPACING["section_y"]))
+
+    def reset_user_entry(self):
+        if self.saved_actions_frame is not None:
+            self.saved_actions_frame.pack_forget()
+        self.filename_var.set("")
+        self.status_var.set("次のユーザー名を入力してください")
+
+    def continue_user(self):
+        if self.saved_actions_frame is not None:
+            self.saved_actions_frame.pack_forget()
+        if self.on_continue_user is not None:
+            self.on_continue_user()
+
+    def finish_app(self):
+        if self.on_finish is not None:
+            self.on_finish()

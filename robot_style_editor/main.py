@@ -1,7 +1,7 @@
 import os
 from pathlib import Path
 import tkinter as tk
-from tkinter import ttk, simpledialog, messagebox
+from tkinter import ttk, messagebox
 
 
 def load_env_file():
@@ -30,7 +30,7 @@ load_env_file()
 from .profile_store import ProfileStore
 from .clients.tts_client import TTSClient
 from . import ui_style as ui
-from .config import SAVE_JSON_DIR
+from .config_default_profile import build_default_profile
 from .config_example import EXAMPLE_VENUES
 
 from .tabs.speaker_tab import SpeakerTab
@@ -72,6 +72,7 @@ class RobotStyleEditorApp(tk.Tk):
         self.profile_store = ProfileStore()
         self.tts_client = TTSClient()
         self.status_var = tk.StringVar(value="準備完了")
+        self.session_active = False
 
         self.build_ui()
 
@@ -144,11 +145,15 @@ class RobotStyleEditorApp(tk.Tk):
         default_tab = DefaultProfileTab(
             self.notebook,
             profile_store=self.profile_store,
+            tts_client=self.tts_client,
             status_var=self.status_var,
-            on_saved=self.go_next_tab,
-            on_examples=self.go_example_tab,
-            on_applied=self.rebuild_tabs_from_profile,
+            on_create_user=self.create_new_user_session,
+            on_load_user=self.load_user_session,
+            on_continue_user=self.continue_current_user,
+            on_finish=self.on_close,
+            can_use_default_talk=lambda: True,
         )
+        self.default_tab = default_tab
 
         speaker_tab = SpeakerTab(
             self.notebook,
@@ -418,6 +423,31 @@ class RobotStyleEditorApp(tk.Tk):
 
         self.add_tabs()
 
+    def create_new_user_session(self, filename):
+        self.profile_store.data = build_default_profile()
+        saved_path = self.profile_store.start_new_session(filename)
+        self.session_active = True
+        self.status_var.set(f"新しいユーザーを開始しました: {saved_path.name}")
+        self.rebuild_tabs_from_profile()
+        self.select_actual_tab(self.default_tab)
+        self.default_tab.show_default_talk_tab()
+        return saved_path
+
+    def load_user_session(self, path):
+        loaded_path = self.profile_store.load_from(path)
+        self.session_active = True
+        self.status_var.set(f"保存データを読み込みました: {loaded_path.name}")
+        self.rebuild_tabs_from_profile()
+        if len(self.tab_sequence) > 1:
+            self.select_actual_tab(self.tab_sequence[1])
+        return loaded_path
+
+    def continue_current_user(self):
+        self.session_active = True
+        self.status_var.set(f"同じユーザーで続けます: {self.profile_store.path.name}")
+        if len(self.tab_sequence) > 1:
+            self.select_actual_tab(self.tab_sequence[1])
+
     def get_current_actual_tab(self):
         selected = self.notebook.nametowidget(self.notebook.select())
         child_notebook = self.group_notebooks.get(selected)
@@ -445,6 +475,11 @@ class RobotStyleEditorApp(tk.Tk):
         notebook.select(tab)
 
     def go_next_tab(self):
+        if not self.session_active:
+            self.select_actual_tab(self.default_tab)
+            self.status_var.set("先にユーザー名を入力してください")
+            return
+
         current_tab = self.get_current_actual_tab()
 
         if current_tab not in self.tab_sequence:
@@ -460,14 +495,22 @@ class RobotStyleEditorApp(tk.Tk):
 
     def on_tab_changed(self, _event):
         selected = self.get_current_actual_tab()
+        if not self.session_active and selected is not getattr(self, "default_tab", None):
+            self.select_actual_tab(self.default_tab)
+            self.status_var.set("先にユーザー名を入力してください")
+            return
 
         if hasattr(selected, "refresh_from_profile"):
             selected.refresh_from_profile()
 
     def save_all(self):
-        saved_path = self.ask_save_profile_as()
-        if saved_path is None:
+        if not self.session_active:
+            messagebox.showwarning("確認", "先にユーザー名を入力してください。", parent=self)
+            self.select_actual_tab(self.default_tab)
             return
+
+        self.profile_store.save_current_with_examples()
+        saved_path = self.profile_store.path
 
         if hasattr(self, "example_scene_tabs"):
             selected = self.get_current_actual_tab()
@@ -477,38 +520,29 @@ class RobotStyleEditorApp(tk.Tk):
             self.select_actual_tab(selected)
             if hasattr(selected, "refresh_from_profile"):
                 selected.refresh_from_profile()
-        self.status_var.set(f"保存しました: {saved_path.name}")
-
-    def ask_save_profile_as(self):
-        SAVE_JSON_DIR.mkdir(parents=True, exist_ok=True)
-
-        while True:
-            filename = simpledialog.askstring(
-                "保存データ名",
-                "新しい保存ファイル名を入力してください。\n同名ファイルがある場合は保存しません。",
-                parent=self,
-            )
-            if filename is None:
-                return None
-
-            try:
-                return self.profile_store.save_as_new(filename)
-            except FileExistsError as e:
-                messagebox.showerror("保存できません", str(e), parent=self)
-            except ValueError as e:
-                messagebox.showerror("保存できません", str(e), parent=self)
-            except Exception as e:
-                messagebox.showerror("保存エラー", str(e), parent=self)
-                return None
+        example_path = getattr(self.profile_store, "last_example_results_path", None)
+        if example_path is not None:
+            self.status_var.set(f"保存しました: {saved_path.name} / {example_path.name}")
+        else:
+            self.status_var.set(f"保存しました: {saved_path.name}")
+        self.session_active = False
+        self.select_actual_tab(self.default_tab)
+        self.default_tab.show_saved_actions(saved_path, example_path)
 
     def go_example_tab(self):
+        if not self.session_active:
+            self.select_actual_tab(self.default_tab)
+            self.status_var.set("先にユーザー名を入力してください")
+            return
+
         if hasattr(self, "example_scene_tab"):
             self.select_actual_tab(self.example_scene_tab)
             if hasattr(self.example_scene_tab, "refresh_from_profile"):
                 self.example_scene_tab.refresh_from_profile()
 
     def on_close(self):
-        self.profile_store.save()
+        if self.session_active:
+            self.profile_store.save()
         self.destroy()
 
 

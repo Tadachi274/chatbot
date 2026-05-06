@@ -7,13 +7,12 @@ import random
 import threading
 import time
 import tkinter as tk
-from tkinter import ttk, messagebox, simpledialog
+from tkinter import ttk, messagebox
 
 from .. import ui_style as ui
 from ..audio.wav_silence import trim_silence_to_temp_wav
 from ..clients.example_generation_client import ExampleGenerationClient
 from ..clients.robot_command_client import RobotCommandClient
-from ..config import SAVE_JSON_DIR
 from ..config import get_person_key_from_speaker
 from ..config_default_profile import build_default_profile
 from ..config_example import EXAMPLE_SCENES, EXAMPLE_VENUES
@@ -21,7 +20,16 @@ from ..panels.mic_activity_panel import MicActivityPanel
 
 
 class ExampleSceneTab(tk.Frame):
-    def __init__(self, parent, profile_store, status_var, tts_client=None, on_saved=None, venue_label=None):
+    def __init__(
+        self,
+        parent,
+        profile_store,
+        status_var,
+        tts_client=None,
+        on_saved=None,
+        venue_label=None,
+        default_only=False,
+    ):
         super().__init__(parent, bg=ui.COLORS["main_card"])
 
         self.profile_store = profile_store
@@ -31,6 +39,7 @@ class ExampleSceneTab(tk.Frame):
         self.generation_client = ExampleGenerationClient()
         self.robot_client = RobotCommandClient()
         self.fixed_venue_label = venue_label
+        self.default_only = default_only
         self.default_profile = build_default_profile()
 
         self.venue_var = tk.StringVar(value=venue_label or EXAMPLE_VENUES[0]["label"])
@@ -80,21 +89,23 @@ class ExampleSceneTab(tk.Frame):
             pady=ui.SPACING["page_y"],
         )
 
-        ui.label(page, text="接客場面で試す", font="page_title", bg="main_card").pack(anchor="w")
-        ui.label(
-            page,
-            text="保存した話し方設定を使って、場面ごとの店員発話をGPTで生成・修正します。",
-            font="body",
-            bg="main_card",
-            fg="sub_text",
-        ).pack(anchor="w", pady=(ui.SPACING["small_gap"], ui.SPACING["section_y"]))
+        if not self.default_only:
+            ui.label(page, text="接客場面で試す", font="page_title", bg="main_card").pack(anchor="w")
+            ui.label(
+                page,
+                text="保存した話し方設定を使って、場面ごとの店員発話をGPTで生成・修正します。",
+                font="body",
+                bg="main_card",
+                fg="sub_text",
+            ).pack(anchor="w", pady=(ui.SPACING["small_gap"], ui.SPACING["section_y"]))
 
         content = ui.scrollable_frame(page)
 
         self.build_selector_area(content)
         self.build_style_summary_area(content)
         self.build_dialogue_area(content)
-        self.build_feedback_area(content)
+        if not self.default_only:
+            self.build_feedback_area(content)
         self.build_bottom_area(page)
 
     def build_selector_area(self, parent):
@@ -134,6 +145,9 @@ class ExampleSceneTab(tk.Frame):
         self.scene_combo = ttk.Combobox(scene_card, textvariable=self.scene_var, state="readonly")
         self.scene_combo.pack(fill="x", padx=ui.SPACING["card_x"], pady=(0, ui.SPACING["compact_y"]))
         self.scene_combo.bind("<<ComboboxSelected>>", lambda _event=None: self.on_scene_changed())
+
+        if self.default_only:
+            return
 
         version_card = ui.bordered_frame(row, bg="card", border="border")
         version_card.pack(side="left", fill="both", expand=True, padx=(0, ui.SPACING["small_gap"]))
@@ -190,6 +204,9 @@ class ExampleSceneTab(tk.Frame):
                 self.refresh_scene_choices()
 
     def build_style_summary_area(self, parent):
+        if self.default_only:
+            return
+
         section = ui.frame(parent, bg="panel")
         section.pack(fill="x", pady=(ui.SPACING["small_gap"], 0))
 
@@ -297,6 +314,23 @@ class ExampleSceneTab(tk.Frame):
     def build_bottom_area(self, parent):
         bottom = ui.frame(parent, bg="main_card")
         bottom.pack(fill="x", pady=(ui.SPACING["small_gap"], 0))
+        if self.default_only:
+            ui.action_button(bottom, text="デフォルトでロボット実演", command=self.prepare_robot_run).pack(
+                side="left",
+            )
+            tk.Checkbutton(
+                bottom,
+                text="実演後に生成WAVを削除",
+                variable=self.delete_generated_wav_var,
+                font=ui.FONTS["small"],
+                bg=ui.COLORS["main_card"],
+                fg=ui.COLORS["sub_text"],
+                activebackground=ui.COLORS["main_card"],
+                activeforeground=ui.COLORS["text"],
+                selectcolor=ui.COLORS["card"],
+            ).pack(side="left", padx=(ui.SPACING["gap"], 0))
+            return
+
         generate_button = ui.action_button(bottom, text="選択場面を生成", command=self.generate_whole_scene)
         generate_button.pack(side="left")
         self.generation_buttons.append(generate_button)
@@ -387,12 +421,16 @@ class ExampleSceneTab(tk.Frame):
         return next(scene for scene in EXAMPLE_SCENES if scene["venue"] == venue_id)
 
     def get_results(self):
-        return self.profile_store.get_nested("example_results", {}) or {}
+        if self.default_only:
+            return {}
+        return self.profile_store.get_example_results() or {}
 
     def get_scene_record(self, scene_id):
         return self.get_results().get(scene_id, {"active": -1, "versions": []})
 
     def is_default_profile_active(self, scene_id=None):
+        if self.default_only:
+            return True
         scene = self.current_scene() if scene_id is None else self.scene_by_id[scene_id]
         record = self.get_scene_record(scene["id"])
         return int(record.get("active", -1)) == -1 and bool(record.get("use_default_profile", False))
@@ -400,7 +438,38 @@ class ExampleSceneTab(tk.Frame):
     def active_profile_data(self):
         if self.is_default_profile_active():
             return self.default_profile
+        _active, version = self.get_active_version()
+        if version and version.get("profile") and not self.current_profile_differs_from_version(version):
+            return version["profile"]
         return self.profile_store.data
+
+    def normalized_profile_snapshot(self, profile_data):
+        snapshot = copy.deepcopy(profile_data or {})
+        snapshot.pop("example_results", None)
+        self.strip_style_sources(snapshot)
+        speaker = snapshot.get("speaker", "")
+        snapshot["speaker_person"] = get_person_key_from_speaker(speaker)
+        return snapshot
+
+    def strip_style_sources(self, value):
+        if isinstance(value, dict):
+            value.pop("style_sources", None)
+            for child in value.values():
+                self.strip_style_sources(child)
+        elif isinstance(value, list):
+            for child in value:
+                self.strip_style_sources(child)
+
+    def current_profile_snapshot(self):
+        if self.is_default_profile_active():
+            return self.normalized_profile_snapshot(self.default_profile)
+        return self.normalized_profile_snapshot(self.profile_store.data)
+
+    def current_profile_differs_from_version(self, version):
+        saved_profile = version.get("profile")
+        if not saved_profile:
+            return False
+        return self.current_profile_snapshot() != self.normalized_profile_snapshot(saved_profile)
 
     def active_profile_get(self, key, default=None):
         return self.active_profile_data().get(key, default)
@@ -429,7 +498,7 @@ class ExampleSceneTab(tk.Frame):
         record["active"] = len(versions) - 1
         record["use_default_profile"] = False
         results[scene_id] = record
-        self.profile_store.set("example_results", results, auto_save=True)
+        self.profile_store.set_example_results(results)
 
     def set_active_version(self, scene_id, active, use_default_profile=None):
         results = self.get_results()
@@ -441,7 +510,7 @@ class ExampleSceneTab(tk.Frame):
                 use_default_profile = active == -1
             record["use_default_profile"] = bool(use_default_profile)
             results[scene_id] = record
-            self.profile_store.set("example_results", results, auto_save=True)
+            self.profile_store.set_example_results(results)
 
     def select_default_version(self):
         scene = self.current_scene()
@@ -496,7 +565,7 @@ class ExampleSceneTab(tk.Frame):
             child.destroy()
 
         values = [
-            ("設定元", "デフォルト" if self.is_default_profile_active() else "現在の設定"),
+            ("設定元", self.active_profile_source_label()),
             ("話者", self.get_speaker_label()),
             ("敬語", self.get_setting_label("politeness")),
             ("親しみ", self.get_setting_label("intimacy")),
@@ -516,6 +585,21 @@ class ExampleSceneTab(tk.Frame):
                 bg="card",
                 fg="text",
             ).pack(anchor="w", padx=ui.SPACING["card_x"], pady=ui.SPACING["compact_y"])
+
+    def active_profile_source_label(self):
+        if self.is_default_profile_active():
+            return "デフォルト"
+
+        _active, version = self.get_active_version()
+        if version and version.get("profile"):
+            if self.current_profile_differs_from_version(version):
+                return "現在の設定（未保存・未生成）"
+            created_at = version.get("created_at", "")
+            suffix = f" {created_at}" if created_at else ""
+            return f"生成時設定{suffix}"
+        if version:
+            return "生成履歴（設定未保存）"
+        return "現在の設定"
 
     def render_summary_chip(self, parent, title, value, wide=False):
         card = ui.bordered_frame(parent, bg="card", border="border")
@@ -962,6 +1046,9 @@ class ExampleSceneTab(tk.Frame):
         return any(marker in text for marker in markers)
 
     def refresh_staff_turn_choices(self, turns):
+        if self.staff_turn_combo is None:
+            return
+
         values = [
             f"{index + 1}. {turn['text'][:48]}"
             for index, turn in enumerate(turns)
@@ -1065,10 +1152,7 @@ class ExampleSceneTab(tk.Frame):
         return any(marker in previous_text for marker in question_markers)
 
     def profile_snapshot(self):
-        snapshot = copy.deepcopy(self.active_profile_data())
-        snapshot.pop("example_results", None)
-        snapshot["speaker_person"] = self.get_speaker_person_key()
-        return snapshot
+        return self.current_profile_snapshot()
 
     def current_turns(self):
         scene = self.current_scene()
@@ -1090,7 +1174,7 @@ class ExampleSceneTab(tk.Frame):
         self.profile_store.save()
         active, version = self.get_active_version(scene["id"])
         global_request = self.get_global_request()
-        current_dialogue = version["turns"] if version and global_request else None
+        current_dialogue = version["turns"] if version else None
         profile = self.profile_snapshot()
 
         self.status_var.set("接客場面を生成中です")
@@ -1125,6 +1209,7 @@ class ExampleSceneTab(tk.Frame):
                     "scene_id": scene["id"],
                     "request": global_request,
                     "result": result,
+                    "profile": profile,
                     "previous_active": active,
                 }
             )
@@ -1179,6 +1264,7 @@ class ExampleSceneTab(tk.Frame):
                     "request": request,
                     "result": result,
                     "current_turns": current_turns,
+                    "profile": profile,
                     "target_turn_index": selected_index,
                     "previous_active": active,
                 }
@@ -1416,6 +1502,7 @@ class ExampleSceneTab(tk.Frame):
                 "request": item["request"],
                 "summary": result.get("summary", ""),
                 "turns": result["turns"],
+                "profile": item["profile"],
                 "previous_active": item["previous_active"],
             },
         )
@@ -1438,6 +1525,7 @@ class ExampleSceneTab(tk.Frame):
                 "request": item["request"],
                 "summary": result.get("reason", ""),
                 "turns": new_turns,
+                "profile": item["profile"],
                 "target_turn_index": item["target_turn_index"],
                 "previous_active": item["previous_active"],
             },
@@ -1504,14 +1592,15 @@ class ExampleSceneTab(tk.Frame):
             pady=ui.SPACING["page_y"],
         )
 
-        ui.label(page, text="ロボットで接客例を試す", font="page_title", bg="main_card").pack(anchor="w")
-        ui.label(
-            page,
-            text="客の発話終了をマイクで検出し、理解した姿を見せてからロボット発話へ進みます。",
-            font="body",
-            bg="main_card",
-            fg="sub_text",
-        ).pack(anchor="w", pady=(ui.SPACING["small_gap"], ui.SPACING["section_y"]))
+        if not self.default_only:
+            ui.label(page, text="ロボットで接客例を試す", font="page_title", bg="main_card").pack(anchor="w")
+            ui.label(
+                page,
+                text="客の発話終了をマイクで検出し、理解した姿を見せてからロボット発話へ進みます。",
+                font="body",
+                bg="main_card",
+                fg="sub_text",
+            ).pack(anchor="w", pady=(ui.SPACING["small_gap"], ui.SPACING["section_y"]))
 
         self.lyric_frame = ui.frame(page, bg="main_card")
         self.lyric_frame.pack(fill="both", expand=True)
@@ -1806,31 +1895,13 @@ class ExampleSceneTab(tk.Frame):
             return None
 
     def save_all(self):
-        saved_path = self.ask_save_profile_as()
-        if saved_path is not None:
+        self.profile_store.save_current_with_examples()
+        saved_path = self.profile_store.path
+        example_path = getattr(self.profile_store, "last_example_results_path", None)
+        if example_path is not None:
+            self.status_var.set(f"保存しました: {saved_path.name} / {example_path.name}")
+        else:
             self.status_var.set(f"保存しました: {saved_path.name}")
-
-    def ask_save_profile_as(self):
-        SAVE_JSON_DIR.mkdir(parents=True, exist_ok=True)
-
-        while True:
-            filename = simpledialog.askstring(
-                "保存データ名",
-                "新しい保存ファイル名を入力してください。\n同名ファイルがある場合は保存しません。",
-                parent=self,
-            )
-            if filename is None:
-                return None
-
-            try:
-                return self.profile_store.save_as_new(filename)
-            except FileExistsError as e:
-                messagebox.showerror("保存できません", str(e), parent=self)
-            except ValueError as e:
-                messagebox.showerror("保存できません", str(e), parent=self)
-            except Exception as e:
-                messagebox.showerror("保存エラー", str(e), parent=self)
-                return None
 
     def cleanup_generated_wavs(self, force=False):
         if not force and not self.delete_generated_wav_var.get():
