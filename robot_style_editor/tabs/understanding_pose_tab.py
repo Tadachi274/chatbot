@@ -74,64 +74,6 @@ class UnderstandingPoseTab(tk.Frame):
         self.build_ui()
 
 
-    def create_scrollable_content_area(self, parent):
-        outer = ui.frame(parent, bg="main_card")
-        outer.pack(
-            fill="both",
-            expand=True,
-            pady=(ui.SPACING["section_y"], 0),
-        )
-
-        canvas = tk.Canvas(
-            outer,
-            bg=ui.COLORS["main_card"],
-            highlightthickness=0,
-            bd=0,
-        )
-        canvas.pack(side="left", fill="both", expand=True)
-
-        scrollbar = tk.Scrollbar(
-            outer,
-            orient="vertical",
-            command=canvas.yview,
-        )
-        scrollbar.pack(side="right", fill="y")
-
-        canvas.configure(yscrollcommand=scrollbar.set)
-
-        content = ui.frame(canvas, bg="main_card")
-        canvas_window = canvas.create_window(
-            (0, 0),
-            window=content,
-            anchor="nw",
-        )
-
-        def on_content_configure(_event=None):
-            canvas.configure(scrollregion=canvas.bbox("all"))
-
-        def on_canvas_configure(event):
-            canvas.itemconfig(canvas_window, width=event.width)
-
-        content.bind("<Configure>", on_content_configure)
-        canvas.bind("<Configure>", on_canvas_configure)
-
-        def on_mousewheel(event):
-            if event.delta > 0:
-                canvas.yview_scroll(-1, "units")
-            elif event.delta < 0:
-                canvas.yview_scroll(1, "units")
-
-        def bind_mousewheel(_event=None):
-            canvas.bind_all("<MouseWheel>", on_mousewheel)
-
-        def unbind_mousewheel(_event=None):
-            canvas.unbind_all("<MouseWheel>")
-
-        canvas.bind("<Enter>", bind_mousewheel)
-        canvas.bind("<Leave>", unbind_mousewheel)
-
-        return content
-
     def build_ui(self):
         page = ui.frame(self, bg="main_card")
         page.pack(
@@ -159,7 +101,10 @@ class UnderstandingPoseTab(tk.Frame):
             pady=(ui.SPACING["small_gap"], 0),
         )
 
-        content = self.create_scrollable_content_area(page)
+        content = ui.scrollable_frame(
+            page,
+            pady=(ui.SPACING["section_y"], 0),
+        )
 
         self.build_face_area(content)
         self.build_nod_area(content)

@@ -17,6 +17,7 @@ class VoiceStylePanel(tk.Frame):
         get_text=None,
         get_speaker=None,
         on_changed=None,
+        voice_presets=None,
     ):
         super().__init__(parent, bg=ui.COLORS["panel"])
 
@@ -26,16 +27,18 @@ class VoiceStylePanel(tk.Frame):
         self.get_text = get_text
         self.get_speaker = get_speaker
         self.on_changed = on_changed
+        self.voice_presets = voice_presets or VOICE_PRESETS
         self._loading = False
 
-        self.selected_voice = tk.StringVar(value=initial_data.get("id", "friendly"))
+        default_voice_id = self.voice_presets[0]["id"]
+        self.selected_voice = tk.StringVar(value=initial_data.get("id", default_voice_id))
         self.editor = None
         self.editor_host = None
         self.editor_data = initial_data.get("editor", {})
 
         if initial_data.get("id") == "other" and not self.editor_data:
             self.editor_data = {
-                "base_preset": initial_data.get("base_preset", "friendly"),
+                "base_preset": initial_data.get("base_preset", self.get_default_preset()["id"]),
                 "controls": initial_data.get("controls", {}),
                 "params": initial_data.get("params", {}),
             }
@@ -65,7 +68,7 @@ class VoiceStylePanel(tk.Frame):
             pady=(0, ui.SPACING["small_gap"]),
         )
 
-        for opt in VOICE_PRESETS:
+        for opt in self.voice_presets:
             card = ui.bordered_frame(preset_row, bg="card", border="border")
             card.pack(
                 side="left",
@@ -108,7 +111,7 @@ class VoiceStylePanel(tk.Frame):
     def on_preset_selected(self, opt):
         if opt["id"] == "other":
             if not self.editor_data:
-                self.editor_data = self.build_editor_data_from_preset(self.find_preset("friendly"))
+                self.editor_data = self.build_editor_data_from_preset(self.get_default_preset())
         else:
             self.editor_data = self.build_editor_data_from_preset(opt)
 
@@ -128,6 +131,7 @@ class VoiceStylePanel(tk.Frame):
                 get_text=self.get_text,
                 get_speaker=self.get_speaker,
                 on_changed=self.on_editor_changed,
+                voice_presets=self.voice_presets,
             )
             self.editor.pack(fill="x")
 
@@ -154,8 +158,15 @@ class VoiceStylePanel(tk.Frame):
         }
 
     def find_preset(self, preset_id):
-        for opt in VOICE_PRESETS:
+        for opt in self.voice_presets:
             if opt["id"] == preset_id:
+                return opt
+
+        return self.get_default_preset()
+
+    def get_default_preset(self):
+        for opt in self.voice_presets:
+            if opt["id"] != "other":
                 return opt
 
         return VOICE_PRESETS[0]

@@ -301,51 +301,7 @@ class FaceEditorPanel(tk.Frame):
             pady=(ui.SPACING["small_gap"], 0),
         )
 
-        canvas = tk.Canvas(
-            section,
-            bg=ui.COLORS["panel"],
-            highlightthickness=0,
-            bd=0,
-        )
-        canvas.pack(side="left", fill="both", expand=True)
-
-        scrollbar = tk.Scrollbar(
-            section,
-            orient="vertical",
-            command=canvas.yview,
-        )
-        scrollbar.pack(side="right", fill="y")
-
-        canvas.configure(yscrollcommand=scrollbar.set)
-
-        grid = ui.frame(canvas, bg="panel")
-
-        canvas_window = canvas.create_window(
-            (0, 0),
-            window=grid,
-            anchor="nw",
-        )
-
-        def on_grid_configure(_event=None):
-            canvas.configure(scrollregion=canvas.bbox("all"))
-
-        def on_canvas_configure(event):
-            canvas.itemconfig(canvas_window, width=event.width)
-
-        grid.bind("<Configure>", on_grid_configure)
-        canvas.bind("<Configure>", on_canvas_configure)
-
-        def on_mousewheel(event):
-            canvas.yview_scroll(int(-1 * (event.delta / 120)), "units")
-
-        def bind_mousewheel(_event=None):
-            canvas.bind_all("<MouseWheel>", on_mousewheel)
-
-        def unbind_mousewheel(_event=None):
-            canvas.unbind_all("<MouseWheel>")
-
-        canvas.bind("<Enter>", bind_mousewheel)
-        canvas.bind("<Leave>", unbind_mousewheel)
+        grid = ui.scrollable_frame(section, bg="panel")
 
         # 5列にして縦方向を圧縮
         axis_columns = 5

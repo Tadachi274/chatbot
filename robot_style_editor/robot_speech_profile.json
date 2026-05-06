@@ -1,56 +1,83 @@
 {
   "speaker": "nozomi_emo_22_standard",
   "speaker_test_text": "話し手が変更されました",
-  "updated_at": "2026-05-04T17:18:35",
   "politeness": {
-    "id": "casual",
-    "label": "カジュアル",
-    "example1": "今日はどうしたの？",
-    "example2": "確認したいから、身分証明書を見せてもらってもいい？",
-    "prompt": "カジュアルで親しみやすい話し方にしてください。敬語は弱め、友好的でやわらかい表現にしてください。例：「今日はどうしたの？」「確認したいから、身分証明書を見せてもらってもいい？」"
+    "id": "formal",
+    "label": "軽い尊敬語",
+    "example1": "本日はどのようなご用件でしょうか。",
+    "example2": "ご本人様確認のため、身分証明書を確認させていただいてもよろしいでしょうか。",
+    "prompt": "軽い尊敬語を使い、丁寧だが堅すぎない自然な話し方にしてください。例：「本日はどのようなご用件でしょうか。」「ご本人様確認のため、身分証明書を確認させていただいてもよろしいでしょうか。」"
   },
   "politeness_test_text": "今日はどのようなご用件でしょうか。",
   "intimacy": {
-    "id": "high",
-    "label": "高",
+    "id": "middle",
+    "label": "中",
     "person": "nozomi",
-    "politeness": "casual",
-    "example1": "今日はどうしたの〜？",
-    "example2": "ちょっと確認したいから、身分証明書見せてもらってもいい〜？",
-    "prompt": "親しみは高めにしてください。語尾に伸ばし棒などを使い、かなり親しげで柔らかい話し方にしてください。"
+    "politeness": "formal",
+    "example1": "今日はどのようなご用件でしょうか。",
+    "example2": "確認のため、身分証明書を見せていただけますか。",
+    "prompt": "親しみは中程度にしてください。丁寧さを保ちながら、少し話しかけやすい自然な表現にしてください。"
   },
   "intimacy_test_text": "今日はどのようなご用件でしょうか。",
   "vocabulary": {
-    "id": "easy",
-    "label": "簡単",
+    "id": "middle",
+    "label": "中",
     "person": "nozomi",
-    "politeness": "polite",
+    "politeness": "formal",
     "intimacy": "middle",
-    "example1": "これは、甘くてふわふわなお菓子ですよ。",
-    "example2": "あちらの棚にありますよ。",
-    "prompt": "語彙は簡単にしてください。日常的でわかりやすい言葉を使い、短く直感的に伝えてください。"
+    "example1": "こちらは、甘味が強く、口に入れるとふわっと溶けるようなお菓子ですよ。",
+    "example2": "入口から見て右側の棚にありますよ。",
+    "prompt": "語彙は中程度にしてください。一般的な接客で自然に使われる、少し具体的な表現にしてください。"
   },
   "vocabulary_test_text": "こちらは、甘味が強く、口に入れるとふわっと溶けるようなお菓子です。",
   "length": {
-    "id": "middle",
-    "label": "中",
-    "example1": "もうすぐ閉店時間です。",
-    "example2": "少しだけお待ちいただけますか。",
-    "prompt": "発話は中くらいの長さにしてください。現在選択されている敬語・親しみ・語彙の方針は維持したまま、短すぎず長すぎない自然な一文で伝えてください。理由、確認、提案、補足は必要以上に増やさないでください。"
+    "id": "short",
+    "label": "短い",
+    "example1": "閉店です。",
+    "example2": "少々お待ちください。",
+    "prompt": "発話は短くしてください。現在選択されている敬語・親しみ・語彙の方針は維持したまま、同じ内容をできるだけ短く、必要最小限の言葉で伝えてください。理由、確認、提案、補足は必要以上に増やさないでください。"
   },
   "length_test_text": "もうすぐ閉店時間です。",
+  "style_detail": {
+    "label": "詳細設定",
+    "selections": {
+      "information_structure": [
+        "reason"
+      ],
+      "information_amount": "standard",
+      "emotional_expression": "standard",
+      "interpersonal_consideration": [],
+      "initiative": []
+    },
+    "labels": {
+      "information_structure": "理由提示",
+      "information_amount": "標準",
+      "emotional_expression": "標準",
+      "interpersonal_consideration": "なし",
+      "initiative": "なし"
+    },
+    "prompt": "判断や案内には、必要に応じて短い理由を添える。 情報量は標準にし、要点と自然な補足のバランスを取る。 感情語や共感語は標準的にし、必要な場面で自然に入れる。",
+    "description": "会話全体に反映する話し方の詳細傾向。"
+  },
+  "special_consideration": {
+    "label": "特別考慮",
+    "text": "",
+    "prompt": "",
+    "strength": "strong",
+    "description": "参加者や場面に合わせて強く反映する自由記述の配慮条件。"
+  },
   "speech_speed": {
-    "value": 1.35,
-    "label": "1.35 倍",
-    "prompt": "話すスピードは通常の 1.35 倍程度にしてください。ただし不自然に聞こえない範囲で調整してください。"
+    "value": 1.0,
+    "label": "1.00 倍",
+    "prompt": "話すスピードは通常の 1.00 倍程度にしてください。ただし不自然に聞こえない範囲で調整してください。"
   },
   "sentence_pause": {
     "value": 0.2,
     "label": "0.20 秒",
     "gaze": {
-      "id": "down",
-      "label": "下",
-      "lookaway": "d",
+      "id": "front",
+      "label": "正面",
+      "lookaway": "f",
       "priority": 4,
       "keeptime": 800
     },
@@ -62,17 +89,19 @@
     "total_value": 0.4,
     "label": "0.40 秒",
     "wait_after_detection": 0.2,
+    "thinking_total_value": 1.0,
+    "thinking_label": "1.00 秒",
+    "thinking_wait_after_detection": 0.8,
     "silence_hold_sec": 0.2,
-    "description": "相手の発話終了からロボットが返答を開始するまでの総時間。内部的には終了判定用の無音時間と、終了判定後の追加待機時間に分かれる。",
-    "prompt": "相手の発話が終わってから、約0.40秒後に返答を開始してください。"
+    "description": "相手の発話終了からロボットが返答を開始するまでの総時間。",
+    "prompt": "通常時は相手の発話が終わってから約0.40秒後、考えている時は約1.00秒後に返答を開始してください。"
   },
   "thinking_pose": {
     "face": {
-      "id": "custom:neutral111",
-      "label": "neutral111",
-      "type": "neutral111",
-      "level": 1,
-      "custom": true
+      "id": "neutral",
+      "label": "Neutral",
+      "type": "neutral",
+      "level": 1
     },
     "gaze": {
       "id": "front",
@@ -85,11 +114,10 @@
   },
   "listening_pose": {
     "face": {
-      "id": "custom:neutral1",
-      "label": "neutral1",
-      "type": "neutral1",
-      "level": 1,
-      "custom": true
+      "id": "neutral",
+      "label": "Neutral",
+      "type": "neutral",
+      "level": 1
     },
     "eye_open": {
       "id": "normal",
@@ -105,22 +133,22 @@
       }
     },
     "nod": {
-      "id": "large",
-      "label": "大",
-      "amplitude": 15,
-      "duration": 500,
+      "id": "none",
+      "label": "無",
+      "amplitude": 0,
+      "duration": 0,
       "times": 1,
       "priority": 3
     },
     "backchannel_voice": {
-      "mode": "always",
+      "mode": "none",
       "probability": 0.3,
-      "effective_probability": 1.0,
-      "word_id": "un",
+      "effective_probability": 0.0,
+      "word_id": "hai",
       "word_type": "wav",
-      "text": "うん",
-      "custom_text": "はい",
-      "wav_path": "/Users/stela/ryoji/chatbot/robot_style_editor/sample_audio/うん.wav",
+      "text": "はい",
+      "custom_text": "",
+      "wav_path": "/Users/stela/ryoji/chatbot/robot_style_editor/sample_audio/はい.wav",
       "description": "うなづき時に、指定割合で既存WAVの相槌を再生する"
     },
     "amount": {
@@ -133,119 +161,818 @@
   },
   "understanding_pose": {
     "face": {
-      "id": "reward_smile3",
-      "label": "RewardSmile3",
-      "type": "RewardSmile",
-      "level": 3
+      "id": "neutral",
+      "label": "Neutral",
+      "type": "neutral",
+      "level": 1
     },
     "nod": {
-      "id": "large_twice",
-      "label": "大 2回",
+      "id": "large_once",
+      "label": "大 1回",
       "amplitude": 15,
       "duration": 500,
-      "count": 2,
+      "count": 1,
       "priority": 3
     },
     "word": {
-      "word_id": "sounandesune",
+      "word_id": "hai",
       "word_type": "wav",
-      "text": "そうなんですね",
+      "text": "はい",
       "custom_text": "",
-      "wav_path": "/Users/stela/ryoji/chatbot/robot_style_editor/sample_audio/そうなんですね.wav"
+      "wav_path": "/Users/stela/ryoji/chatbot/robot_style_editor/sample_audio/はい.wav"
     },
-    "response_delay_source": "response_delay.wait_after_detection",
+    "response_delay_source": "response_delay.wait_after_detection / response_delay.thinking_wait_after_detection",
     "description": "相手の発話を理解した直後に出す表情・うなづき・短い言葉"
+  },
+  "filler": {
+    "enabled": false,
+    "selected_ids": [],
+    "phrases": [],
+    "custom_text": "",
+    "voice": {
+      "id": "neutral",
+      "label": "Neutral",
+      "params": {
+        "volume": 1.3,
+        "rate": 1.0,
+        "pitch": 1.0,
+        "emphasis": 1.0,
+        "joy": 0.0,
+        "anger": 0.0,
+        "sadness": 0.0
+      },
+      "controls": {
+        "friendly": 1.0,
+        "calm": 1.0,
+        "tension": 1.0
+      }
+    },
+    "tts_instructions": {
+      "tts_volume": 1.3,
+      "tts_rate": 1.0,
+      "tts_pitch": 1.0,
+      "tts_emphasis": 1.0,
+      "tts_emo_joy": 0.0,
+      "tts_emo_angry": 0.0,
+      "tts_emo_sad": 0.0
+    },
+    "prompt": "フィラーは使用しない。"
   },
   "greeting": {
     "intent": "greeting",
     "label": "挨拶",
-    "text": "こんにちは〜。よければ、ゆっくり案内するよ〜。何を探してるの〜？",
-    "techniques": [
-      "consideration"
-    ],
-    "technique_defs": {
-      "consideration": "相手への配慮を入れる。負担を気遣う表現や「もしよろしければ」などの柔らかい言い回しを含める。"
+    "text": "こんにちは、いらっしゃいませ。",
+    "face": {
+      "id": "neutral",
+      "label": "Neutral",
+      "type": "neutral",
+      "level": 1
     },
     "voice": {
-      "id": "other",
-      "label": "その他",
+      "id": "neutral",
+      "label": "Neutral",
       "params": {
-        "volume": 1.5,
-        "rate": 1.3,
-        "pitch": 1.24,
-        "emphasis": 1.33,
-        "joy": 0.52,
+        "volume": 1.3,
+        "rate": 1.0,
+        "pitch": 1.0,
+        "emphasis": 1.0,
+        "joy": 0.0,
         "anger": 0.0,
-        "sadness": 0.14
-      },
-      "editor": {
-        "base_preset": "lively",
-        "controls": {
-          "friendly": 0.95,
-          "calm": 0.9,
-          "tension": 1.5
-        },
-        "params": {
-          "volume": 1.5,
-          "rate": 1.3,
-          "pitch": 1.24,
-          "emphasis": 1.33,
-          "joy": 0.52,
-          "anger": 0.0,
-          "sadness": 0.14
-        }
+        "sadness": 0.0
       },
       "controls": {
-        "friendly": 0.95,
-        "calm": 0.9,
-        "tension": 1.5
-      },
-      "base_preset": "lively"
+        "friendly": 1.0,
+        "calm": 1.0,
+        "tension": 1.0
+      }
     },
     "tts_instructions": {
-      "tts_volume": 1.5,
-      "tts_rate": 1.3,
-      "tts_pitch": 1.24,
-      "tts_emphasis": 1.33,
-      "tts_emo_joy": 0.52,
+      "tts_volume": 1.3,
+      "tts_rate": 1.0,
+      "tts_pitch": 1.0,
+      "tts_emphasis": 1.0,
+      "tts_emo_joy": 0.0,
       "tts_emo_angry": 0.0,
-      "tts_emo_sad": 0.14
+      "tts_emo_sad": 0.0
     },
+    "techniques": [],
     "style_sources": {
       "politeness": {
-        "id": "casual",
-        "label": "カジュアル",
-        "example1": "今日はどうしたの？",
-        "example2": "確認したいから、身分証明書を見せてもらってもいい？",
-        "prompt": "カジュアルで親しみやすい話し方にしてください。敬語は弱め、友好的でやわらかい表現にしてください。例：「今日はどうしたの？」「確認したいから、身分証明書を見せてもらってもいい？」"
+        "id": "formal",
+        "label": "軽い尊敬語",
+        "example1": "本日はどのようなご用件でしょうか。",
+        "example2": "ご本人様確認のため、身分証明書を確認させていただいてもよろしいでしょうか。",
+        "prompt": "軽い尊敬語を使い、丁寧だが堅すぎない自然な話し方にしてください。例：「本日はどのようなご用件でしょうか。」「ご本人様確認のため、身分証明書を確認させていただいてもよろしいでしょうか。」"
       },
       "intimacy": {
-        "id": "high",
-        "label": "高",
+        "id": "middle",
+        "label": "中",
         "person": "nozomi",
-        "politeness": "casual",
-        "example1": "今日はどうしたの〜？",
-        "example2": "ちょっと確認したいから、身分証明書見せてもらってもいい〜？",
-        "prompt": "親しみは高めにしてください。語尾に伸ばし棒などを使い、かなり親しげで柔らかい話し方にしてください。"
+        "politeness": "formal",
+        "example1": "今日はどのようなご用件でしょうか。",
+        "example2": "確認のため、身分証明書を見せていただけますか。",
+        "prompt": "親しみは中程度にしてください。丁寧さを保ちながら、少し話しかけやすい自然な表現にしてください。"
       },
       "vocabulary": {
-        "id": "easy",
-        "label": "簡単",
+        "id": "middle",
+        "label": "中",
         "person": "nozomi",
-        "politeness": "polite",
+        "politeness": "formal",
         "intimacy": "middle",
-        "example1": "これは、甘くてふわふわなお菓子ですよ。",
-        "example2": "あちらの棚にありますよ。",
-        "prompt": "語彙は簡単にしてください。日常的でわかりやすい言葉を使い、短く直感的に伝えてください。"
+        "example1": "こちらは、甘味が強く、口に入れるとふわっと溶けるようなお菓子ですよ。",
+        "example2": "入口から見て右側の棚にありますよ。",
+        "prompt": "語彙は中程度にしてください。一般的な接客で自然に使われる、少し具体的な表現にしてください。"
       },
       "length": {
         "id": "middle",
         "label": "中",
         "example1": "もうすぐ閉店時間です。",
         "example2": "少しだけお待ちいただけますか。",
-        "prompt": "発話は中くらいの長さにしてください。現在選択されている敬語・親しみ・語彙の方針は維持したまま、短すぎず長すぎない自然な一文で伝えてください。理由、確認、提案、補足は必要以上に増やさないでください。"
+        "prompt": "発話は中くらいの長さにしてください。現在選択されている敬語・親しみ・語彙の方針は維持したまま、短すぎず長すぎない自然な一文で伝えてください。"
       }
     },
-    "prompt": "会話開始時の挨拶。保存された text を読み上げる。必要に応じて techniques の方針を反映する。"
+    "prompt": "挨拶の発話。保存された text を読み上げる。"
+  },
+  "explanation": {
+    "intent": "explanation",
+    "label": "説明時",
+    "text": "チェックアウトは11時となっております。",
+    "face": {
+      "id": "neutral",
+      "label": "Neutral",
+      "type": "neutral",
+      "level": 1
+    },
+    "voice": {
+      "id": "neutral",
+      "label": "Neutral",
+      "params": {
+        "volume": 1.3,
+        "rate": 1.0,
+        "pitch": 1.0,
+        "emphasis": 1.0,
+        "joy": 0.0,
+        "anger": 0.0,
+        "sadness": 0.0
+      },
+      "controls": {
+        "friendly": 1.0,
+        "calm": 1.0,
+        "tension": 1.0
+      }
+    },
+    "tts_instructions": {
+      "tts_volume": 1.3,
+      "tts_rate": 1.0,
+      "tts_pitch": 1.0,
+      "tts_emphasis": 1.0,
+      "tts_emo_joy": 0.0,
+      "tts_emo_angry": 0.0,
+      "tts_emo_sad": 0.0
+    },
+    "techniques": [],
+    "style_sources": {
+      "politeness": {
+        "id": "formal",
+        "label": "軽い尊敬語",
+        "example1": "本日はどのようなご用件でしょうか。",
+        "example2": "ご本人様確認のため、身分証明書を確認させていただいてもよろしいでしょうか。",
+        "prompt": "軽い尊敬語を使い、丁寧だが堅すぎない自然な話し方にしてください。例：「本日はどのようなご用件でしょうか。」「ご本人様確認のため、身分証明書を確認させていただいてもよろしいでしょうか。」"
+      },
+      "intimacy": {
+        "id": "middle",
+        "label": "中",
+        "person": "nozomi",
+        "politeness": "formal",
+        "example1": "今日はどのようなご用件でしょうか。",
+        "example2": "確認のため、身分証明書を見せていただけますか。",
+        "prompt": "親しみは中程度にしてください。丁寧さを保ちながら、少し話しかけやすい自然な表現にしてください。"
+      },
+      "vocabulary": {
+        "id": "middle",
+        "label": "中",
+        "person": "nozomi",
+        "politeness": "formal",
+        "intimacy": "middle",
+        "example1": "こちらは、甘味が強く、口に入れるとふわっと溶けるようなお菓子ですよ。",
+        "example2": "入口から見て右側の棚にありますよ。",
+        "prompt": "語彙は中程度にしてください。一般的な接客で自然に使われる、少し具体的な表現にしてください。"
+      },
+      "length": {
+        "id": "middle",
+        "label": "中",
+        "example1": "もうすぐ閉店時間です。",
+        "example2": "少しだけお待ちいただけますか。",
+        "prompt": "発話は中くらいの長さにしてください。現在選択されている敬語・親しみ・語彙の方針は維持したまま、短すぎず長すぎない自然な一文で伝えてください。"
+      }
+    },
+    "prompt": "説明時の発話。保存された text を読み上げる。"
+  },
+  "question": {
+    "intent": "question",
+    "label": "質問時",
+    "text": "本日は一泊でよろしいでしょうか。",
+    "face": {
+      "id": "neutral",
+      "label": "Neutral",
+      "type": "neutral",
+      "level": 1
+    },
+    "voice": {
+      "id": "neutral",
+      "label": "Neutral",
+      "params": {
+        "volume": 1.3,
+        "rate": 1.0,
+        "pitch": 1.0,
+        "emphasis": 1.0,
+        "joy": 0.0,
+        "anger": 0.0,
+        "sadness": 0.0
+      },
+      "controls": {
+        "friendly": 1.0,
+        "calm": 1.0,
+        "tension": 1.0
+      }
+    },
+    "tts_instructions": {
+      "tts_volume": 1.3,
+      "tts_rate": 1.0,
+      "tts_pitch": 1.0,
+      "tts_emphasis": 1.0,
+      "tts_emo_joy": 0.0,
+      "tts_emo_angry": 0.0,
+      "tts_emo_sad": 0.0
+    },
+    "techniques": [],
+    "style_sources": {
+      "politeness": {
+        "id": "formal",
+        "label": "軽い尊敬語",
+        "example1": "本日はどのようなご用件でしょうか。",
+        "example2": "ご本人様確認のため、身分証明書を確認させていただいてもよろしいでしょうか。",
+        "prompt": "軽い尊敬語を使い、丁寧だが堅すぎない自然な話し方にしてください。例：「本日はどのようなご用件でしょうか。」「ご本人様確認のため、身分証明書を確認させていただいてもよろしいでしょうか。」"
+      },
+      "intimacy": {
+        "id": "middle",
+        "label": "中",
+        "person": "nozomi",
+        "politeness": "formal",
+        "example1": "今日はどのようなご用件でしょうか。",
+        "example2": "確認のため、身分証明書を見せていただけますか。",
+        "prompt": "親しみは中程度にしてください。丁寧さを保ちながら、少し話しかけやすい自然な表現にしてください。"
+      },
+      "vocabulary": {
+        "id": "middle",
+        "label": "中",
+        "person": "nozomi",
+        "politeness": "formal",
+        "intimacy": "middle",
+        "example1": "こちらは、甘味が強く、口に入れるとふわっと溶けるようなお菓子ですよ。",
+        "example2": "入口から見て右側の棚にありますよ。",
+        "prompt": "語彙は中程度にしてください。一般的な接客で自然に使われる、少し具体的な表現にしてください。"
+      },
+      "length": {
+        "id": "middle",
+        "label": "中",
+        "example1": "もうすぐ閉店時間です。",
+        "example2": "少しだけお待ちいただけますか。",
+        "prompt": "発話は中くらいの長さにしてください。現在選択されている敬語・親しみ・語彙の方針は維持したまま、短すぎず長すぎない自然な一文で伝えてください。"
+      }
+    },
+    "prompt": "質問時の発話。保存された text を読み上げる。"
+  },
+  "acceptance": {
+    "intent": "acceptance",
+    "label": "承諾時",
+    "text": "かしこまりました。",
+    "face": {
+      "id": "neutral",
+      "label": "Neutral",
+      "type": "neutral",
+      "level": 1
+    },
+    "voice": {
+      "id": "neutral",
+      "label": "Neutral",
+      "params": {
+        "volume": 1.3,
+        "rate": 1.0,
+        "pitch": 1.0,
+        "emphasis": 1.0,
+        "joy": 0.0,
+        "anger": 0.0,
+        "sadness": 0.0
+      },
+      "controls": {
+        "friendly": 1.0,
+        "calm": 1.0,
+        "tension": 1.0
+      }
+    },
+    "tts_instructions": {
+      "tts_volume": 1.3,
+      "tts_rate": 1.0,
+      "tts_pitch": 1.0,
+      "tts_emphasis": 1.0,
+      "tts_emo_joy": 0.0,
+      "tts_emo_angry": 0.0,
+      "tts_emo_sad": 0.0
+    },
+    "techniques": [],
+    "style_sources": {
+      "politeness": {
+        "id": "formal",
+        "label": "軽い尊敬語",
+        "example1": "本日はどのようなご用件でしょうか。",
+        "example2": "ご本人様確認のため、身分証明書を確認させていただいてもよろしいでしょうか。",
+        "prompt": "軽い尊敬語を使い、丁寧だが堅すぎない自然な話し方にしてください。例：「本日はどのようなご用件でしょうか。」「ご本人様確認のため、身分証明書を確認させていただいてもよろしいでしょうか。」"
+      },
+      "intimacy": {
+        "id": "middle",
+        "label": "中",
+        "person": "nozomi",
+        "politeness": "formal",
+        "example1": "今日はどのようなご用件でしょうか。",
+        "example2": "確認のため、身分証明書を見せていただけますか。",
+        "prompt": "親しみは中程度にしてください。丁寧さを保ちながら、少し話しかけやすい自然な表現にしてください。"
+      },
+      "vocabulary": {
+        "id": "middle",
+        "label": "中",
+        "person": "nozomi",
+        "politeness": "formal",
+        "intimacy": "middle",
+        "example1": "こちらは、甘味が強く、口に入れるとふわっと溶けるようなお菓子ですよ。",
+        "example2": "入口から見て右側の棚にありますよ。",
+        "prompt": "語彙は中程度にしてください。一般的な接客で自然に使われる、少し具体的な表現にしてください。"
+      },
+      "length": {
+        "id": "middle",
+        "label": "中",
+        "example1": "もうすぐ閉店時間です。",
+        "example2": "少しだけお待ちいただけますか。",
+        "prompt": "発話は中くらいの長さにしてください。現在選択されている敬語・親しみ・語彙の方針は維持したまま、短すぎず長すぎない自然な一文で伝えてください。"
+      }
+    },
+    "prompt": "承諾時の発話。保存された text を読み上げる。"
+  },
+  "request": {
+    "intent": "request",
+    "label": "要求時",
+    "text": "こちらにご記入をお願いいたします。",
+    "face": {
+      "id": "neutral",
+      "label": "Neutral",
+      "type": "neutral",
+      "level": 1
+    },
+    "voice": {
+      "id": "neutral",
+      "label": "Neutral",
+      "params": {
+        "volume": 1.3,
+        "rate": 1.0,
+        "pitch": 1.0,
+        "emphasis": 1.0,
+        "joy": 0.0,
+        "anger": 0.0,
+        "sadness": 0.0
+      },
+      "controls": {
+        "friendly": 1.0,
+        "calm": 1.0,
+        "tension": 1.0
+      }
+    },
+    "tts_instructions": {
+      "tts_volume": 1.3,
+      "tts_rate": 1.0,
+      "tts_pitch": 1.0,
+      "tts_emphasis": 1.0,
+      "tts_emo_joy": 0.0,
+      "tts_emo_angry": 0.0,
+      "tts_emo_sad": 0.0
+    },
+    "techniques": [],
+    "style_sources": {
+      "politeness": {
+        "id": "formal",
+        "label": "軽い尊敬語",
+        "example1": "本日はどのようなご用件でしょうか。",
+        "example2": "ご本人様確認のため、身分証明書を確認させていただいてもよろしいでしょうか。",
+        "prompt": "軽い尊敬語を使い、丁寧だが堅すぎない自然な話し方にしてください。例：「本日はどのようなご用件でしょうか。」「ご本人様確認のため、身分証明書を確認させていただいてもよろしいでしょうか。」"
+      },
+      "intimacy": {
+        "id": "middle",
+        "label": "中",
+        "person": "nozomi",
+        "politeness": "formal",
+        "example1": "今日はどのようなご用件でしょうか。",
+        "example2": "確認のため、身分証明書を見せていただけますか。",
+        "prompt": "親しみは中程度にしてください。丁寧さを保ちながら、少し話しかけやすい自然な表現にしてください。"
+      },
+      "vocabulary": {
+        "id": "middle",
+        "label": "中",
+        "person": "nozomi",
+        "politeness": "formal",
+        "intimacy": "middle",
+        "example1": "こちらは、甘味が強く、口に入れるとふわっと溶けるようなお菓子ですよ。",
+        "example2": "入口から見て右側の棚にありますよ。",
+        "prompt": "語彙は中程度にしてください。一般的な接客で自然に使われる、少し具体的な表現にしてください。"
+      },
+      "length": {
+        "id": "middle",
+        "label": "中",
+        "example1": "もうすぐ閉店時間です。",
+        "example2": "少しだけお待ちいただけますか。",
+        "prompt": "発話は中くらいの長さにしてください。現在選択されている敬語・親しみ・語彙の方針は維持したまま、短すぎず長すぎない自然な一文で伝えてください。"
+      }
+    },
+    "prompt": "要求時の発話。保存された text を読み上げる。"
+  },
+  "apology": {
+    "intent": "apology",
+    "label": "謝罪時",
+    "text": "申し訳ございません。",
+    "face": {
+      "id": "neutral",
+      "label": "Neutral",
+      "type": "neutral",
+      "level": 1
+    },
+    "voice": {
+      "id": "neutral",
+      "label": "Neutral",
+      "params": {
+        "volume": 1.3,
+        "rate": 1.0,
+        "pitch": 1.0,
+        "emphasis": 1.0,
+        "joy": 0.0,
+        "anger": 0.0,
+        "sadness": 0.0
+      },
+      "controls": {
+        "friendly": 1.0,
+        "calm": 1.0,
+        "tension": 1.0
+      }
+    },
+    "tts_instructions": {
+      "tts_volume": 1.3,
+      "tts_rate": 1.0,
+      "tts_pitch": 1.0,
+      "tts_emphasis": 1.0,
+      "tts_emo_joy": 0.0,
+      "tts_emo_angry": 0.0,
+      "tts_emo_sad": 0.0
+    },
+    "techniques": [],
+    "style_sources": {
+      "politeness": {
+        "id": "formal",
+        "label": "軽い尊敬語",
+        "example1": "本日はどのようなご用件でしょうか。",
+        "example2": "ご本人様確認のため、身分証明書を確認させていただいてもよろしいでしょうか。",
+        "prompt": "軽い尊敬語を使い、丁寧だが堅すぎない自然な話し方にしてください。例：「本日はどのようなご用件でしょうか。」「ご本人様確認のため、身分証明書を確認させていただいてもよろしいでしょうか。」"
+      },
+      "intimacy": {
+        "id": "middle",
+        "label": "中",
+        "person": "nozomi",
+        "politeness": "formal",
+        "example1": "今日はどのようなご用件でしょうか。",
+        "example2": "確認のため、身分証明書を見せていただけますか。",
+        "prompt": "親しみは中程度にしてください。丁寧さを保ちながら、少し話しかけやすい自然な表現にしてください。"
+      },
+      "vocabulary": {
+        "id": "middle",
+        "label": "中",
+        "person": "nozomi",
+        "politeness": "formal",
+        "intimacy": "middle",
+        "example1": "こちらは、甘味が強く、口に入れるとふわっと溶けるようなお菓子ですよ。",
+        "example2": "入口から見て右側の棚にありますよ。",
+        "prompt": "語彙は中程度にしてください。一般的な接客で自然に使われる、少し具体的な表現にしてください。"
+      },
+      "length": {
+        "id": "middle",
+        "label": "中",
+        "example1": "もうすぐ閉店時間です。",
+        "example2": "少しだけお待ちいただけますか。",
+        "prompt": "発話は中くらいの長さにしてください。現在選択されている敬語・親しみ・語彙の方針は維持したまま、短すぎず長すぎない自然な一文で伝えてください。"
+      }
+    },
+    "prompt": "謝罪時の発話。保存された text を読み上げる。"
+  },
+  "gratitude": {
+    "intent": "gratitude",
+    "label": "感謝時",
+    "text": "ありがとうございます。",
+    "face": {
+      "id": "neutral",
+      "label": "Neutral",
+      "type": "neutral",
+      "level": 1
+    },
+    "voice": {
+      "id": "neutral",
+      "label": "Neutral",
+      "params": {
+        "volume": 1.3,
+        "rate": 1.0,
+        "pitch": 1.0,
+        "emphasis": 1.0,
+        "joy": 0.0,
+        "anger": 0.0,
+        "sadness": 0.0
+      },
+      "controls": {
+        "friendly": 1.0,
+        "calm": 1.0,
+        "tension": 1.0
+      }
+    },
+    "tts_instructions": {
+      "tts_volume": 1.3,
+      "tts_rate": 1.0,
+      "tts_pitch": 1.0,
+      "tts_emphasis": 1.0,
+      "tts_emo_joy": 0.0,
+      "tts_emo_angry": 0.0,
+      "tts_emo_sad": 0.0
+    },
+    "techniques": [],
+    "style_sources": {
+      "politeness": {
+        "id": "formal",
+        "label": "軽い尊敬語",
+        "example1": "本日はどのようなご用件でしょうか。",
+        "example2": "ご本人様確認のため、身分証明書を確認させていただいてもよろしいでしょうか。",
+        "prompt": "軽い尊敬語を使い、丁寧だが堅すぎない自然な話し方にしてください。例：「本日はどのようなご用件でしょうか。」「ご本人様確認のため、身分証明書を確認させていただいてもよろしいでしょうか。」"
+      },
+      "intimacy": {
+        "id": "middle",
+        "label": "中",
+        "person": "nozomi",
+        "politeness": "formal",
+        "example1": "今日はどのようなご用件でしょうか。",
+        "example2": "確認のため、身分証明書を見せていただけますか。",
+        "prompt": "親しみは中程度にしてください。丁寧さを保ちながら、少し話しかけやすい自然な表現にしてください。"
+      },
+      "vocabulary": {
+        "id": "middle",
+        "label": "中",
+        "person": "nozomi",
+        "politeness": "formal",
+        "intimacy": "middle",
+        "example1": "こちらは、甘味が強く、口に入れるとふわっと溶けるようなお菓子ですよ。",
+        "example2": "入口から見て右側の棚にありますよ。",
+        "prompt": "語彙は中程度にしてください。一般的な接客で自然に使われる、少し具体的な表現にしてください。"
+      },
+      "length": {
+        "id": "middle",
+        "label": "中",
+        "example1": "もうすぐ閉店時間です。",
+        "example2": "少しだけお待ちいただけますか。",
+        "prompt": "発話は中くらいの長さにしてください。現在選択されている敬語・親しみ・語彙の方針は維持したまま、短すぎず長すぎない自然な一文で伝えてください。"
+      }
+    },
+    "prompt": "感謝時の発話。保存された text を読み上げる。"
+  },
+  "smalltalk": {
+    "intent": "smalltalk",
+    "label": "雑談時",
+    "text": "今日は過ごしやすいですね。",
+    "face": {
+      "id": "neutral",
+      "label": "Neutral",
+      "type": "neutral",
+      "level": 1
+    },
+    "voice": {
+      "id": "neutral",
+      "label": "Neutral",
+      "params": {
+        "volume": 1.3,
+        "rate": 1.0,
+        "pitch": 1.0,
+        "emphasis": 1.0,
+        "joy": 0.0,
+        "anger": 0.0,
+        "sadness": 0.0
+      },
+      "controls": {
+        "friendly": 1.0,
+        "calm": 1.0,
+        "tension": 1.0
+      }
+    },
+    "tts_instructions": {
+      "tts_volume": 1.3,
+      "tts_rate": 1.0,
+      "tts_pitch": 1.0,
+      "tts_emphasis": 1.0,
+      "tts_emo_joy": 0.0,
+      "tts_emo_angry": 0.0,
+      "tts_emo_sad": 0.0
+    },
+    "techniques": [],
+    "style_sources": {
+      "politeness": {
+        "id": "formal",
+        "label": "軽い尊敬語",
+        "example1": "本日はどのようなご用件でしょうか。",
+        "example2": "ご本人様確認のため、身分証明書を確認させていただいてもよろしいでしょうか。",
+        "prompt": "軽い尊敬語を使い、丁寧だが堅すぎない自然な話し方にしてください。例：「本日はどのようなご用件でしょうか。」「ご本人様確認のため、身分証明書を確認させていただいてもよろしいでしょうか。」"
+      },
+      "intimacy": {
+        "id": "middle",
+        "label": "中",
+        "person": "nozomi",
+        "politeness": "formal",
+        "example1": "今日はどのようなご用件でしょうか。",
+        "example2": "確認のため、身分証明書を見せていただけますか。",
+        "prompt": "親しみは中程度にしてください。丁寧さを保ちながら、少し話しかけやすい自然な表現にしてください。"
+      },
+      "vocabulary": {
+        "id": "middle",
+        "label": "中",
+        "person": "nozomi",
+        "politeness": "formal",
+        "intimacy": "middle",
+        "example1": "こちらは、甘味が強く、口に入れるとふわっと溶けるようなお菓子ですよ。",
+        "example2": "入口から見て右側の棚にありますよ。",
+        "prompt": "語彙は中程度にしてください。一般的な接客で自然に使われる、少し具体的な表現にしてください。"
+      },
+      "length": {
+        "id": "middle",
+        "label": "中",
+        "example1": "もうすぐ閉店時間です。",
+        "example2": "少しだけお待ちいただけますか。",
+        "prompt": "発話は中くらいの長さにしてください。現在選択されている敬語・親しみ・語彙の方針は維持したまま、短すぎず長すぎない自然な一文で伝えてください。"
+      }
+    },
+    "prompt": "雑談時の発話。保存された text を読み上げる。"
+  },
+  "updated_at": "2026-05-06T18:27:22",
+  "example_results": {
+    "hotel_checkin": {
+      "active": 1,
+      "versions": [
+        {
+          "created_at": "2026-05-06T18:11:50",
+          "kind": "whole",
+          "request": "",
+          "summary": "ホテルのチェックイン手続きで、田中様に丁寧かつ程よい親しみを込めて対応し、身分証明書の確認から支払い方法の確認まで案内しています。",
+          "turns": [
+            {
+              "role": "customer",
+              "text": "すみません、今日から一泊で予約している田中です。",
+              "intent_parts": []
+            },
+            {
+              "role": "staff",
+              "text": "田中様でいらっしゃいますね。ご来館いただきありがとうございます。ご本人様確認のため、身分証明書を拝見してもよろしいでしょうか。",
+              "intent_parts": [
+                {
+                  "intent": "question",
+                  "text": "田中様でいらっしゃいますね。"
+                },
+                {
+                  "intent": "gratitude",
+                  "text": "ご来館いただきありがとうございます。"
+                },
+                {
+                  "intent": "request",
+                  "text": "ご本人様確認のため、身分証明書を拝見してもよろしいでしょうか。"
+                }
+              ]
+            },
+            {
+              "role": "customer",
+              "text": "はい、これです。",
+              "intent_parts": []
+            },
+            {
+              "role": "staff",
+              "text": "ありがとうございます。確認いたしました。田中様は朝食付きのプランでご予約を承っております。お支払いは現金でよろしいでしょうか。",
+              "intent_parts": [
+                {
+                  "intent": "gratitude",
+                  "text": "ありがとうございます。"
+                },
+                {
+                  "intent": "explanation",
+                  "text": "確認いたしました。田中様は朝食付きのプランでご予約を承っております。"
+                },
+                {
+                  "intent": "question",
+                  "text": "お支払いは現金でよろしいでしょうか。"
+                }
+              ]
+            },
+            {
+              "role": "customer",
+              "text": "はい、現金でお願いします。",
+              "intent_parts": []
+            },
+            {
+              "role": "staff",
+              "text": "かしこまりました。それではお手続きを進めますので、少々お待ちくださいませ。",
+              "intent_parts": [
+                {
+                  "intent": "acceptance",
+                  "text": "かしこまりました。"
+                },
+                {
+                  "intent": "request",
+                  "text": "それではお手続きを進めますので、少々お待ちくださいませ。"
+                }
+              ]
+            }
+          ],
+          "previous_active": -1
+        },
+        {
+          "created_at": "2026-05-06T18:27:22",
+          "kind": "whole",
+          "request": "",
+          "summary": "ホテルのチェックイン手続きで、田中様の予約確認、本人確認、支払い方法の確認を丁寧かつ親しみを込めて行った会話です。",
+          "turns": [
+            {
+              "role": "customer",
+              "text": "すみません、今日から一泊で予約している田中です。",
+              "intent_parts": []
+            },
+            {
+              "role": "staff",
+              "text": "田中様でお間違いないでしょうか。本日はご宿泊いただき、誠にありがとうございます。ご本人様確認のため、身分証明書を拝見してもよろしいでしょうか。",
+              "intent_parts": [
+                {
+                  "intent": "question",
+                  "text": "田中様でお間違いないでしょうか。"
+                },
+                {
+                  "intent": "gratitude",
+                  "text": "本日はご宿泊いただき、誠にありがとうございます。"
+                },
+                {
+                  "intent": "request",
+                  "text": "ご本人様確認のため、身分証明書を拝見してもよろしいでしょうか。"
+                }
+              ]
+            },
+            {
+              "role": "customer",
+              "text": "はい、これです。",
+              "intent_parts": []
+            },
+            {
+              "role": "staff",
+              "text": "ありがとうございます。確認が取れました。朝食付きのプランで承っておりますが、お支払いは現金でよろしいでしょうか。",
+              "intent_parts": [
+                {
+                  "intent": "gratitude",
+                  "text": "ありがとうございます。"
+                },
+                {
+                  "intent": "explanation",
+                  "text": "確認が取れました。朝食付きのプランで承っております。"
+                },
+                {
+                  "intent": "question",
+                  "text": "お支払いは現金でよろしいでしょうか。"
+                }
+              ]
+            },
+            {
+              "role": "customer",
+              "text": "はい、現金でお願いします。",
+              "intent_parts": []
+            },
+            {
+              "role": "staff",
+              "text": "かしこまりました。それではお手続きを進めさせていただきますので、少々お待ちいただけますでしょうか。",
+              "intent_parts": [
+                {
+                  "intent": "acceptance",
+                  "text": "かしこまりました。"
+                },
+                {
+                  "intent": "request",
+                  "text": "それではお手続きを進めさせていただきますので、少々お待ちいただけますでしょうか。"
+                }
+              ]
+            }
+          ],
+          "previous_active": -1
+        }
+      ],
+      "use_default_profile": false
+    }
   }
 }

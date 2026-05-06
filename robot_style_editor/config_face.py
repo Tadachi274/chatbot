@@ -51,6 +51,240 @@ THINKING_FACE_KEEPTIME = 3000
 THINKING_GAZE_PRIORITY = 4
 THINKING_GAZE_KEEPTIME = 1500
 
+GREETING_FACE_OPTIONS = [
+    {
+        "id": "neutral",
+        "label": "Neutral",
+        "type": "neutral",
+        "level": 1,
+    },
+    {
+        "id": "affiliative_smile",
+        "label": "親しみの笑顔",
+        "type": "AffiliativeSmile",
+        "level": 2,
+    },
+    {
+        "id": "wait_smile",
+        "label": "穏やかな笑顔",
+        "type": "WaitSmile",
+        "level": 2,
+    },
+    {
+        "id": "reward_smile",
+        "label": "明るい笑顔",
+        "type": "RewardSmile",
+        "level": 2,
+    },
+]
+
+GREETING_FACE_PRIORITY = 3
+GREETING_FACE_KEEPTIME = 3000
+
+EXPLANATION_FACE_OPTIONS = [
+    {
+        "id": "neutral",
+        "label": "Neutral",
+        "type": "neutral",
+        "level": 1,
+    },
+    {
+        "id": "affiliative_smile3",
+        "label": "AffiliativeSmile3",
+        "type": "AffiliativeSmile",
+        "level": 3,
+    },
+    {
+        "id": "smile3",
+        "label": "Smile3",
+        "type": "Smile",
+        "level": 3,
+    },
+]
+
+EXPLANATION_FACE_PRIORITY = 3
+EXPLANATION_FACE_KEEPTIME = 3000
+
+QUESTION_FACE_OPTIONS = [
+    {
+        "id": "neutral",
+        "label": "Neutral",
+        "type": "neutral",
+        "level": 1,
+    },
+    {
+        "id": "affiliative_smile3",
+        "label": "AffiliativeSmile3",
+        "type": "AffiliativeSmile",
+        "level": 3,
+    },
+    {
+        "id": "affiliative_smile_open_eyes3",
+        "label": "AffiliativeSmileOpenEyes3",
+        "type": "AffiliativeSmileOpenEyes",
+        "level": 3,
+    },
+]
+
+QUESTION_FACE_PRIORITY = 3
+QUESTION_FACE_KEEPTIME = 3000
+
+APOLOGY_FACE_OPTIONS = [
+    {
+        "id": "neutral",
+        "label": "Neutral",
+        "type": "neutral",
+        "level": 1,
+    },
+    {
+        "id": "sorry",
+        "label": "Sorry",
+        "type": "sorry",
+        "level": 1,
+    },
+    {
+        "id": "eye_open",
+        "label": "目だけ開ける",
+        "type": "neutral",
+        "level": 1,
+        "eye_open": True,
+    },
+]
+
+APOLOGY_FACE_PRIORITY = 3
+APOLOGY_FACE_KEEPTIME = 3000
+APOLOGY_EYE_OPEN_AXES = {
+    "1": 95,
+    "2": 95,
+}
+APOLOGY_EYE_OPEN_VELOCITY = 2000
+
+APOLOGY_BOW_OPTIONS = [
+    {
+        "id": "small",
+        "label": "小",
+        "amplitude": 7,
+        "duration": 300,
+    },
+    {
+        "id": "large",
+        "label": "大",
+        "amplitude": 15,
+        "duration": 500,
+    },
+]
+
+APOLOGY_BOW_TIMES = 1
+APOLOGY_BOW_PRIORITY = 3
+
+GRATITUDE_FACE_OPTIONS = [
+    {
+        "id": "neutral",
+        "label": "Neutral",
+        "type": "neutral",
+        "level": 1,
+    },
+    {
+        "id": "reward_smile3",
+        "label": "RewardSmile3",
+        "type": "RewardSmile",
+        "level": 3,
+    },
+    {
+        "id": "releaf2",
+        "label": "Releaf2",
+        "type": "Releaf",
+        "level": 2,
+    },
+]
+
+GRATITUDE_FACE_PRIORITY = 3
+GRATITUDE_FACE_KEEPTIME = 3000
+
+GRATITUDE_BOW_OPTIONS = [
+    {
+        "id": "small",
+        "label": "小",
+        "amplitude": 7,
+        "duration": 300,
+    },
+    {
+        "id": "large",
+        "label": "大",
+        "amplitude": 15,
+        "duration": 500,
+    },
+]
+
+GRATITUDE_BOW_TIMES = 1
+GRATITUDE_BOW_PRIORITY = 3
+
+SMALLTALK_FACE_OPTIONS = [
+    {
+        "id": "neutral",
+        "label": "Neutral",
+        "type": "neutral",
+        "level": 1,
+    },
+    {
+        "id": "warm_smile3",
+        "label": "WarmSmile3",
+        "type": "WarmSmile",
+        "level": 3,
+    },
+]
+
+SMALLTALK_FACE_PRIORITY = 3
+SMALLTALK_FACE_KEEPTIME = 3000
+
+ACCEPTANCE_FACE_OPTIONS = [
+    {
+        "id": "neutral",
+        "label": "Neutral",
+        "type": "neutral",
+        "level": 1,
+    },
+    {
+        "id": "affiliative_smile3",
+        "label": "AffiliativeSmile3",
+        "type": "AffiliativeSmile",
+        "level": 3,
+    },
+    {
+        "id": "smile3",
+        "label": "Smile3",
+        "type": "Smile",
+        "level": 3,
+    },
+]
+
+ACCEPTANCE_FACE_PRIORITY = 3
+ACCEPTANCE_FACE_KEEPTIME = 3000
+
+REQUEST_FACE_OPTIONS = [
+    {
+        "id": "neutral",
+        "label": "Neutral",
+        "type": "neutral",
+        "level": 1,
+    },
+    {
+        "id": "affiliative_smile3",
+        "label": "AffiliativeSmile3",
+        "type": "AffiliativeSmile",
+        "level": 3,
+    },
+    {
+        "id": "wait_smile3",
+        "label": "WaitSmile3",
+        "type": "WaitSmile",
+        "level": 3,
+    },
+]
+
+REQUEST_FACE_PRIORITY = 3
+REQUEST_FACE_KEEPTIME = 3000
+
 FACE_AXIS_NAMES = [str(i) for i in range(1, 36)]
 
 FACE_DEFAULT_VALUES = [

@@ -1,9 +1,13 @@
 import threading
 import wave
 import time
+import re
+import shutil
+from datetime import datetime
 from pathlib import Path
+from uuid import uuid4
 
-from ..config import TTS_URL, DEFAULT_INSTRUCTIONS
+from ..config import TTS_URL, DEFAULT_INSTRUCTIONS, TTS_GENERATED_WAV_DIR
 from chatbot.tts import tts_nikola_data as tts
 from chatbot.tts.tts_audioplayer import AudioPlayer
 from ..audio.wav_silence import trim_silence_to_temp_wav
@@ -29,7 +33,7 @@ class TTSClient:
             **(instructions or {}),
         }
 
-        resolved_person = person or merged.get("tts_speaker_change")
+        resolved_person = person or merged.get("tts_speaker_change") or tts.DEFAULT_PERSON
 
         if resolved_person is None:
             return tts.speak_async(
@@ -62,6 +66,59 @@ class TTSClient:
             text=text,
             instructions=instructions or DEFAULT_INSTRUCTIONS,
         )
+
+    def synthesize_to_wav(
+        self,
+        text: str,
+        instructions: dict | None = None,
+        person: str | None = None,
+        output_dir: Path | None = TTS_GENERATED_WAV_DIR,
+    ):
+        text = text.strip()
+        if not text:
+            return None
+
+        merged = {
+            **DEFAULT_INSTRUCTIONS,
+            **(instructions or {}),
+        }
+        resolved_person = person or merged.get("tts_speaker_change") or tts.DEFAULT_PERSON
+
+        wav_path = tts._synthesize_to_wav(
+            text=text,
+            instructions=merged,
+            url=self.url,
+            person=resolved_person,
+        )
+
+        if output_dir is None:
+            return wav_path
+
+        return self.move_generated_wav(wav_path, text, resolved_person, output_dir)
+
+    def move_generated_wav(self, wav_path: Path, text: str, person: str, output_dir: Path):
+        wav_path = Path(wav_path)
+        output_dir = Path(output_dir)
+        output_dir.mkdir(parents=True, exist_ok=True)
+
+        safe_text = re.sub(r"[\\/:*?\"<>|\\s]+", "_", text).strip("_")
+        safe_text = safe_text[:32] or "tts"
+        timestamp = datetime.now().strftime("%Y%m%d-%H%M%S")
+        target = output_dir / f"{timestamp}_{uuid4().hex[:8]}_{person}_{safe_text}.wav"
+
+        if wav_path.resolve() == target.resolve():
+            return target
+
+        try:
+            shutil.move(str(wav_path), str(target))
+        except Exception:
+            shutil.copy2(str(wav_path), str(target))
+            try:
+                wav_path.unlink(missing_ok=True)
+            except Exception:
+                pass
+
+        return target
 
     # =========================
     # WAVプレビュー再生

@@ -1,6 +1,7 @@
+import os
 from pathlib import Path
 
-TTS_URL = 'http://192.168.0.169:15001/synthesize'
+TTS_URL = os.environ.get("TTS_URL", "http://192.168.0.169:15001/synthesize")
 # ROBOT_TCP_HOST = "nikola-humantracker"
 # ROBOT_TCP_PORT = 8078
 ROBOT_TCP_HOST = "127.0.0.1"
@@ -11,6 +12,8 @@ ROBOT_TCP_TIMEOUT = 5.0
 BASE_DIR = Path(__file__).resolve().parent
 
 PROFILE_PATH = BASE_DIR / "robot_speech_profile.json"
+SAVE_JSON_DIR = BASE_DIR / "save_json"
+TTS_GENERATED_WAV_DIR = BASE_DIR / "sample_audio" / "wav"
 
 SPEED_SAMPLE_WAV_PATH = BASE_DIR / "sample_audio" / "speed_sample_要変更.wav"
 

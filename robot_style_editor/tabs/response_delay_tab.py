@@ -10,10 +10,13 @@ from ..config import (
     RESPONSE_DELAY_SAMPLE_WAV,
     MIC_SILENCE_HOLD_SEC_DEFAULT,
 )
+from ..config_face import UNDERSTANDING_NOD_OPTIONS, UNDERSTANDING_NOD_PRIORITY
 from ..panels.mic_activity_panel import MicActivityPanel
 from ..audio.response_delay_player import ResponseDelayPlayer
 from .. import ui_style as ui
 
+
+THINKING_RESPONSE_DELAY_DEFAULT = 1.0
 
 
 class ResponseDelayTab(tk.Frame):
@@ -31,8 +34,16 @@ class ResponseDelayTab(tk.Frame):
             value=float(delay_data.get("total_value", RESPONSE_DELAY_TOTAL_DEFAULT))
         )
 
+        self.thinking_delay_sec = tk.DoubleVar(
+            value=float(delay_data.get("thinking_total_value", THINKING_RESPONSE_DELAY_DEFAULT))
+        )
 
         self.delay_label = tk.StringVar(value=self.format_delay(self.delay_sec.get()))
+        self.thinking_delay_label = tk.StringVar(value=self.format_delay(self.thinking_delay_sec.get()))
+
+        understanding_data = self.profile_store.get_nested("understanding_pose", {}) or {}
+        nod_data = understanding_data.get("nod", {})
+        self.selected_nod = tk.StringVar(value=nod_data.get("id", "large_once"))
         
         self.response_player = ResponseDelayPlayer()
 
@@ -56,7 +67,7 @@ class ResponseDelayTab(tk.Frame):
 
         ui.label(
             page,
-            text="お客さんが話し終わってから、店員が返答を始めるまでの総時間を調整します。",
+            text="お客さんが話し終わってから、理解のうなづきや返答に移るまでの間を調整します。",
             font="body",
             bg="main_card",
             fg="sub_text",
@@ -65,8 +76,14 @@ class ResponseDelayTab(tk.Frame):
             pady=(ui.SPACING["small_gap"], ui.SPACING["section_y"]),
         )
 
-        self.build_delay_area(page)
-        self.build_mic_area(page)
+        content = ui.scrollable_frame(
+            page,
+            pady=(0, ui.SPACING["small_gap"]),
+        )
+
+        self.build_delay_area(content)
+        self.build_understanding_nod_area(content)
+        self.build_mic_area(content)
         self.build_bottom_area(page)
 
     def build_delay_area(self, parent):
@@ -84,11 +101,31 @@ class ResponseDelayTab(tk.Frame):
             pady=(ui.SPACING["section_y"], ui.SPACING["small_gap"]),
         )
 
-        card = ui.bordered_frame(section, bg="card", border="border")
+        self.build_delay_card(
+            section,
+            title="通常時",
+            description="質問や説明などで追加の考える姿を入れない時の返答間です。",
+            variable=self.delay_sec,
+            label_var=self.delay_label,
+            command=self.on_delay_changed,
+        )
+
+        self.build_delay_card(
+            section,
+            title="考えている時",
+            description="おすすめ相談など、返答前に考えている姿を見せる時の返答間です。",
+            variable=self.thinking_delay_sec,
+            label_var=self.thinking_delay_label,
+            command=self.on_thinking_delay_changed,
+            bottom_pady=ui.SPACING["section_y"],
+        )
+
+    def build_delay_card(self, parent, title, description, variable, label_var, command, bottom_pady=None):
+        card = ui.bordered_frame(parent, bg="card", border="border")
         card.pack(
             fill="x",
             padx=ui.SPACING["section_x"],
-            pady=(0, ui.SPACING["small_gap"]),
+            pady=(0, ui.SPACING["small_gap"] if bottom_pady is None else bottom_pady),
         )
 
         value_row = ui.frame(card, bg="card")
@@ -100,7 +137,7 @@ class ResponseDelayTab(tk.Frame):
 
         ui.label(
             value_row,
-            text="現在の間",
+            text=title,
             font="body",
             bg="card",
             fg="sub_text",
@@ -113,6 +150,17 @@ class ResponseDelayTab(tk.Frame):
             bg="card",
             fg="text",
         ).pack(side="right")
+
+        ui.label(
+            card,
+            text=description,
+            font="small",
+            bg="card",
+            fg="muted",
+            justify="left",
+            anchor="w",
+            wraplength=900,
+        ).pack(anchor="w", padx=ui.SPACING["card_x"], pady=(0, ui.SPACING["small_gap"]))
 
         scale_row = ui.frame(card, bg="card")
         scale_row.pack(
@@ -134,10 +182,10 @@ class ResponseDelayTab(tk.Frame):
 
         ui.scale(
             slider_area,
-            variable=self.delay_sec,
+            variable=variable,
             from_=RESPONSE_DELAY_TOTAL_MIN,
             to=RESPONSE_DELAY_TOTAL_MAX,
-            command=self.on_delay_changed,
+            command=command,
         ).pack(fill="x")
 
         ui.label(
@@ -147,6 +195,59 @@ class ResponseDelayTab(tk.Frame):
             bg="card",
             fg="muted",
         ).pack(side="left")
+
+    def build_understanding_nod_area(self, parent):
+        section = ui.frame(parent, bg="panel")
+        section.pack(fill="x", pady=(ui.SPACING["small_gap"], 0))
+
+        ui.label(
+            section,
+            text="理解のうなづき",
+            font="section_title",
+            bg="panel",
+        ).pack(
+            anchor="w",
+            padx=ui.SPACING["section_x"],
+            pady=(ui.SPACING["section_y"], ui.SPACING["small_gap"]),
+        )
+
+        row = ui.frame(section, bg="panel")
+        row.pack(
+            fill="x",
+            padx=ui.SPACING["section_x"],
+            pady=(0, ui.SPACING["section_y"]),
+        )
+
+        for opt in UNDERSTANDING_NOD_OPTIONS:
+            card = ui.bordered_frame(row, bg="card", border="border")
+            card.pack(
+                side="left",
+                fill="both",
+                expand=True,
+                padx=ui.SPACING["small_gap"],
+                pady=ui.SPACING["small_gap"],
+            )
+
+            ui.radio(
+                card,
+                text=opt["label"],
+                variable=self.selected_nod,
+                value=opt["id"],
+                command=lambda item=opt: self.on_nod_selected(item),
+                bg="card",
+            ).pack(
+                anchor="w",
+                padx=ui.SPACING["card_x"],
+                pady=(ui.SPACING["compact_y"], ui.SPACING["small_gap"]),
+            )
+
+            ui.label(
+                card,
+                text=f"/nod {opt['amplitude']} {opt['duration']} × {opt['count']}",
+                font="small",
+                bg="card",
+                fg="muted",
+            ).pack(anchor="w", padx=ui.SPACING["card_x"], pady=(0, ui.SPACING["compact_y"]))
 
     def build_mic_area(self, parent):
         self.mic_panel = MicActivityPanel(
@@ -208,8 +309,22 @@ class ResponseDelayTab(tk.Frame):
         self.delay_label.set(self.format_delay(value))
         self.save_selection_only(update_status=False)
 
+    def on_thinking_delay_changed(self, value):
+        self.thinking_delay_label.set(self.format_delay(value))
+        self.save_selection_only(update_status=False)
+
+    def on_nod_selected(self, opt):
+        self.save_selection_only(update_status=False)
+        self.status_var.set(f"理解のうなづきを保存しました: {opt['label']}")
+
     def get_wait_after_detection_sec(self):
-        total_delay = float(self.delay_sec.get())
+        return self.get_wait_after_detection_from_total(self.delay_sec.get())
+
+    def get_thinking_wait_after_detection_sec(self):
+        return self.get_wait_after_detection_from_total(self.thinking_delay_sec.get())
+
+    def get_wait_after_detection_from_total(self, total_value):
+        total_delay = float(total_value)
         wait_after_detection = total_delay - MIC_SILENCE_HOLD_SEC_DEFAULT
         return max(0.0, wait_after_detection)
     
@@ -241,21 +356,51 @@ class ResponseDelayTab(tk.Frame):
    
     def get_current_data(self):
         total_value = round(float(self.delay_sec.get()), 2)
+        thinking_total_value = round(float(self.thinking_delay_sec.get()), 2)
         wait_after_detection = round(self.get_wait_after_detection_sec(), 2)
+        thinking_wait_after_detection = round(self.get_thinking_wait_after_detection_sec(), 2)
 
         return {
             "total_value": total_value,
             "label": self.format_delay(total_value),
             "wait_after_detection": wait_after_detection,
+            "thinking_total_value": thinking_total_value,
+            "thinking_label": self.format_delay(thinking_total_value),
+            "thinking_wait_after_detection": thinking_wait_after_detection,
             "silence_hold_sec": MIC_SILENCE_HOLD_SEC_DEFAULT,
             "description": (
                 "相手の発話終了からロボットが返答を開始するまでの総時間。"
-                "内部的には終了判定用の無音時間と、終了判定後の追加待機時間に分かれる。"
+                "通常時と考えている時で別々に設定する。"
             ),
             "prompt": (
-                f"相手の発話が終わってから、約{total_value:.2f}秒後に返答を開始してください。"
+                f"通常時は相手の発話が終わってから約{total_value:.2f}秒後、"
+                f"考えている時は約{thinking_total_value:.2f}秒後に返答を開始してください。"
             ),
         }
+
+    def find_selected_nod_option(self):
+        selected = self.selected_nod.get()
+        for opt in UNDERSTANDING_NOD_OPTIONS:
+            if opt["id"] == selected:
+                return opt
+        return UNDERSTANDING_NOD_OPTIONS[0]
+
+    def save_understanding_nod(self):
+        existing = self.profile_store.get_nested("understanding_pose", {}) or {}
+        nod = self.find_selected_nod_option()
+        updated = {
+            **existing,
+            "nod": {
+                "id": nod["id"],
+                "label": nod["label"],
+                "amplitude": int(nod["amplitude"]),
+                "duration": int(nod["duration"]),
+                "count": int(nod["count"]),
+                "priority": UNDERSTANDING_NOD_PRIORITY,
+            },
+            "response_delay_source": "response_delay.wait_after_detection / response_delay.thinking_wait_after_detection",
+        }
+        self.profile_store.set("understanding_pose", updated, auto_save=True)
 
     def save_selection_only(self, update_status=True):
         self.profile_store.set(
@@ -263,9 +408,10 @@ class ResponseDelayTab(tk.Frame):
             self.get_current_data(),
             auto_save=True,
         )
+        self.save_understanding_nod()
 
         if update_status:
-            self.status_var.set("返答の間を保存しました")
+            self.status_var.set("返答の間と理解のうなづきを保存しました")
 
     def save_and_next(self):
         self.save_selection_only()

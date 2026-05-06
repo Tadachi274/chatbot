@@ -32,6 +32,7 @@ class VoiceEditorPanel(tk.Frame):
         get_text=None,
         get_speaker=None,
         on_changed=None,
+        voice_presets=None,
     ):
         super().__init__(parent, bg=ui.COLORS["panel"])
 
@@ -43,9 +44,11 @@ class VoiceEditorPanel(tk.Frame):
         self.get_text = get_text
         self.get_speaker = get_speaker
         self.on_changed = on_changed
+        self.voice_presets = voice_presets or VOICE_PRESETS
         self._loading = False
 
-        preset_id = initial_data.get("base_preset", "friendly")
+        default_preset_id = self.voice_presets[0]["id"]
+        preset_id = initial_data.get("base_preset", default_preset_id)
         preset = self.find_preset(preset_id)
 
         self.preset_id = tk.StringVar(value=preset_id)
@@ -92,6 +95,12 @@ class VoiceEditorPanel(tk.Frame):
             command=self.speak_current_text,
         ).pack(side="right")
 
+        ui.sub_button(
+            header,
+            text="デフォルトに戻す",
+            command=self.reset_to_default,
+        ).pack(side="right", padx=(0, ui.SPACING["small_gap"]))
+
         card = ui.bordered_frame(section, bg="card", border="border")
         card.pack(
             fill="x",
@@ -118,7 +127,7 @@ class VoiceEditorPanel(tk.Frame):
 
         combo = ttk.Combobox(
             preset_row,
-            values=[opt["label"] for opt in VOICE_PRESETS if opt["id"] != "other"],
+            values=[opt["label"] for opt in self.voice_presets if opt["id"] != "other"],
             state="readonly",
             width=16,
         )
@@ -224,7 +233,7 @@ class VoiceEditorPanel(tk.Frame):
         self.update_all_labels()
 
     def on_preset_combo_selected(self, label):
-        for opt in VOICE_PRESETS:
+        for opt in self.voice_presets:
             if opt["label"] == label:
                 self.load_preset(opt)
                 return
@@ -263,6 +272,21 @@ class VoiceEditorPanel(tk.Frame):
 
         self.update_all_labels(notify=notify)
 
+    def reset_to_default(self):
+        preset = self.get_default_preset()
+        self._loading = True
+        try:
+            self.preset_id.set(preset["id"])
+            self.friendly.set(1.0)
+            self.calm.set(1.0)
+            self.tension.set(1.0)
+            for key, value in VOICE_BASE_PARAMS.items():
+                self.param_vars[key].set(float(value))
+        finally:
+            self._loading = False
+
+        self.update_all_labels()
+
     def update_all_labels(self, notify=True):
         for var, label_var in (*self.control_labels, *self.param_labels):
             label_var.set(f"{var.get():.2f}")
@@ -271,8 +295,15 @@ class VoiceEditorPanel(tk.Frame):
             self.on_changed(self.get_data())
 
     def find_preset(self, preset_id):
-        for opt in VOICE_PRESETS:
+        for opt in self.voice_presets:
             if opt["id"] == preset_id:
+                return opt
+
+        return self.get_default_preset()
+
+    def get_default_preset(self):
+        for opt in self.voice_presets:
+            if opt["id"] != "other":
                 return opt
 
         return VOICE_PRESETS[0]

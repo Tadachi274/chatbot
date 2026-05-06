@@ -1,16 +1,57 @@
+import os
+from pathlib import Path
 import tkinter as tk
-from tkinter import ttk
+from tkinter import ttk, simpledialog, messagebox
+
+
+def load_env_file():
+    env_path = Path(__file__).resolve().parent / ".env"
+    if not env_path.exists():
+        return
+
+    for raw_line in env_path.read_text(encoding="utf-8").splitlines():
+        line = raw_line.strip()
+        if not line or line.startswith("#") or "=" not in line:
+            continue
+
+        if line.startswith("export "):
+            line = line[len("export "):].strip()
+
+        key, value = line.split("=", 1)
+        key = key.strip()
+        value = value.strip().strip('"').strip("'")
+
+        if key and key not in os.environ:
+            os.environ[key] = value
+
+
+load_env_file()
 
 from .profile_store import ProfileStore
 from .clients.tts_client import TTSClient
 from . import ui_style as ui
+from .config import SAVE_JSON_DIR
+from .config_example import EXAMPLE_VENUES
 
 from .tabs.speaker_tab import SpeakerTab
+from .tabs.default_profile_tab import DefaultProfileTab
 from .tabs.politeness_tab import PolitenessTab
 from .tabs.intimacy_tab import IntimacyTab
 from .tabs.vocabulary_tab import VocabularyTab
 from .tabs.length_tab import LengthTab
+from .tabs.style_detail_tab import StyleDetailTab
+from .tabs.special_consideration_tab import SpecialConsiderationTab
 from .tabs.greeting_tab import GreetingTab
+from .tabs.explanation_tab import ExplanationTab
+from .tabs.question_tab import QuestionTab
+from .tabs.apology_tab import ApologyTab
+from .tabs.gratitude_tab import GratitudeTab
+from .tabs.smalltalk_tab import SmalltalkTab
+from .tabs.acceptance_tab import AcceptanceTab
+from .tabs.request_tab import RequestTab
+from .tabs.filler_tab import FillerTab
+from .tabs.settings_review_tab import SettingsReviewTab
+from .tabs.example_scene_tab import ExampleSceneTab
 from .tabs.speed_tab import SpeedTab
 from .tabs.sentence_pause_tab import SentencePauseTab
 from .tabs.response_delay_tab import ResponseDelayTab
@@ -90,6 +131,25 @@ class RobotStyleEditorApp(tk.Tk):
         ).pack(side="right")
 
     def add_tabs(self):
+        self.tab_sequence = []
+        self.tab_locations = {}
+        self.group_notebooks = {}
+        self.child_notebook_parents = {}
+
+        style_frame, style_notebook = self.create_group_notebook()
+        response_frame, response_notebook = self.create_group_notebook()
+        da_frame, da_notebook = self.create_group_notebook()
+        example_frame, example_notebook = self.create_group_notebook()
+
+        default_tab = DefaultProfileTab(
+            self.notebook,
+            profile_store=self.profile_store,
+            status_var=self.status_var,
+            on_saved=self.go_next_tab,
+            on_examples=self.go_example_tab,
+            on_applied=self.rebuild_tabs_from_profile,
+        )
+
         speaker_tab = SpeakerTab(
             self.notebook,
             profile_store=self.profile_store,
@@ -99,7 +159,7 @@ class RobotStyleEditorApp(tk.Tk):
         )
 
         politeness_tab = PolitenessTab(
-            self.notebook,
+            style_notebook,
             profile_store=self.profile_store,
             tts_client=self.tts_client,
             status_var=self.status_var,
@@ -107,7 +167,7 @@ class RobotStyleEditorApp(tk.Tk):
         )
 
         intimacy_tab = IntimacyTab(
-            self.notebook,
+            style_notebook,
             profile_store=self.profile_store,
             tts_client=self.tts_client,
             status_var=self.status_var,
@@ -115,7 +175,7 @@ class RobotStyleEditorApp(tk.Tk):
         )
 
         vocabulary_tab = VocabularyTab(
-            self.notebook,
+            style_notebook,
             profile_store=self.profile_store,
             tts_client=self.tts_client,
             status_var=self.status_var,
@@ -123,7 +183,23 @@ class RobotStyleEditorApp(tk.Tk):
         )
 
         length_tab = LengthTab(
-            self.notebook,
+            style_notebook,
+            profile_store=self.profile_store,
+            tts_client=self.tts_client,
+            status_var=self.status_var,
+            on_saved=self.go_next_tab,
+        )
+
+        style_detail_tab = StyleDetailTab(
+            style_notebook,
+            profile_store=self.profile_store,
+            tts_client=self.tts_client,
+            status_var=self.status_var,
+            on_saved=self.go_next_tab,
+        )
+
+        special_consideration_tab = SpecialConsiderationTab(
+            style_notebook,
             profile_store=self.profile_store,
             tts_client=self.tts_client,
             status_var=self.status_var,
@@ -131,6 +207,78 @@ class RobotStyleEditorApp(tk.Tk):
         )
 
         greeting_tab = GreetingTab(
+            da_notebook,
+            profile_store=self.profile_store,
+            tts_client=self.tts_client,
+            status_var=self.status_var,
+            on_saved=self.go_next_tab,
+        )
+
+        explanation_tab = ExplanationTab(
+            da_notebook,
+            profile_store=self.profile_store,
+            tts_client=self.tts_client,
+            status_var=self.status_var,
+            on_saved=self.go_next_tab,
+        )
+
+        question_tab = QuestionTab(
+            da_notebook,
+            profile_store=self.profile_store,
+            tts_client=self.tts_client,
+            status_var=self.status_var,
+            on_saved=self.go_next_tab,
+        )
+
+        acceptance_tab = AcceptanceTab(
+            da_notebook,
+            profile_store=self.profile_store,
+            tts_client=self.tts_client,
+            status_var=self.status_var,
+            on_saved=self.go_next_tab,
+        )
+
+        request_tab = RequestTab(
+            da_notebook,
+            profile_store=self.profile_store,
+            tts_client=self.tts_client,
+            status_var=self.status_var,
+            on_saved=self.go_next_tab,
+        )
+
+        apology_tab = ApologyTab(
+            da_notebook,
+            profile_store=self.profile_store,
+            tts_client=self.tts_client,
+            status_var=self.status_var,
+            on_saved=self.go_next_tab,
+        )
+
+        gratitude_tab = GratitudeTab(
+            da_notebook,
+            profile_store=self.profile_store,
+            tts_client=self.tts_client,
+            status_var=self.status_var,
+            on_saved=self.go_next_tab,
+        )
+
+        smalltalk_tab = SmalltalkTab(
+            da_notebook,
+            profile_store=self.profile_store,
+            tts_client=self.tts_client,
+            status_var=self.status_var,
+            on_saved=self.go_next_tab,
+        )
+
+        filler_tab = FillerTab(
+            da_notebook,
+            profile_store=self.profile_store,
+            tts_client=self.tts_client,
+            status_var=self.status_var,
+            on_saved=self.go_next_tab,
+        )
+
+        settings_review_tab = SettingsReviewTab(
             self.notebook,
             profile_store=self.profile_store,
             tts_client=self.tts_client,
@@ -138,8 +286,22 @@ class RobotStyleEditorApp(tk.Tk):
             on_saved=self.go_next_tab,
         )
 
+        example_scene_tabs = [
+            ExampleSceneTab(
+                example_notebook,
+                profile_store=self.profile_store,
+                status_var=self.status_var,
+                tts_client=self.tts_client,
+                on_saved=self.go_next_tab,
+                venue_label=venue["label"],
+            )
+            for venue in EXAMPLE_VENUES
+        ]
+        self.example_scene_tabs = example_scene_tabs
+        self.example_scene_tab = example_scene_tabs[0]
+
         speed_tab = SpeedTab(
-            self.notebook,
+            response_notebook,
             profile_store=self.profile_store,
             tts_client=self.tts_client,
             status_var=self.status_var,
@@ -147,7 +309,7 @@ class RobotStyleEditorApp(tk.Tk):
         )
 
         sentence_pause_tab = SentencePauseTab(
-            self.notebook,
+            response_notebook,
             profile_store=self.profile_store,
             tts_client=self.tts_client,
             status_var=self.status_var,
@@ -155,7 +317,7 @@ class RobotStyleEditorApp(tk.Tk):
         )
 
         response_delay_tab = ResponseDelayTab(
-            self.notebook,
+            response_notebook,
             profile_store=self.profile_store,
             tts_client=self.tts_client,
             status_var=self.status_var,
@@ -163,7 +325,7 @@ class RobotStyleEditorApp(tk.Tk):
         )
 
         thinking_pose_tab = ThinkingPoseTab(
-            self.notebook,
+            response_notebook,
             profile_store=self.profile_store,
             tts_client=self.tts_client,
             status_var=self.status_var,
@@ -171,7 +333,7 @@ class RobotStyleEditorApp(tk.Tk):
         )
 
         listening_pose_tab = ListeningPoseTab(
-            self.notebook,
+            response_notebook,
             profile_store=self.profile_store,
             tts_client=self.tts_client,
             status_var=self.status_var,
@@ -179,45 +341,171 @@ class RobotStyleEditorApp(tk.Tk):
         )
 
         understanding_pose_tab = UnderstandingPoseTab(
-            self.notebook,
+            response_notebook,
             profile_store=self.profile_store,
             tts_client=self.tts_client,
             status_var=self.status_var,
             on_saved=self.go_next_tab,
         )
 
-        self.notebook.add(speaker_tab, text="話者")
-        self.notebook.add(politeness_tab, text="敬語")
-        self.notebook.add(intimacy_tab, text="親しみ")
-        self.notebook.add(vocabulary_tab, text="語彙")
-        self.notebook.add(length_tab, text="長さ")
-        self.notebook.add(speed_tab, text="話速")
-        self.notebook.add(sentence_pause_tab, text="文間")
-        self.notebook.add(response_delay_tab, text="返答間")
-        self.notebook.add(thinking_pose_tab, text="考え姿")
-        self.notebook.add(listening_pose_tab, text="聴く姿")
-        self.notebook.add(understanding_pose_tab, text="理解")
-        self.notebook.add(greeting_tab, text="挨拶")
+        self.add_top_tab(default_tab, "デフォルト")
+        self.add_top_tab(speaker_tab, "話者")
+
+        self.add_child_tab(style_notebook, politeness_tab, "敬語")
+        self.add_child_tab(style_notebook, intimacy_tab, "親しみ")
+        self.add_child_tab(style_notebook, vocabulary_tab, "語彙")
+        self.add_child_tab(style_notebook, length_tab, "長さ")
+        self.add_child_tab(style_notebook, style_detail_tab, "詳細設定")
+        self.add_child_tab(style_notebook, special_consideration_tab, "特別考慮")
+        self.notebook.add(style_frame, text="スタイル")
+
+        self.add_child_tab(response_notebook, speed_tab, "話速")
+        self.add_child_tab(response_notebook, sentence_pause_tab, "文間")
+        self.add_child_tab(response_notebook, response_delay_tab, "返答・理解")
+        self.add_child_tab(response_notebook, thinking_pose_tab, "考え姿")
+        self.add_child_tab(response_notebook, listening_pose_tab, "聴く姿")
+        self.add_child_tab(response_notebook, understanding_pose_tab, "理解詳細")
+        self.notebook.add(response_frame, text="応答・間合い")
+
+        self.add_child_tab(da_notebook, greeting_tab, "挨拶")
+        self.add_child_tab(da_notebook, explanation_tab, "説明")
+        self.add_child_tab(da_notebook, question_tab, "質問")
+        self.add_child_tab(da_notebook, acceptance_tab, "承諾")
+        self.add_child_tab(da_notebook, request_tab, "要求")
+        self.add_child_tab(da_notebook, apology_tab, "謝罪")
+        self.add_child_tab(da_notebook, gratitude_tab, "感謝")
+        self.add_child_tab(da_notebook, smalltalk_tab, "雑談")
+        self.add_child_tab(da_notebook, filler_tab, "フィラー")
+        self.notebook.add(da_frame, text="DA")
+
+        self.add_top_tab(settings_review_tab, "設定確認")
+
+        for venue, example_scene_tab in zip(EXAMPLE_VENUES, example_scene_tabs):
+            self.add_child_tab(example_notebook, example_scene_tab, venue["label"])
+        self.notebook.add(example_frame, text="接客例")
+
+    def create_group_notebook(self):
+        frame = ui.frame(self.notebook, bg="main_card")
+        notebook = ttk.Notebook(frame, style="Research.TNotebook")
+        notebook.pack(fill="both", expand=True)
+        notebook.bind("<<NotebookTabChanged>>", self.on_tab_changed)
+        self.group_notebooks[frame] = notebook
+        self.child_notebook_parents[notebook] = frame
+        return frame, notebook
+
+    def add_top_tab(self, tab, text):
+        self.notebook.add(tab, text=text)
+        self.register_actual_tab(tab, self.notebook)
+
+    def add_child_tab(self, notebook, tab, text):
+        notebook.add(tab, text=text)
+        self.register_actual_tab(tab, notebook)
+
+    def register_actual_tab(self, tab, notebook):
+        self.tab_sequence.append(tab)
+        self.tab_locations[tab] = notebook
+
+    def rebuild_tabs_from_profile(self):
+        for tab_id in list(self.notebook.tabs()):
+            try:
+                widget = self.notebook.nametowidget(tab_id)
+            except tk.TclError:
+                continue
+            try:
+                widget.destroy()
+            except tk.TclError:
+                pass
+
+        self.add_tabs()
+
+    def get_current_actual_tab(self):
+        selected = self.notebook.nametowidget(self.notebook.select())
+        child_notebook = self.group_notebooks.get(selected)
+
+        if child_notebook is None:
+            return selected
+
+        if not child_notebook.select():
+            return selected
+
+        return child_notebook.nametowidget(child_notebook.select())
+
+    def select_actual_tab(self, tab):
+        notebook = self.tab_locations.get(tab)
+
+        if notebook is None:
+            return
+
+        if notebook == self.notebook:
+            self.notebook.select(tab)
+            return
+
+        parent_frame = self.child_notebook_parents[notebook]
+        self.notebook.select(parent_frame)
+        notebook.select(tab)
 
     def go_next_tab(self):
-        current = self.notebook.index(self.notebook.select())
-        total = self.notebook.index("end")
+        current_tab = self.get_current_actual_tab()
 
-        if current + 1 < total:
-            self.notebook.select(current + 1)
-            selected = self.notebook.nametowidget(self.notebook.select())
+        if current_tab not in self.tab_sequence:
+            return
+
+        current = self.tab_sequence.index(current_tab)
+
+        if current + 1 < len(self.tab_sequence):
+            selected = self.tab_sequence[current + 1]
+            self.select_actual_tab(selected)
             if hasattr(selected, "refresh_from_profile"):
                 selected.refresh_from_profile()
 
     def on_tab_changed(self, _event):
-        selected = self.notebook.nametowidget(self.notebook.select())
+        selected = self.get_current_actual_tab()
 
         if hasattr(selected, "refresh_from_profile"):
             selected.refresh_from_profile()
 
     def save_all(self):
-        self.profile_store.save()
-        self.status_var.set("全体を保存しました")
+        saved_path = self.ask_save_profile_as()
+        if saved_path is None:
+            return
+
+        if hasattr(self, "example_scene_tabs"):
+            selected = self.get_current_actual_tab()
+            if selected not in self.example_scene_tabs:
+                selected = self.example_scene_tab
+
+            self.select_actual_tab(selected)
+            if hasattr(selected, "refresh_from_profile"):
+                selected.refresh_from_profile()
+        self.status_var.set(f"保存しました: {saved_path.name}")
+
+    def ask_save_profile_as(self):
+        SAVE_JSON_DIR.mkdir(parents=True, exist_ok=True)
+
+        while True:
+            filename = simpledialog.askstring(
+                "保存データ名",
+                "新しい保存ファイル名を入力してください。\n同名ファイルがある場合は保存しません。",
+                parent=self,
+            )
+            if filename is None:
+                return None
+
+            try:
+                return self.profile_store.save_as_new(filename)
+            except FileExistsError as e:
+                messagebox.showerror("保存できません", str(e), parent=self)
+            except ValueError as e:
+                messagebox.showerror("保存できません", str(e), parent=self)
+            except Exception as e:
+                messagebox.showerror("保存エラー", str(e), parent=self)
+                return None
+
+    def go_example_tab(self):
+        if hasattr(self, "example_scene_tab"):
+            self.select_actual_tab(self.example_scene_tab)
+            if hasattr(self.example_scene_tab, "refresh_from_profile"):
+                self.example_scene_tab.refresh_from_profile()
 
     def on_close(self):
         self.profile_store.save()
