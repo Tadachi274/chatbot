@@ -773,12 +773,6 @@ class GreetingTab(tk.Frame):
             },
             "voice": voice_data,
             "tts_instructions": voice_params_to_tts_instructions(voice_data["params"]),
-            "style_sources": {
-                "politeness": self.profile_store.get_nested("politeness", {}),
-                "intimacy": self.profile_store.get_nested("intimacy", {}),
-                "vocabulary": self.profile_store.get_nested("vocabulary", {}),
-                "length": self.profile_store.get_nested("length", {}),
-            },
             "prompt": (
                 "会話開始時の挨拶。保存された text を読み上げる。"
                 "必要に応じて techniques の方針を反映する。"
