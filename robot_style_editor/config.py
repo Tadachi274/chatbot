@@ -1,10 +1,41 @@
+import os
 from pathlib import Path
 
-TTS_URL = 'http://192.168.0.169:15001/synthesize'
+TTS_URL = os.environ.get("TTS_URL", "http://192.168.0.169:15001/synthesize")
+# ROBOT_TCP_HOST = "nikola-humantracker"
+# ROBOT_TCP_PORT = 8078
+ROBOT_TCP_HOST = "127.0.0.1"
+ROBOT_TCP_PORT = 5000
+ROBOT_TCP_EOL = "lf"
+ROBOT_TCP_TIMEOUT = 5.0
 
 BASE_DIR = Path(__file__).resolve().parent
 
 PROFILE_PATH = BASE_DIR / "robot_speech_profile.json"
+SAVE_JSON_DIR = BASE_DIR / "save_json"
+TTS_GENERATED_WAV_DIR = BASE_DIR / "sample_audio" / "wav"
+
+SPEED_SAMPLE_WAV_PATH = BASE_DIR / "sample_audio" / "speed_sample_要変更.wav"
+
+SENTENCE_PAUSE_DEFAULT = 0.2
+SENTENCE_PAUSE_MIN = 0.0
+SENTENCE_PAUSE_MAX = 1.0
+SENTENCE_PAUSE_SAMPLE_WAV_1 = BASE_DIR / "sample_audio" / "えっと.wav"
+SENTENCE_PAUSE_SAMPLE_WAV_2 = BASE_DIR / "sample_audio" / "少々お待ちください.wav"
+
+# 返答の間
+RESPONSE_DELAY_SAMPLE_WAV = BASE_DIR / "sample_audio" / "承知いたしました.wav"
+
+MIC_VOLUME_START_THRESHOLD_DEFAULT = 0.006
+MIC_VOLUME_END_THRESHOLD_DEFAULT = 0.003
+MIC_SILENCE_HOLD_SEC_DEFAULT = 0.20
+MIC_START_HOLD_SEC_DEFAULT = 0.08
+MIC_METER_UPDATE_INTERVAL_SEC = 0.05
+
+RESPONSE_DELAY_TOTAL_DEFAULT = 0.40
+RESPONSE_DELAY_TOTAL_MIN = MIC_SILENCE_HOLD_SEC_DEFAULT
+RESPONSE_DELAY_TOTAL_MAX = 2.00
+
 
 PERSON = [
     "nozomi_emo_22_standard",

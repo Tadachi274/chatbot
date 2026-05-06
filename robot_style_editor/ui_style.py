@@ -104,6 +104,62 @@ def bordered_frame(parent, bg="card", border="border", thickness=1, **kwargs):
     )
 
 
+def scrollable_frame(parent, bg="main_card", bind_mousewheel=True, **pack_kwargs):
+    outer = frame(parent, bg=bg)
+    outer.pack(fill="both", expand=True, **pack_kwargs)
+
+    canvas = tk.Canvas(
+        outer,
+        bg=COLORS[bg],
+        highlightthickness=0,
+        bd=0,
+    )
+    canvas.pack(side="left", fill="both", expand=True)
+
+    scrollbar = tk.Scrollbar(
+        outer,
+        orient="vertical",
+        command=canvas.yview,
+    )
+    scrollbar.pack(side="right", fill="y")
+
+    canvas.configure(yscrollcommand=scrollbar.set)
+
+    content = frame(canvas, bg=bg)
+    canvas_window = canvas.create_window(
+        (0, 0),
+        window=content,
+        anchor="nw",
+    )
+
+    def on_content_configure(_event=None):
+        canvas.configure(scrollregion=canvas.bbox("all"))
+
+    def on_canvas_configure(event):
+        canvas.itemconfig(canvas_window, width=event.width)
+
+    content.bind("<Configure>", on_content_configure)
+    canvas.bind("<Configure>", on_canvas_configure)
+
+    if bind_mousewheel:
+        def on_mousewheel(event):
+            if event.delta > 0:
+                canvas.yview_scroll(-1, "units")
+            elif event.delta < 0:
+                canvas.yview_scroll(1, "units")
+
+        def bind_wheel(_event=None):
+            canvas.bind_all("<MouseWheel>", on_mousewheel)
+
+        def unbind_wheel(_event=None):
+            canvas.unbind_all("<MouseWheel>")
+
+        canvas.bind("<Enter>", bind_wheel)
+        canvas.bind("<Leave>", unbind_wheel)
+
+    return content
+
+
 def label(parent, text="", font="body", bg="panel", fg="text", **kwargs):
     return tk.Label(
         parent,
@@ -239,5 +295,23 @@ def radio(parent, text, variable, value, command=None, bg="card", **kwargs):
         activebackground=COLORS[bg],
         activeforeground=COLORS["text"],
         selectcolor=COLORS["card"],
+        **kwargs,
+    )
+
+def scale(parent, variable, from_, to, command=None, orient="horizontal", **kwargs):
+    return tk.Scale(
+        parent,
+        variable=variable,
+        from_=from_,
+        to=to,
+        resolution=0.05,
+        orient=orient,
+        command=command,
+        showvalue=False,
+        bg=COLORS["panel"],
+        fg=COLORS["text"],
+        troughcolor=COLORS["soft_border"],
+        highlightthickness=0,
+        bd=0,
         **kwargs,
     )
