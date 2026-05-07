@@ -4,9 +4,6 @@ import time
 import random
 import wave
 
-from ..config import MIC_VOLUME_END_THRESHOLD_DEFAULT
-
-
 from ..config_face import (
     LISTENING_FACE_OPTIONS,
     LISTENING_FACE_PRIORITY,
@@ -943,8 +940,8 @@ class ListeningPoseTab(tk.Frame):
             parent,
             title="相槌のテスト",
             description=(
-                "下の文を声に出して読んでください。"
-                "短い沈黙を検出したら、設定中のうなづき・音声相槌を試します。"
+                "実環境の act 値が 1 以上の間を客の発話中として扱います。"
+                "発話中の短い act=0 の切れ目を検出したら、設定中のうなづき・音声相槌を試します。"
                 "句点や読点で区切ると、より相槌が入りやすくなります。"
             ),
             sample_text=(
@@ -955,6 +952,8 @@ class ListeningPoseTab(tk.Frame):
             on_speech_end=self.on_backchannel_speech_end,
             on_volume_update=self.on_backchannel_volume_update,
             status_var=self.status_var,
+            activity_mode="robot_act",
+            act_threshold=1,
             start_hold_sec=LISTENING_BACKCHANNEL_START_HOLD_SEC_DEFAULT,
             silence_hold_sec=LISTENING_BACKCHANNEL_SILENCE_HOLD_SEC_DEFAULT,
         )
@@ -991,7 +990,7 @@ class ListeningPoseTab(tk.Frame):
         now = time.monotonic()
         silence_sec = float(self.find_amount_option()["silence_sec"])
 
-        is_silent = volume < MIC_VOLUME_END_THRESHOLD_DEFAULT
+        is_silent = volume < 1.0
 
         if not is_silent:
             self.current_silence_start_t = None

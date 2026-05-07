@@ -495,6 +495,7 @@ class UnderstandingPoseTab(tk.Frame):
             parent,
             title="理解した姿のテスト",
             description=(
+                "実環境の act 値が 1 以上の間を客の発話中として扱います。"
                 "下の文を声に出して読んでください。"
                 "話し終わったあと、返答の間で設定したタイミングで理解した姿を出します。"
             ),
@@ -502,6 +503,8 @@ class UnderstandingPoseTab(tk.Frame):
             on_speech_start=self.on_user_speech_start,
             on_speech_end=self.on_user_speech_end,
             status_var=self.status_var,
+            activity_mode="robot_act",
+            act_threshold=1,
         )
         self.mic_panel.pack(fill="x", pady=(ui.SPACING["small_gap"], 0))
 

@@ -252,10 +252,15 @@ class ResponseDelayTab(tk.Frame):
     def build_mic_area(self, parent):
         self.mic_panel = MicActivityPanel(
             parent,
-            title="マイク入力",
-            description="「チェックインをお願いします」と話すと、話し終わりから設定秒数後に返答音声を再生します。",
+            title="実環境入力",
+            description=(
+                "実環境の act 値が 1 以上の間を客の発話中として扱います。"
+                "「チェックインをお願いします」と話すと、話し終わりから設定秒数後に返答音声を再生します。"
+            ),
             on_speech_end=self.on_user_speech_end,
             status_var=self.status_var,
+            activity_mode="robot_act",
+            act_threshold=1,
         )
         self.mic_panel.pack(fill="x", pady=(ui.SPACING["small_gap"], 0))
 
