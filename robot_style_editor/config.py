@@ -22,6 +22,8 @@ SENTENCE_PAUSE_MIN = 0.0
 SENTENCE_PAUSE_MAX = 1.0
 SENTENCE_PAUSE_SAMPLE_WAV_1 = BASE_DIR / "sample_audio" / "sample_誠にありがとうございます。.wav"
 SENTENCE_PAUSE_SAMPLE_WAV_2 = BASE_DIR / "sample_audio" / "sample_確認が取れました。.wav"
+SENTENCE_PAUSE_TRIMMED_SAMPLE_WAV_1 = TTS_GENERATED_WAV_DIR / "sentence_pause_sample_1_trimmed.wav"
+SENTENCE_PAUSE_TRIMMED_SAMPLE_WAV_2 = TTS_GENERATED_WAV_DIR / "sentence_pause_sample_2_trimmed.wav"
 
 # 返答の間
 RESPONSE_DELAY_SAMPLE_WAV = BASE_DIR / "sample_audio" / "承知いたしました.wav"

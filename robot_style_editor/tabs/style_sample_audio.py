@@ -5,6 +5,7 @@ import shutil
 import threading
 
 from ..config import STYLE_SAMPLE_TTS_CACHE_DIR
+from ..audio.wav_silence import trim_silence_to_wav
 
 
 _CACHE_LOCKS = {}
@@ -19,7 +20,7 @@ class StyleSampleAudioMixin:
         payload = {
             "text": text,
             "person": person or "",
-            "cache_version": 1,
+            "cache_version": 2,
         }
         raw = json.dumps(payload, ensure_ascii=False, sort_keys=True, separators=(",", ":"))
         digest = hashlib.sha256(raw.encode("utf-8")).hexdigest()[:20]
@@ -54,7 +55,8 @@ class StyleSampleAudioMixin:
 
             wav_path = Path(wav_path)
             try:
-                shutil.move(str(wav_path), str(cache_path))
+                trim_silence_to_wav(wav_path, cache_path)
+                wav_path.unlink(missing_ok=True)
             except Exception:
                 shutil.copy2(str(wav_path), str(cache_path))
                 try:

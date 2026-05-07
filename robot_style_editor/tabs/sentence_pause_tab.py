@@ -1,6 +1,7 @@
 import tkinter as tk
 from tkinter import messagebox
 import random
+import threading
     
 from .. import ui_style as ui
 from ..config import (
@@ -9,6 +10,8 @@ from ..config import (
         SENTENCE_PAUSE_MAX,
     SENTENCE_PAUSE_SAMPLE_WAV_1,
     SENTENCE_PAUSE_SAMPLE_WAV_2,
+    SENTENCE_PAUSE_TRIMMED_SAMPLE_WAV_1,
+    SENTENCE_PAUSE_TRIMMED_SAMPLE_WAV_2,
 )
 
 from ..config_face import (
@@ -18,6 +21,7 @@ from ..config_face import (
 )
 from ..panels.gaze_direction_panel import GazeDirectionPanel, find_gaze_option
 from ..clients.robot_command_client import RobotCommandClient
+from ..audio.wav_silence import trim_silence_to_wav
 
 class SentencePauseTab(tk.Frame):
     def __init__(self, parent, profile_store, tts_client, status_var, on_saved=None):
@@ -45,8 +49,11 @@ class SentencePauseTab(tk.Frame):
         )
 
         self.robot_client = RobotCommandClient()
+        self.trimmed_sample_wav_1 = None
+        self.trimmed_sample_wav_2 = None
 
         self.build_ui()
+        self.prewarm_trimmed_sentence_pause_samples()
 
     def clear_views(self):
         for child in self.winfo_children():
@@ -449,11 +456,13 @@ class SentencePauseTab(tk.Frame):
         self.save_selection_only(update_status=False)
 
         try:
+            wav1, wav2 = self.get_trimmed_sentence_pause_samples()
             self.tts_client.play_wav_pair_with_pause(
-                wav1=SENTENCE_PAUSE_SAMPLE_WAV_1,
-                wav2=SENTENCE_PAUSE_SAMPLE_WAV_2,
+                wav1=wav1,
+                wav2=wav2,
                 pause_sec=float(self.pause_sec.get()),
                 on_pause_start=self.send_sentence_pause_gaze,
+                trim=False,
             )
 
             self.status_var.set(
@@ -463,6 +472,34 @@ class SentencePauseTab(tk.Frame):
         except Exception as e:
             messagebox.showerror("再生エラー", str(e))
             self.status_var.set(f"再生エラー: {e}")
+
+    def get_trimmed_sentence_pause_samples(self):
+        if self.trimmed_sample_wav_1 is None or not SENTENCE_PAUSE_TRIMMED_SAMPLE_WAV_1.exists():
+            self.trimmed_sample_wav_1 = trim_silence_to_wav(
+                SENTENCE_PAUSE_SAMPLE_WAV_1,
+                SENTENCE_PAUSE_TRIMMED_SAMPLE_WAV_1,
+            )
+        else:
+            self.trimmed_sample_wav_1 = SENTENCE_PAUSE_TRIMMED_SAMPLE_WAV_1
+
+        if self.trimmed_sample_wav_2 is None or not SENTENCE_PAUSE_TRIMMED_SAMPLE_WAV_2.exists():
+            self.trimmed_sample_wav_2 = trim_silence_to_wav(
+                SENTENCE_PAUSE_SAMPLE_WAV_2,
+                SENTENCE_PAUSE_TRIMMED_SAMPLE_WAV_2,
+            )
+        else:
+            self.trimmed_sample_wav_2 = SENTENCE_PAUSE_TRIMMED_SAMPLE_WAV_2
+
+        return self.trimmed_sample_wav_1, self.trimmed_sample_wav_2
+
+    def prewarm_trimmed_sentence_pause_samples(self):
+        def worker():
+            try:
+                self.get_trimmed_sentence_pause_samples()
+            except Exception:
+                pass
+
+        threading.Thread(target=worker, daemon=True).start()
 
     def send_sentence_pause_gaze(self):
         gaze = self.find_sentence_pause_gaze_option()
