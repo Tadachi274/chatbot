@@ -150,8 +150,8 @@ def build_default_profile():
             "prompt": "話すスピードは通常の 1.00 倍程度にしてください。ただし不自然に聞こえない範囲で調整してください。",
         },
         "sentence_pause": {
-            "value": 0.2,
-            "label": "0.20 秒",
+            "value": 0.4,
+            "label": "0.40 秒",
             "gaze": {
                 "id": "front",
                 "label": "正面",
