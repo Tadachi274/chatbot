@@ -13,18 +13,18 @@ import time
 import json
 import re
 
-import speaking_style_file
-import system_content_file
-import tts_nikola as tts
-from string_to_file import StringFile
-import fixed_reply
+from . import speaking_style_file
+from . import system_content_file
+from . import tts_nikola as tts
+from .string_to_file import StringFile
+from . import fixed_reply
 
-from filler.asr_stream import iter_asr_events
-from filler.robot_client import RobotCommandClient
-from filler.filler_controller import FillerController
-from interrupt_handler import InterruptHandler
-from command.xyz_server import XYZClient
-import utterance_planner as ut
+from .filler.asr_stream import iter_asr_events
+from .filler.robot_client import RobotCommandClient
+from .filler.filler_controller import FillerController
+from .interrupt_handler import InterruptHandler
+from .command.xyz_server import XYZClient
+from . import utterance_planner as ut
 
 load_dotenv()
 openai.api_key = os.getenv("OPENAI_API_KEY")
@@ -33,9 +33,10 @@ HOST = os.getenv("HOST", "192.168.0.165")
 PORT = int(os.getenv("PORT", 8888))
 OPENAI_MODEL = "gpt-5-chat-latest"
 tts_url = 'http://192.168.0.169:15001/synthesize'
-CONFIG_PATH_PROMPT = "voice_config_openai.json"
-CONFIG_PATH_TTS = "command/voice_state_emo.json"
-CONFIG_PATH_MOTION = "command/motion_state.json"
+
+TTS_DIR = Path(__file__).resolve().parent
+CONFIG_PATH_TTS = TTS_DIR / "command" / "voice_state_emo.json"
+CONFIG_PATH_MOTION = TTS_DIR / "command" / "motion_state.json"
 
 MAX_TURNS = 3  # 直近3往復を保持
 SCENARIO = "hotel" # "hotel" "market" "electronics_store" "restaurant"

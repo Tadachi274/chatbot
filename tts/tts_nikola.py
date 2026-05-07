@@ -5,7 +5,7 @@ from datetime import datetime
 import json
 import atexit
 import requests 
-from tts_audioplayer import AudioPlayer
+from .tts_audioplayer import AudioPlayer
 
 DEFAULT_AUTOREMOVE = True
 _player = None
