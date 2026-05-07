@@ -1535,6 +1535,8 @@ class ExampleSceneTab(tk.Frame):
         self.status_var.set("選択した店員発話を再生成しました")
 
     def setup_ui_event_pipe(self):
+        self.bind("<<ExampleSceneTabQueue>>", self._handle_queue_event, add="+")
+
         create_filehandler = getattr(self.tk, "createfilehandler", None)
         if create_filehandler is None:
             return
@@ -1553,16 +1555,28 @@ class ExampleSceneTab(tk.Frame):
         if self._event_write_fd is None:
             if threading.current_thread() is threading.main_thread():
                 self.on_robot_prep_progress()
+            else:
+                self.generate_queue_event()
             return
 
         try:
             os.write(self._event_write_fd, b"1")
         except (BlockingIOError, OSError):
             pass
+        self.generate_queue_event()
 
     def _handle_pipe_event(self, _fd=None, _mask=None):
         self.drain_event_pipe()
         self.on_robot_prep_progress()
+
+    def _handle_queue_event(self, _event=None):
+        self.on_robot_prep_progress()
+
+    def generate_queue_event(self):
+        try:
+            self.event_generate("<<ExampleSceneTabQueue>>", when="tail")
+        except Exception:
+            pass
 
     def drain_event_pipe(self):
         if self._event_read_fd is None:
