@@ -466,6 +466,12 @@ REQUEST_PURPOSE_TEXT = {
     "casual": "確認したいので、",
 }
 
+REQUEST_TEXT_VARIANTS["light_casual"] = REQUEST_TEXT_VARIANTS["polite"]
+REQUEST_HEDGE_TEXT["light_casual"] = REQUEST_HEDGE_TEXT["polite"]
+REQUEST_CONSIDERATION_TEXT["light_casual"] = REQUEST_CONSIDERATION_TEXT["polite"]
+REQUEST_COMBINED_SOFTENER_TEXT["light_casual"] = REQUEST_COMBINED_SOFTENER_TEXT["polite"]
+REQUEST_PURPOSE_TEXT["light_casual"] = REQUEST_PURPOSE_TEXT["casual"]
+
 
 def get_request_softener_text(politeness_id, intimacy_id, has_hedge, has_consideration):
     """
@@ -755,6 +761,10 @@ GREETING_LONG_EXTRA = {
     "polite": "必要でしたら、一緒に確認しながらご案内します。",
     "casual": "よければ、一緒に見ていこう。",
 }
+
+GREETING_OPENING_TEXT["light_casual"] = GREETING_OPENING_TEXT["polite"]
+GREETING_NEED_SENTENCE["light_casual"] = GREETING_NEED_SENTENCE["polite"]
+GREETING_LONG_EXTRA["light_casual"] = "よければ、一緒に確認しながら案内します。"
 
 EXPLANATION_DEFAULT_TEXT = "チェックアウトは11時となっております。"
 

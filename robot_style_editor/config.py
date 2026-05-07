@@ -91,14 +91,29 @@ POLITENESS_OPTIONS = [
         ),
     },
     {
+        "id": "light_casual",
+        "label": "軽くカジュアル",
+        "short": "丁寧語まじり",
+        "example1": "今日はどうしましたか？",
+        "example2": "確認したいので、身分証明書を見せてもらってもいいですか？",
+        "prompt": (
+            "丁寧語とカジュアルな表現を混ぜた、軽くカジュアルな話し方にしてください。"
+            "尊敬語や謙譲語は使いすぎず、「です・ます」は必要に応じて残してください。"
+            "例：「今日はどうしましたか？」"
+            "「確認したいので、身分証明書を見せてもらってもいいですか？」"
+        ),
+    },
+    {
         "id": "casual",
         "label": "カジュアル",
-        "short": "親しみやすい",
+        "short": "丁寧語なし",
         "example1": "今日はどうしたの？",
         "example2": "確認したいから、身分証明書を見せてもらってもいい？",
         "prompt": (
             "カジュアルで親しみやすい話し方にしてください。"
-            "敬語は弱め、友好的でやわらかい表現にしてください。"
+            "丁寧語、尊敬語、謙譲語は使わないでください。"
+            "「です」「ます」「ください」「でしょうか」「いただく」「ございます」などの敬語表現は入れず、"
+            "友好的で自然な口語にしてください。"
             "例：「今日はどうしたの？」"
             "「確認したいから、身分証明書を見せてもらってもいい？」"
         ),
@@ -440,6 +455,18 @@ INTIMACY_OPTIONS_BY_PERSON_AND_POLITENESS = {
     },
 }
 
+for _person_options in INTIMACY_OPTIONS_BY_PERSON_AND_POLITENESS.values():
+    _light_casual_options = []
+    for _item in _person_options["polite"]:
+        _copy = dict(_item)
+        if _copy["id"] != "other":
+            _copy["prompt"] = (
+                _copy["prompt"]
+                + "丁寧語とカジュアルな言い回しを混ぜ、軽くくだけた接客表現にしてください。"
+            )
+        _light_casual_options.append(_copy)
+    _person_options["light_casual"] = _light_casual_options
+
 VOCABULARY_BASE_OPTIONS = [
     {
         "id": "easy",
@@ -600,6 +627,12 @@ VOCABULARY_STYLE_TEMPLATES = {
     },
 }
 
+for _person_templates in VOCABULARY_STYLE_TEMPLATES.values():
+    _person_templates["light_casual"] = {
+        _intimacy_id: dict(_templates)
+        for _intimacy_id, _templates in _person_templates["polite"].items()
+    }
+
 LENGTH_BASE_OPTIONS = [
     {
         "id": "short",
@@ -655,7 +688,7 @@ def get_person_key_from_speaker(speaker_id: str) -> str:
 
 
 def normalize_politeness_id(politeness_id: str) -> str:
-    if politeness_id in ("very_formal", "formal", "polite", "casual"):
+    if politeness_id in ("very_formal", "formal", "polite", "light_casual", "casual"):
         return politeness_id
     return "formal"
 

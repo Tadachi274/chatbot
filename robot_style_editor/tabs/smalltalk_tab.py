@@ -24,6 +24,7 @@ SMALLTALK_STYLE_OPTIONS = {
         ("very_formal", "尊敬語・謙譲語"),
         ("formal", "軽い尊敬語"),
         ("polite", "丁寧語"),
+        ("light_casual", "軽くカジュアル"),
         ("casual", "カジュアル"),
     ],
     "intimacy": [
@@ -351,7 +352,7 @@ class SmalltalkTab(tk.Frame):
             if vocabulary_id == "hard":
                 return "今日は穏やかで心地よい気候ですね。"
             return "今日は過ごしやすい気候ですね。"
-        if politeness_id == "polite":
+        if politeness_id in ("polite", "light_casual"):
             if vocabulary_id == "easy":
                 return "今日はいい天気ですね。"
             if vocabulary_id == "hard":
@@ -376,7 +377,7 @@ class SmalltalkTab(tk.Frame):
             if vocabulary_id == "hard":
                 return "心地よい気候ですね。"
             return "いい気候ですね。"
-        if politeness_id == "polite":
+        if politeness_id in ("polite", "light_casual"):
             if vocabulary_id == "hard":
                 return "心地よいですね。"
             return "いい天気ですね。"
