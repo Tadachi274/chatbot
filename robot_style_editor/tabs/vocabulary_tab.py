@@ -9,9 +9,10 @@ from ..config import (
     build_vocabulary_examples,
 )
 from .. import ui_style as ui
+from .style_sample_audio import StyleSampleAudioMixin
 
 
-class VocabularyTab(tk.Frame):
+class VocabularyTab(StyleSampleAudioMixin, tk.Frame):
     def __init__(self, parent, profile_store, tts_client, status_var, on_saved=None):
         super().__init__(parent, bg=ui.COLORS["main_card"])
 
@@ -156,6 +157,7 @@ class VocabularyTab(tk.Frame):
         bottom_row.pack(fill="x", pady=(ui.SPACING["small_gap"], 0))
 
         options = self.get_options()
+        self.prewarm_style_sample_wavs(options)
 
         normal_options = [opt for opt in options if opt["id"] != "other"]
         other_options = [opt for opt in options if opt["id"] == "other"]
@@ -227,6 +229,15 @@ class VocabularyTab(tk.Frame):
                 anchor="w",
             ).pack(
                 fill="x",
+                padx=ui.SPACING["card_x"],
+                pady=(0, ui.SPACING["compact_y"]),
+            )
+            ui.sub_button(
+                parent,
+                text="例2を再生",
+                command=lambda item=opt: self.play_option_example(item, 2),
+            ).pack(
+                anchor="w",
                 padx=ui.SPACING["card_x"],
                 pady=(0, ui.SPACING["compact_y"]),
             )
@@ -434,6 +445,11 @@ class VocabularyTab(tk.Frame):
 
     def on_changed(self):
         self.save_selection_only()
+        self.play_option_example(self.find_option(self.selected_vocabulary.get()), 1)
+
+    def play_option_example(self, opt, example_no=1):
+        text = opt.get(f"example{example_no}", "")
+        self.play_style_sample_text(text, label=f"語彙 {opt.get('label', '')} 例{example_no}")
 
     # =========================
     # TTS
