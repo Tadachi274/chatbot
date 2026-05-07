@@ -270,8 +270,8 @@ class MicActivityPanel(tk.Frame):
         duration_sec = max(0.0, float(duration_sec))
         self.ignore_until_t = max(self.ignore_until_t, time.monotonic() + duration_sec)
         self.paused_label_text = label
-        self.set_state(label)
-        self.set_result("")
+        self.set_state_threadsafe(label)
+        self.set_result_threadsafe("")
 
 
     def is_paused(self):
