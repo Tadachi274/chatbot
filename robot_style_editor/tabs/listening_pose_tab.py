@@ -1,9 +1,14 @@
 import tkinter as tk
 from tkinter import ttk, messagebox
+import hashlib
+import json
+from pathlib import Path
+import shutil
 import time
 import random
 import wave
 
+from ..config import BACKCHANNEL_TTS_CACHE_DIR
 from ..config_face import (
     LISTENING_FACE_OPTIONS,
     LISTENING_FACE_PRIORITY,
@@ -26,6 +31,7 @@ from ..panels.face_editor_panel import FaceEditorPanel
 from ..face_preset_store import load_face_presets
 from ..clients.robot_command_client import RobotCommandClient
 from ..panels.mic_activity_panel import MicActivityPanel
+from ..audio.wav_silence import trim_silence_to_wav
 from .. import ui_style as ui
 
 
@@ -95,6 +101,9 @@ class ListeningPoseTab(tk.Frame):
 
         self.custom_word_text = tk.StringVar(
             value=voice.get("custom_text", "")
+        )
+        self.reuse_custom_backchannel_wav = tk.BooleanVar(
+            value=bool(voice.get("reuse_tts_cache", True))
         )
 
         amount = listening.get("amount", {})
@@ -770,6 +779,32 @@ class ListeningPoseTab(tk.Frame):
             command=self.speak_custom_backchannel_word,
         ).pack(side="right", padx=(ui.SPACING["small_gap"], 0))
 
+        cache_row = ui.frame(word_card, bg="card")
+        cache_row.pack(
+            fill="x",
+            padx=ui.SPACING["card_x"],
+            pady=(0, ui.SPACING["compact_y"]),
+        )
+        tk.Checkbutton(
+            cache_row,
+            text="その他のTTS音声を保存して使い回す",
+            variable=self.reuse_custom_backchannel_wav,
+            command=lambda: self.save_selection_only(update_status=False),
+            font=ui.FONTS["small"],
+            bg=ui.COLORS["card"],
+            fg=ui.COLORS["sub_text"],
+            activebackground=ui.COLORS["card"],
+            activeforeground=ui.COLORS["text"],
+            selectcolor=ui.COLORS["main_card"],
+        ).pack(side="left")
+        ui.label(
+            cache_row,
+            text="保存先: sample_audio/wav/backchannel_cache",
+            font="small",
+            bg="card",
+            fg="muted",
+        ).pack(side="left", padx=(ui.SPACING["small_gap"], 0))
+
     def build_voice_probability_slider(self, parent):
         row = ui.frame(parent, bg="card")
         row.pack(
@@ -849,11 +884,55 @@ class ListeningPoseTab(tk.Frame):
         self.save_selection_only(update_status=False)
 
         try:
-            self.tts_client.speak_current_speaker(text=text)
-            self.status_var.set(f"その他の相槌をTTSで再生しました: {text}")
+            if self.reuse_custom_backchannel_wav.get():
+                wav_path, cache_hit = self.get_or_create_custom_backchannel_wav(text)
+                self.tts_client.play_preview_wav(wav_path, trim=False)
+                action = "保存済み音声を再生" if cache_hit else "TTSで作成して保存・再生"
+                self.status_var.set(f"その他の相槌を{action}しました: {text}")
+            else:
+                self.tts_client.speak_current_speaker(text=text)
+                self.status_var.set(f"その他の相槌をTTSで再生しました: {text}")
         except Exception as e:
             messagebox.showerror("TTSエラー", str(e))
             self.status_var.set(f"TTSエラー: {e}")
+
+    def custom_backchannel_cache_path(self, text):
+        speaker = self.profile_store.get("speaker", "")
+        payload = {
+            "text": text,
+            "speaker": speaker,
+            "cache_version": 1,
+        }
+        raw = json.dumps(payload, ensure_ascii=False, sort_keys=True, separators=(",", ":"))
+        digest = hashlib.sha256(raw.encode("utf-8")).hexdigest()[:20]
+        safe_text = "".join("_" if char in '\\/:*?"<>| \t\r\n' else char for char in text).strip("_")
+        safe_text = safe_text[:28] or "backchannel"
+        return BACKCHANNEL_TTS_CACHE_DIR / f"{digest}_{safe_text}.wav"
+
+    def get_or_create_custom_backchannel_wav(self, text):
+        cache_path = self.custom_backchannel_cache_path(text)
+        if cache_path.exists():
+            return cache_path, True
+
+        wav_path = self.tts_client.synthesize_to_wav(
+            text=text,
+            person=self.profile_store.get("speaker", None),
+        )
+        if wav_path is None:
+            raise RuntimeError("TTS音声を作成できませんでした。")
+
+        cache_path.parent.mkdir(parents=True, exist_ok=True)
+        wav_path = Path(wav_path)
+        try:
+            trim_silence_to_wav(wav_path, cache_path)
+            wav_path.unlink(missing_ok=True)
+        except Exception:
+            shutil.copy2(str(wav_path), str(cache_path))
+            try:
+                wav_path.unlink(missing_ok=True)
+            except Exception:
+                pass
+        return cache_path, False
 
     # =========================
     # 相槌：量
@@ -1064,13 +1143,19 @@ class ListeningPoseTab(tk.Frame):
                 if not text:
                     return
 
-                if self.backchannel_mic_panel is not None:
-                    self.backchannel_mic_panel.pause_for(
-                        1.2,
-                        label="相槌再生中",
-                    )
-
-                self.tts_client.speak_current_speaker(text=text)
+                if voice.get("reuse_tts_cache"):
+                    wav_path, _cache_hit = self.get_or_create_custom_backchannel_wav(text)
+                    duration = self.tts_client.get_wav_duration_sec(wav_path)
+                    if self.backchannel_mic_panel is not None:
+                        self.backchannel_mic_panel.pause_for(duration + 0.15, label="相槌再生中")
+                    self.tts_client.play_preview_wav(wav_path, trim=False)
+                else:
+                    if self.backchannel_mic_panel is not None:
+                        self.backchannel_mic_panel.pause_for(
+                            1.2,
+                            label="相槌再生中",
+                        )
+                    self.tts_client.speak_current_speaker(text=text)
 
         except Exception as e:
             self.status_var.set(f"相槌音声エラー: {e}")
@@ -1192,6 +1277,8 @@ class ListeningPoseTab(tk.Frame):
                 "word_type": "tts",
                 "text": text,
                 "custom_text": text,
+                "reuse_tts_cache": bool(self.reuse_custom_backchannel_wav.get()),
+                "cache_dir": str(BACKCHANNEL_TTS_CACHE_DIR),
                 "wav_path": None,
                 "description": "うなづき時に、指定割合でTTS生成した相槌を再生する",
             }
@@ -1204,6 +1291,8 @@ class ListeningPoseTab(tk.Frame):
             "word_type": "wav",
             "text": word["text"],
             "custom_text": self.custom_word_text.get().strip(),
+            "reuse_tts_cache": bool(self.reuse_custom_backchannel_wav.get()),
+            "cache_dir": str(BACKCHANNEL_TTS_CACHE_DIR),
             "wav_path": str(word["wav_path"]),
             "description": "うなづき時に、指定割合で既存WAVの相槌を再生する",
         }

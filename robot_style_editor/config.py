@@ -14,6 +14,7 @@ SAVE_JSON_DIR = BASE_DIR / "save_json"
 TTS_GENERATED_WAV_DIR = BASE_DIR / "sample_audio" / "wav"
 DEFAULT_TTS_CACHE_DIR = TTS_GENERATED_WAV_DIR / "default_cache"
 STYLE_SAMPLE_TTS_CACHE_DIR = TTS_GENERATED_WAV_DIR / "style_sample_cache"
+BACKCHANNEL_TTS_CACHE_DIR = TTS_GENERATED_WAV_DIR / "backchannel_cache"
 
 SPEED_SAMPLE_WAV_PATH = BASE_DIR / "sample_audio" / "speed_sample_ご本人様確認のため、身分証明書を拝見してもよろしいでしょうか.wav"
 
