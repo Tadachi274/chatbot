@@ -4,7 +4,6 @@ from tkinter import ttk, filedialog, messagebox
 from .. import ui_style as ui
 from ..config import SAVE_JSON_DIR
 from ..config_default_profile import build_default_profile
-from .example_scene_tab import ExampleSceneTab
 
 
 class DefaultProfileTab(tk.Frame):
@@ -35,6 +34,7 @@ class DefaultProfileTab(tk.Frame):
         self.saved_actions_frame = None
         self.inner_notebook = None
         self.default_talk_tab = None
+        self.default_talk_frame = None
         self.build_ui()
 
     def build_ui(self):
@@ -67,23 +67,34 @@ class DefaultProfileTab(tk.Frame):
         self.build_summary_area(content)
         self.build_bottom_area(settings_tab)
 
-        self.default_talk_tab = ExampleSceneTab(
-            self.inner_notebook,
-            profile_store=self.profile_store,
-            status_var=self.status_var,
-            tts_client=self.tts_client,
-            default_only=True,
-        )
-        self.inner_notebook.add(self.default_talk_tab, text="デフォルトで話す")
+        self.default_talk_frame = ui.frame(self.inner_notebook, bg="main_card")
+        self.inner_notebook.add(self.default_talk_frame, text="デフォルトで話す")
 
     def on_inner_tab_changed(self, _event=None):
-        if self.inner_notebook is None or self.default_talk_tab is None:
+        if self.inner_notebook is None or self.default_talk_frame is None:
             return
-        if self.inner_notebook.select() != str(self.default_talk_tab):
+        if self.inner_notebook.select() != str(self.default_talk_frame):
             return
         if self.can_use_default_talk is not None and not self.can_use_default_talk():
             self.inner_notebook.select(self.settings_tab)
             self.status_var.set("先にユーザー名を入力してください")
+            return
+        self.ensure_default_talk_tab()
+
+    def ensure_default_talk_tab(self):
+        if self.default_talk_tab is not None:
+            return self.default_talk_tab
+
+        from .default_talk_tab import DefaultTalkTab
+
+        self.default_talk_tab = DefaultTalkTab(
+            self.default_talk_frame,
+            profile_store=self.profile_store,
+            status_var=self.status_var,
+            tts_client=self.tts_client,
+        )
+        self.default_talk_tab.pack(fill="both", expand=True)
+        return self.default_talk_tab
 
     def build_user_area(self, parent):
         section = ui.frame(parent, bg="panel")
@@ -229,10 +240,11 @@ class DefaultProfileTab(tk.Frame):
             messagebox.showerror("作成エラー", str(e))
 
     def show_default_talk_tab(self):
-        if self.inner_notebook is not None and self.default_talk_tab is not None:
-            self.inner_notebook.select(self.default_talk_tab)
-            if hasattr(self.default_talk_tab, "refresh_from_profile"):
-                self.default_talk_tab.refresh_from_profile()
+        if self.inner_notebook is not None and self.default_talk_frame is not None:
+            self.inner_notebook.select(self.default_talk_frame)
+            tab = self.ensure_default_talk_tab()
+            if hasattr(tab, "refresh_from_profile"):
+                tab.refresh_from_profile()
 
     def load_saved_profile(self):
         SAVE_JSON_DIR.mkdir(parents=True, exist_ok=True)
