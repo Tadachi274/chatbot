@@ -12,6 +12,7 @@ BASE_DIR = Path(__file__).resolve().parent
 PROFILE_PATH = BASE_DIR / "robot_speech_profile.json"
 SAVE_JSON_DIR = BASE_DIR / "save_json"
 TTS_GENERATED_WAV_DIR = BASE_DIR / "sample_audio" / "wav"
+DEFAULT_TTS_CACHE_DIR = TTS_GENERATED_WAV_DIR / "default_cache"
 
 SPEED_SAMPLE_WAV_PATH = BASE_DIR / "sample_audio" / "speed_sample_要変更.wav"
 

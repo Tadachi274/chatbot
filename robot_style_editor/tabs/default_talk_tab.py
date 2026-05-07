@@ -1,13 +1,17 @@
 import copy
+import hashlib
+import json
 from pathlib import Path
 import queue
 import random
+import shutil
 import threading
 import time
 import tkinter as tk
 from tkinter import ttk, messagebox
 
 from .. import ui_style as ui
+from ..config import DEFAULT_TTS_CACHE_DIR
 from ..config_default_profile import build_default_profile
 from ..config_example import EXAMPLE_SCENES, EXAMPLE_VENUES
 
@@ -67,16 +71,12 @@ class DefaultTalkTab(tk.Frame):
             text="デフォルトでロボット実演",
             command=self.prepare_robot_run,
         ).pack(side="left")
-        tk.Checkbutton(
+        ui.label(
             bottom,
-            text="実演後に生成WAVを削除する",
-            variable=self.delete_generated_wav_var,
-            font=ui.FONTS["small"],
-            bg=ui.COLORS["main_card"],
-            fg=ui.COLORS["sub_text"],
-            activebackground=ui.COLORS["main_card"],
-            activeforeground=ui.COLORS["text"],
-            selectcolor=ui.COLORS["card"],
+            font="small",
+            bg="main_card",
+            fg="sub_text",
+            text="デフォルト音声は一度生成した後、次回以降も再利用します",
         ).pack(side="left", padx=(ui.SPACING["gap"], 0))
 
     def build_selector_area(self, parent):
@@ -297,15 +297,15 @@ class DefaultTalkTab(tk.Frame):
                         self.emit_prep_progress(
                             completed,
                             total,
-                            f"{turn_index + 1}. {self.intent_label(intent)} を生成中: {segment[:28]}",
+                            f"{turn_index + 1}. {self.intent_label(intent)} を準備中: {segment[:28]}",
                         )
-                        wav_path = self.tts_client.synthesize_to_wav(
+                        wav_path, cache_hit = self.get_or_create_default_wav(
                             text=segment,
                             instructions=instructions,
                             person=self.active_profile_get("speaker", None),
                         )
-                        if wav_path is not None:
-                            self.generated_wav_paths.append(str(wav_path))
+                        if wav_path is None:
+                            continue
                         prepared_parts.append(
                             {
                                 "intent": intent,
@@ -315,7 +315,8 @@ class DefaultTalkTab(tk.Frame):
                             }
                         )
                         completed += 1
-                        self.emit_prep_progress(completed, total, f"{completed} / {total} 件のWAVを生成しました")
+                        action = "読み込み" if cache_hit else "生成"
+                        self.emit_prep_progress(completed, total, f"{completed} / {total} 件のWAVを{action}しました")
 
                 prepared["prepared_parts"] = prepared_parts
                 prepared_turns.append(prepared)
@@ -326,6 +327,44 @@ class DefaultTalkTab(tk.Frame):
         except Exception as e:
             self.prep_queue.put({"type": "error", "message": str(e)})
             self.wake_ui()
+
+    def get_or_create_default_wav(self, text, instructions, person):
+        cache_path = self.default_wav_cache_path(text, instructions, person)
+        if cache_path.exists():
+            return cache_path, True
+
+        cache_path.parent.mkdir(parents=True, exist_ok=True)
+        wav_path = self.tts_client.synthesize_to_wav(
+            text=text,
+            instructions=instructions,
+            person=person,
+        )
+        if wav_path is None:
+            return wav_path, False
+
+        wav_path = Path(wav_path)
+        try:
+            shutil.move(str(wav_path), str(cache_path))
+        except Exception:
+            shutil.copy2(str(wav_path), str(cache_path))
+            try:
+                wav_path.unlink(missing_ok=True)
+            except Exception:
+                pass
+        return cache_path, False
+
+    def default_wav_cache_path(self, text, instructions, person):
+        payload = {
+            "text": text,
+            "instructions": instructions or {},
+            "person": person or "",
+            "cache_version": 1,
+        }
+        raw = json.dumps(payload, ensure_ascii=False, sort_keys=True, separators=(",", ":"))
+        digest = hashlib.sha256(raw.encode("utf-8")).hexdigest()[:20]
+        safe_text = "".join("_" if char in '\\/:*?"<>| \t\r\n' else char for char in text).strip("_")
+        safe_text = safe_text[:28] or "default"
+        return DEFAULT_TTS_CACHE_DIR / f"{digest}_{safe_text}.wav"
 
     def split_speech_units(self, text):
         units = []
