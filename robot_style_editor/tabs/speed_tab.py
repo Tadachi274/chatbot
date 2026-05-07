@@ -230,6 +230,7 @@ class SpeedTab(tk.Frame):
     def play_sample(self):
         try:
             self.save_selection_only(update_status=False)
+            
             self.player.play(
                 src_path=SPEED_SAMPLE_WAV_PATH,
                 speed=float(self.speed.get()),

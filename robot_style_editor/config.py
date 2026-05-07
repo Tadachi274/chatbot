@@ -15,13 +15,13 @@ TTS_GENERATED_WAV_DIR = BASE_DIR / "sample_audio" / "wav"
 DEFAULT_TTS_CACHE_DIR = TTS_GENERATED_WAV_DIR / "default_cache"
 STYLE_SAMPLE_TTS_CACHE_DIR = TTS_GENERATED_WAV_DIR / "style_sample_cache"
 
-SPEED_SAMPLE_WAV_PATH = BASE_DIR / "sample_audio" / "speed_sample_要変更.wav"
+SPEED_SAMPLE_WAV_PATH = BASE_DIR / "sample_audio" / "speed_sample_ご本人様確認のため、身分証明書を拝見してもよろしいでしょうか.wav"
 
 SENTENCE_PAUSE_DEFAULT = 0.2
 SENTENCE_PAUSE_MIN = 0.0
 SENTENCE_PAUSE_MAX = 1.0
-SENTENCE_PAUSE_SAMPLE_WAV_1 = BASE_DIR / "sample_audio" / "えっと.wav"
-SENTENCE_PAUSE_SAMPLE_WAV_2 = BASE_DIR / "sample_audio" / "少々お待ちください.wav"
+SENTENCE_PAUSE_SAMPLE_WAV_1 = BASE_DIR / "sample_audio" / "sample_誠にありがとうございます。.wav"
+SENTENCE_PAUSE_SAMPLE_WAV_2 = BASE_DIR / "sample_audio" / "sample_確認が取れました。.wav"
 
 # 返答の間
 RESPONSE_DELAY_SAMPLE_WAV = BASE_DIR / "sample_audio" / "承知いたしました.wav"
@@ -155,12 +155,14 @@ INTIMACY_OPTIONS_BY_PERSON_AND_POLITENESS = {
             {
                 "id": "high",
                 "label": "高",
-                "example1": "本日はどのようなご用件でしょうか〜？",
-                "example2": "すみません〜、確認のために身分証明書を見せていただけますか？",
+                "example1": "本日はどのようなご用件でしょうかぁ？",
+                "example2": "すみませぇん、確認のために身分証明書を見せていただけますかぁ？",
                 "prompt": (
                     "親しみは高めにしてください。"
                     "丁寧さは残しつつ、語尾に伸ばし棒などを使い、柔らかく親しげな話し方にしてください。"
                     "話者がのぞみの場合は、少しやわらかく、近い距離感の表現にしてください。"
+                    "伸ばし棒の～はttsに反映されないので、ーか小さいぁぃぅぇぉを使ってください"
+                    "ーか小さいぁぃぅぇぉを入れる際は後ろが。の場合はぁっやぃっのように伸ばし棒の後に小さいっを絶対に入れください"
                 ),
             },
             {
@@ -195,12 +197,14 @@ INTIMACY_OPTIONS_BY_PERSON_AND_POLITENESS = {
             {
                 "id": "high",
                 "label": "高",
-                "example1": "今日はどんなご用件ですか〜？",
-                "example2": "確認したいので、身分証明書を見せてもらってもいいですか〜？",
+                "example1": "今日はどんなご用件ですかぁ？",
+                "example2": "確認したいので、身分証明書を見せてもらってもいいですかぁ？",
                 "prompt": (
                     "親しみは高めにしてください。"
                     "語尾に伸ばし棒などを使い、柔らかく親しげな話し方にしてください。"
                     "ただし接客として最低限の丁寧さは残してください。"
+                    "伸ばし棒の～はttsに反映されないので、ーか小さいぁぃぅぇぉを使ってください"
+                    "ーか小さいぁぃぅぇぉを入れる際は後ろが。の場合はぁっやぃっのように伸ばし棒の後に小さいっを絶対に入れください"
                 ),
             },
             {
@@ -235,11 +239,13 @@ INTIMACY_OPTIONS_BY_PERSON_AND_POLITENESS = {
             {
                 "id": "high",
                 "label": "高",
-                "example1": "今日はどうしましたか〜？",
-                "example2": "ちょっと確認したいので、身分証明書を見せてもらってもいいですか〜？",
+                "example1": "今日はどうしましたかぁ？",
+                "example2": "ちょっと確認したいので、身分証明書を見せてもらってもいいですかぁ？",
                 "prompt": (
                     "親しみは高めにしてください。"
                     "語尾に伸ばし棒などを使い、柔らかく親しげな話し方にしてください。"
+                    "伸ばし棒の～はttsに反映されないので、ーか小さいぁぃぅぇぉを使ってください"
+                    "ーか小さいぁぃぅぇぉを入れる際は後ろが。の場合はぁっやぃっのように伸ばし棒の後に小さいっを絶対に入れください"
                 ),
             },
             {
@@ -274,11 +280,13 @@ INTIMACY_OPTIONS_BY_PERSON_AND_POLITENESS = {
             {
                 "id": "high",
                 "label": "高",
-                "example1": "今日はどうしたの〜？",
-                "example2": "ちょっと確認したいから、身分証明書見せてもらってもいい〜？",
+                "example1": "今日はどうしたのぉ？",
+                "example2": "ちょっと確認したいから、身分証明書見せてもらってもいいぃ？",
                 "prompt": (
                     "親しみは高めにしてください。"
                     "語尾に伸ばし棒などを使い、かなり親しげで柔らかい話し方にしてください。"
+                    "伸ばし棒の～はttsに反映されないので、ーか小さいぁぃぅぇぉを使ってください"
+                    "ーか小さいぁぃぅぇぉを入れる際は後ろが。の場合はぁっやぃっのように伸ばし棒の後に小さいっを絶対に入れください"
                 ),
             },
             {
@@ -437,8 +445,8 @@ INTIMACY_OPTIONS_BY_PERSON_AND_POLITENESS = {
             {
                 "id": "high",
                 "label": "高",
-                "example1": "今日はどうしたの〜？",
-                "example2": "確認したいから、身分証明書見せてもらってもいい〜？",
+                "example1": "今日はどうしたのぉ？",
+                "example2": "確認したいから、身分証明書見せてもらってもいいぃ？",
                 "prompt": (
                     "親しみは高めにしてください。"
                     "「〜っすね」「〜っすか」など、店員らしく砕けた表現を使ってください。"
@@ -519,8 +527,8 @@ VOCABULARY_STYLE_TEMPLATES = {
                 "example2": "{content}にございますよ。",
             },
             "high": {
-                "example1": "こちらは、{content}でございます〜。",
-                "example2": "{content}にございますよ〜。",
+                "example1": "こちらは、{content}でございますぅっ。",
+                "example2": "{content}にございますよぉっ。",
             },
         },
         "formal": {
@@ -533,8 +541,8 @@ VOCABULARY_STYLE_TEMPLATES = {
                 "example2": "{content}にありますよ。",
             },
             "high": {
-                "example1": "こちら、{content}ですよ〜。",
-                "example2": "{content}にありますよ〜。",
+                "example1": "こちら、{content}ですよぉっ。",
+                "example2": "{content}にありますよぉっ。",
             },
         },
         "polite": {
@@ -543,26 +551,26 @@ VOCABULARY_STYLE_TEMPLATES = {
                 "example2": "{content}にあります。",
             },
             "middle": {
-                "example1": "これは、{content}ですよ。",
+                "example1": "{content}ですよ。",
                 "example2": "{content}にありますよ。",
             },
             "high": {
-                "example1": "これ、{content}ですよ〜。",
-                "example2": "{content}にありますよ〜。",
+                "example1": "{content}ですよぉっ。",
+                "example2": "{content}にありますよぉっ。",
             },
         },
         "casual": {
             "low": {
-                "example1": "これは、{content}だよ。",
+                "example1": "{content}だよ。",
                 "example2": "{content}にあるよ。",
             },
             "middle": {
-                "example1": "これ、{content}だよ。",
+                "example1": "{content}だよ。",
                 "example2": "{content}にあるよ。",
             },
             "high": {
-                "example1": "これ、{content}だよ〜。",
-                "example2": "{content}にあるよ〜。",
+                "example1": "{content}だよぉっ。",
+                "example2": "{content}にあるよぉっ。",
             },
         },
     },
@@ -602,25 +610,25 @@ VOCABULARY_STYLE_TEMPLATES = {
                 "example2": "{content}にあります。",
             },
             "middle": {
-                "example1": "これは、{content}ですね。",
+                "example1": "{content}ですね。",
                 "example2": "{content}にありますね。",
             },
             "high": {
-                "example1": "これ、{content}っすね。",
+                "example1": "{content}っすね。",
                 "example2": "{content}にあるっすね。",
             },
         },
         "casual": {
             "low": {
-                "example1": "これは、{content}だよ。",
+                "example1": "{content}だよ。",
                 "example2": "{content}にあるよ。",
             },
             "middle": {
-                "example1": "これ、{content}だよね。",
+                "example1": "{content}だよね。",
                 "example2": "{content}にあるよね。",
             },
             "high": {
-                "example1": "これ、{content}っす。",
+                "example1": "{content}っす。",
                 "example2": "{content}にあるっす。",
             },
         },

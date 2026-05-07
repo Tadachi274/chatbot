@@ -143,7 +143,7 @@ class SentencePauseTab(tk.Frame):
 
         ui.label(
             example_card,
-            text="例：こんにちは。 → 今日はどのようなご用件でしょうか？",
+            text="例：誠にありがとうございます。 → 確認が取れました。",
             font="body",
             bg="card",
             fg="text",
@@ -204,14 +204,6 @@ class SentencePauseTab(tk.Frame):
             font="body",
             bg="main_card",
             fg="sub_text",
-        ).pack(anchor="w")
-
-        ui.label(
-            info_area,
-            text="えっと。 / 少々お待ちください。",
-            font="small",
-            bg="main_card",
-            fg="muted",
         ).pack(anchor="w")
 
         play_button_area = ui.frame(sample_row, bg="main_card")
