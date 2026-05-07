@@ -158,7 +158,7 @@ class RobotActActivitySource(BaseVoiceActivitySource):
     def __init__(
         self,
         xyz_client,
-        act_threshold: int = 2,
+        act_threshold: int = 1,
         silence_hold_sec: float = 0.45,
         poll_interval: float = 0.03,
         on_start: Optional[Callable[[float], None]] = None,

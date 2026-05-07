@@ -64,7 +64,7 @@ class RobotStyleEditorApp(tk.Tk):
         super().__init__()
 
         self.title("ロボット話し方設定")
-        self.geometry("1300x1000-1200-1100")
+        self.geometry("1300x1000")
         self.minsize(1100, 650)
 
         ui.apply_app_style(self)
