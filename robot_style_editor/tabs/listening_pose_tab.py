@@ -4,6 +4,7 @@ import hashlib
 import json
 from pathlib import Path
 import shutil
+import threading
 import time
 import random
 import wave
@@ -114,6 +115,8 @@ class ListeningPoseTab(tk.Frame):
         self.current_silence_start_t = None
         self.backchannel_active = False
         self.last_backchannel_t = 0.0
+        self.backchannel_preview_running = False
+        self.backchannel_preview_lock = threading.Lock()
         self.backchannel_mic_panel = None
 
         self.build_main_view()
@@ -1085,22 +1088,35 @@ class ListeningPoseTab(tk.Frame):
         if silence_duration < silence_sec:
             return
 
-        if self.backchannel_active:
+        if self.backchannel_active or self.backchannel_preview_running:
             return
 
-        self.trigger_backchannel_preview()
+        if now - self.last_backchannel_t < 1.0:
+            return
+
         self.backchannel_active = True
         self.last_backchannel_t = now
+        self.start_backchannel_preview_worker()
+
+    def start_backchannel_preview_worker(self):
+        with self.backchannel_preview_lock:
+            if self.backchannel_preview_running:
+                return
+            self.backchannel_preview_running = True
+
+        threading.Thread(target=self.trigger_backchannel_preview, daemon=True).start()
 
 
     def trigger_backchannel_preview(self):
         if self.backchannel_mic_panel is not None:
-            self.backchannel_mic_panel.set_result("相槌")
+            self.backchannel_mic_panel.set_result_threadsafe("相槌")
 
-        self.play_selected_nod()
-        self.play_selected_backchannel_voice()
-
-        self.status_var.set("相槌を試しました")
+        try:
+            self.play_selected_nod()
+            self.play_selected_backchannel_voice()
+        finally:
+            with self.backchannel_preview_lock:
+                self.backchannel_preview_running = False
 
 
     def play_selected_nod(self):
@@ -1117,7 +1133,8 @@ class ListeningPoseTab(tk.Frame):
                 priority=LISTENING_NOD_PRIORITY,
             )
         except Exception as e:
-            self.status_var.set(f"うなづき送信エラー: {e}")
+            if self.backchannel_mic_panel is not None:
+                self.backchannel_mic_panel.set_result_threadsafe(f"うなづき送信エラー: {e}")
 
 
     def play_selected_backchannel_voice(self):
@@ -1158,7 +1175,8 @@ class ListeningPoseTab(tk.Frame):
                     self.tts_client.speak_current_speaker(text=text)
 
         except Exception as e:
-            self.status_var.set(f"相槌音声エラー: {e}")
+            if self.backchannel_mic_panel is not None:
+                self.backchannel_mic_panel.set_result_threadsafe(f"相槌音声エラー: {e}")
 
     # =========================
     # 保存
