@@ -425,7 +425,7 @@ LISTENING_NOD_OPTIONS = [
 LISTENING_NOD_PRIORITY = 3
 LISTENING_NOD_TIME = 1
 
-LISTENING_BACKCHANNEL_WORDS = ["うん", "はい", "ええ"]
+LISTENING_BACKCHANNEL_WORDS = ["うん", "はい", "ええ", "はいっ"]
 
 LISTENING_BACKCHANNEL_AMOUNT_OPTIONS = [
     {
@@ -491,6 +491,13 @@ LISTENING_BACKCHANNEL_WORD_OPTIONS = [
         "text": "ええ",
         "type": "wav",
         "wav_path": BASE_DIR / "sample_audio" / "ええ.wav",
+    },
+    {
+        "id": "hailtu",
+        "label": "はいっ",
+        "text": "はいっ",
+        "type": "wav",
+        "wav_path": BASE_DIR / "sample_audio" / "はいっ.wav",
     },
     {
         "id": "other",

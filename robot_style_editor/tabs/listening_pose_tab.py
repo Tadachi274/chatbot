@@ -1024,7 +1024,7 @@ class ListeningPoseTab(tk.Frame):
                 "句点や読点で区切ると、より相槌が入りやすくなります。"
             ),
             sample_text=(
-                "新しいセットアップを試したいなと思っているんですけど、"
+                "新しい服を試したいなと思っているんですけど、"
                 "何か最近流行りのものはありますか"
             ),
             on_speech_start=self.on_backchannel_speech_start,
