@@ -2,12 +2,10 @@ import os
 from pathlib import Path
 
 TTS_URL = os.environ.get("TTS_URL", "http://192.168.0.169:15001/synthesize")
-# ROBOT_TCP_HOST = "nikola-humantracker"
-# ROBOT_TCP_PORT = 8078
-ROBOT_TCP_HOST = "127.0.0.1"
-ROBOT_TCP_PORT = 5000
-ROBOT_TCP_EOL = "lf"
-ROBOT_TCP_TIMEOUT = 5.0
+ROBOT_TCP_HOST = os.environ.get("ROBOT_TCP_HOST", "nikola-humantracker")
+ROBOT_TCP_PORT = int(os.environ.get("ROBOT_TCP_PORT", "8078"))
+ROBOT_TCP_EOL = os.environ.get("ROBOT_TCP_EOL", "lf")
+ROBOT_TCP_TIMEOUT = float(os.environ.get("ROBOT_TCP_TIMEOUT", "1.0"))
 
 BASE_DIR = Path(__file__).resolve().parent
 

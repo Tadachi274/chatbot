@@ -1,4 +1,5 @@
 import socket
+import threading
 
 from ..config import (
     ROBOT_TCP_HOST,
@@ -41,6 +42,7 @@ class RobotCommandClient:
         self.receive = receive
 
         self.sock = None
+        self._lock = threading.Lock()
         self.terminator = self._eol_bytes(eol)
 
     def _eol_bytes(self, eol: str) -> bytes:
@@ -72,22 +74,32 @@ class RobotCommandClient:
     def send(self, command: str):
         print(f"[RobotCommandClient] > {command}")
 
-        if self.persistent:
-            self._send_persistent(command)
-        else:
-            self._send_single(command)
+        try:
+            if self.persistent:
+                self._send_persistent(command)
+            else:
+                self._send_single(command)
+        except Exception as e:
+            print(f"[RobotCommandClient] send error: {e}")
 
     def _send_persistent(self, command: str):
-        try:
-            if self.sock is None:
+        with self._lock:
+            try:
+                if self.sock is None:
+                    self.connect()
+
+                self.sock.sendall(command.encode("utf-8") + self.terminator)
+                return
+
+            except (BrokenPipeError, ConnectionResetError, OSError):
+                self.close()
+
+            try:
                 self.connect()
-
-            self.sock.sendall(command.encode("utf-8") + self.terminator)
-
-        except (BrokenPipeError, ConnectionResetError, OSError):
-            self.close()
-            self.connect()
-            self.sock.sendall(command.encode("utf-8") + self.terminator)
+                self.sock.sendall(command.encode("utf-8") + self.terminator)
+            except Exception as e:
+                self.close()
+                print(f"[RobotCommandClient] persistent send failed: {e}")
 
     def _send_single(self, command: str):
         if send_single_command is None:
