@@ -510,14 +510,14 @@ class ApologyTab(tk.Frame):
 
     def apply_intimacy_to_text(self, text, politeness_id, intimacy_id, person_key):
         if intimacy_id == "low":
-            return text.replace("〜。", "。")
+            return text.replace("ーっ。", "。")
         if intimacy_id != "high":
             return text
         if person_key == "kenta":
             return self.apply_kenta_high_tone(text)
         if politeness_id == "casual":
-            return text.replace("ね。", "ね〜。")
-        return text.replace("。", "〜。")
+            return text.replace("ね。", "ねーっ。")
+        return text.replace("。", "ーっ。")
 
     def apply_kenta_high_tone(self, text):
         text = text.replace("ごめんね。", "ごめんっす。")

@@ -414,7 +414,7 @@ class SmalltalkTab(tk.Frame):
     def apply_intimacy_to_text(self, text, politeness_id, intimacy_id, person_key):
         if intimacy_id == "low":
             return (
-                text.replace("〜。", "。")
+                text.replace("ーっ。", "。")
                 .replace("ですね。", "です。")
                 .replace("だね。", "だよ。")
                 .replace("よね。", "よ。")
@@ -424,8 +424,8 @@ class SmalltalkTab(tk.Frame):
         if person_key == "kenta":
             return self.apply_kenta_high_tone(text)
         if politeness_id == "casual":
-            return text.replace("だね。", "だね〜。").replace("よね。", "よね〜。").replace("そう。", "そう〜。")
-        return text.replace("ですね。", "ですね〜。").replace("ますね。", "ますね〜。")
+            return text.replace("だね。", "だねーっ。").replace("よね。", "よねーっ。").replace("そう。", "そうーっ。")
+        return text.replace("ですね。", "ですねーっ。").replace("ますね。", "ますねーっ。")
 
     def apply_kenta_high_tone(self, text):
         text = text.replace("ですね。", "っすね。")

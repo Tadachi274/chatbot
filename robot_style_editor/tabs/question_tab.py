@@ -427,7 +427,7 @@ class QuestionTab(tk.Frame):
 
     def apply_intimacy_to_text(self, text, politeness_id, intimacy_id, person_key):
         if intimacy_id == "low":
-            return text.replace("〜。", "。")
+            return text.replace("ーっ。", "。")
 
         if intimacy_id != "high":
             return text
@@ -436,9 +436,9 @@ class QuestionTab(tk.Frame):
             return self.apply_kenta_high_tone(text)
 
         if politeness_id == "casual":
-            return text.replace("ね。", "ね〜。").replace("？", "〜？")
+            return text.replace("ね。", "ねーっ。").replace("？", "〜？")
 
-        return text.replace("。", "〜。")
+        return text.replace("。", "ーっ。")
 
     def apply_kenta_high_tone(self, text):
         text = text.replace("でしょうか。", "っすか。")

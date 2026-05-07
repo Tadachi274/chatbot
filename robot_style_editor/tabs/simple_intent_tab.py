@@ -312,7 +312,7 @@ class SimpleIntentTab(tk.Frame):
         )
 
         if intimacy_id == "high" and person_key == "nozomi":
-            text = text.replace("ね。", "ね〜。")
+            text = text.replace("ね。", "ねーっ。")
         elif intimacy_id == "high" and person_key == "kenta":
             text = text.replace("です。", "っす。").replace("ます。", "ます。")
 

@@ -653,10 +653,10 @@ class GreetingTab(tk.Frame):
         if intimacy_id == "high":
             if person_key == "kenta":
                 return self.apply_kenta_high_tone(text)
-            return text.replace("。", "〜。")
+            return text.replace("。", "ーっ。")
 
         if intimacy_id == "low":
-            return text.replace("〜。", "。")
+            return text.replace("ーっ。", "。")
 
         return text
 

@@ -646,7 +646,7 @@ class ExplanationTab(tk.Frame):
 
     def apply_intimacy_to_text(self, text, politeness_id, intimacy_id, person_key):
         if intimacy_id == "low":
-            return text.replace("〜。", "。")
+            return text.replace("ーっ。", "。")
 
         if intimacy_id != "high":
             return text
@@ -655,15 +655,15 @@ class ExplanationTab(tk.Frame):
             return self.apply_kenta_high_tone(text)
 
         if politeness_id == "casual":
-            return text.replace("だよ。", "だよ〜。").replace("ね。", "ね〜。")
+            return text.replace("だよ。", "だよーっ。").replace("ね。", "ねーっ。")
 
-        return text.replace("。", "〜。")
+        return text.replace("。", "ーっ。")
 
     def apply_kenta_high_tone(self, text):
         text = text.replace("ですよね。", "っすよね。")
         text = text.replace("です。", "っす。")
         text = text.replace("だよ。", "っす。")
-        text = text.replace("だよ〜。", "っすね。")
+        text = text.replace("だよーっ。", "っすね。")
         text = text.replace("してもいい？", "してもいいっすか。")
         text = text.replace("来てね。", "来てほしいっす。")
         text = text.replace("できるよ。", "できるっす。")
