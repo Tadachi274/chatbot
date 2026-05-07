@@ -1632,10 +1632,12 @@ class ExampleSceneTab(tk.Frame):
         self.mic_panel = MicActivityPanel(
             page,
             title="客発話の切れ目検出",
-            description="客の発話が終わったら、理解した姿を出して次のロボット発話へ進みます。",
+            description="実環境の act 値が 1 以上の間を客の発話中として扱い、発話終了後に次へ進みます。",
             on_speech_start=self.on_run_customer_speech_start,
             on_speech_end=self.on_run_customer_speech_end,
             status_var=self.status_var,
+            activity_mode="robot_act",
+            act_threshold=1,
         )
         self.mic_panel.pack(fill="x", pady=(ui.SPACING["small_gap"], 0))
         self.status_var.set("ロボット実演の準備ができました")
