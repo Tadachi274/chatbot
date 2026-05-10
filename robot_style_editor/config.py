@@ -1,11 +1,77 @@
 import os
 from pathlib import Path
 
-TTS_URL = os.environ.get("TTS_URL", "http://192.168.0.169:15001/synthesize")
-ROBOT_TCP_HOST = os.environ.get("ROBOT_TCP_HOST", "nikola-humantracker")
-ROBOT_TCP_PORT = int(os.environ.get("ROBOT_TCP_PORT", "8078"))
-ROBOT_TCP_EOL = os.environ.get("ROBOT_TCP_EOL", "lf")
-ROBOT_TCP_TIMEOUT = float(os.environ.get("ROBOT_TCP_TIMEOUT", "1.0"))
+RUNTIME_ENV_PRESETS = {
+    "real": {
+        "label": "実環境",
+        "TTS_URL": "http://192.168.0.169:15001/synthesize",
+        "ROBOT_TCP_HOST": "nikola-humantracker",
+        "ROBOT_TCP_PORT": "8078",
+        "ROBOT_TCP_EOL": "lf",
+        "ROBOT_TCP_TIMEOUT": "1.0",
+        "MIC_ACTIVITY_MODE": "robot_act",
+    },
+    "mac": {
+        "label": "Mac上",
+        "TTS_URL": "http://127.0.0.1:15001/synthesize",
+        "ROBOT_TCP_HOST": "127.0.0.1",
+        "ROBOT_TCP_PORT": "5000",
+        "ROBOT_TCP_EOL": "lf",
+        "ROBOT_TCP_TIMEOUT": "1.0",
+        "MIC_ACTIVITY_MODE": "mic",
+    },
+}
+
+
+def normalize_runtime_env(env_name=None):
+    env_name = env_name or os.environ.get("ROBOT_STYLE_ENV", "real")
+    return env_name if env_name in RUNTIME_ENV_PRESETS else "real"
+
+
+def apply_runtime_environment(env_name, override=True):
+    env_name = normalize_runtime_env(env_name)
+    os.environ["ROBOT_STYLE_ENV"] = env_name
+    for key, value in RUNTIME_ENV_PRESETS[env_name].items():
+        if key == "label":
+            continue
+        if override or key not in os.environ:
+            os.environ[key] = str(value)
+    return env_name
+
+
+def get_runtime_environment():
+    return normalize_runtime_env()
+
+
+def get_tts_url():
+    return os.environ.get("TTS_URL", RUNTIME_ENV_PRESETS[get_runtime_environment()]["TTS_URL"])
+
+
+def get_robot_tcp_config():
+    preset = RUNTIME_ENV_PRESETS[get_runtime_environment()]
+    return {
+        "host": os.environ.get("ROBOT_TCP_HOST", preset["ROBOT_TCP_HOST"]),
+        "port": int(os.environ.get("ROBOT_TCP_PORT", preset["ROBOT_TCP_PORT"])),
+        "eol": os.environ.get("ROBOT_TCP_EOL", preset["ROBOT_TCP_EOL"]),
+        "timeout": float(os.environ.get("ROBOT_TCP_TIMEOUT", preset["ROBOT_TCP_TIMEOUT"])),
+    }
+
+
+def get_default_mic_activity_mode():
+    return os.environ.get(
+        "MIC_ACTIVITY_MODE",
+        RUNTIME_ENV_PRESETS[get_runtime_environment()]["MIC_ACTIVITY_MODE"],
+    )
+
+
+apply_runtime_environment(os.environ.get("ROBOT_STYLE_ENV", "real"), override=False)
+
+TTS_URL = get_tts_url()
+_ROBOT_TCP_CONFIG = get_robot_tcp_config()
+ROBOT_TCP_HOST = _ROBOT_TCP_CONFIG["host"]
+ROBOT_TCP_PORT = _ROBOT_TCP_CONFIG["port"]
+ROBOT_TCP_EOL = _ROBOT_TCP_CONFIG["eol"]
+ROBOT_TCP_TIMEOUT = _ROBOT_TCP_CONFIG["timeout"]
 
 BASE_DIR = Path(__file__).resolve().parent
 

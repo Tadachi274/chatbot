@@ -33,6 +33,7 @@ class VoiceEditorPanel(tk.Frame):
         get_speaker=None,
         on_changed=None,
         voice_presets=None,
+        instruction_transform=None,
     ):
         super().__init__(parent, bg=ui.COLORS["panel"])
 
@@ -45,6 +46,7 @@ class VoiceEditorPanel(tk.Frame):
         self.get_speaker = get_speaker
         self.on_changed = on_changed
         self.voice_presets = voice_presets or VOICE_PRESETS
+        self.instruction_transform = instruction_transform
         self._loading = False
 
         default_preset_id = self.voice_presets[0]["id"]
@@ -329,7 +331,10 @@ class VoiceEditorPanel(tk.Frame):
         }
 
     def get_tts_instructions(self):
-        return voice_params_to_tts_instructions(self.get_params())
+        instructions = voice_params_to_tts_instructions(self.get_params())
+        if self.instruction_transform is not None:
+            return self.instruction_transform(instructions)
+        return instructions
 
     def speak_current_text(self):
         if self.tts_client is None or self.get_text is None:

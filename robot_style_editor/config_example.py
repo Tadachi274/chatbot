@@ -1,7 +1,8 @@
 EXAMPLE_VENUES = [{'id': 'hotel', 'label': 'ホテル'},
  {'id': 'museum', 'label': '美術館'},
  {'id': 'fast_food', 'label': 'ファストフード店'},
- {'id': 'apparel', 'label': 'アパレル'}]
+ {'id': 'apparel', 'label': 'アパレル'},
+ {'id': 'electronics_store', 'label': '家電量販店'}]
 
 # 接客例の初期会話。base_text はデフォルト表示で使う店員発話。
 # intent_parts は、発話の一部にどの発話意図の声色・表情・お辞儀を適用するかの目印。
@@ -306,3 +307,150 @@ EXAMPLE_SCENES = [{'id': 'hotel_checkin',
              'intent_parts': [{'intent': 'gratitude', 'text': 'ありがとうございます。'},
                               {'intent': 'acceptance', 'text': '今お持ちいたします。'},
                               {'intent': 'apology', 'text': '黒をご希望でしたら、他店舗の在庫もお調べできます。'}]}]}]
+
+EXAMPLE_SCENES += [
+    {
+        'id': 'electronics_recommend_washer',
+        'venue': 'electronics_store',
+        'title': '提案系: おすすめ紹介',
+        'turns': [
+            {'role': 'customer', 'text': '洗濯機を探しているんですけど、おすすめはありますか？'},
+            {
+                'role': 'staff',
+                'base_text': 'はい。ご家族でお使いでしたら、こちらの8キロタイプがおすすめでございます。容量に余裕があり、普段のお洗濯に使いやすい機種です。',
+                'intent_parts': [
+                    {'intent': 'acceptance', 'text': 'はい。'},
+                    {'intent': 'explanation', 'text': 'ご家族でお使いでしたら、こちらの8キロタイプがおすすめでございます。'},
+                    {'intent': 'explanation', 'text': '容量に余裕があり、普段のお洗濯に使いやすい機種です。'},
+                ],
+            },
+            {'role': 'customer', 'text': '一人暮らしなんですけど、大きすぎますか？'},
+            {
+                'role': 'staff',
+                'base_text': '一人暮らしでしたら、5キロから6キロほどでも十分かと存じます。こちらの6キロタイプですと、毛布なども洗いやすいです。',
+                'intent_parts': [
+                    {'intent': 'explanation', 'text': '一人暮らしでしたら、5キロから6キロほどでも十分かと存じます。'},
+                    {'intent': 'explanation', 'text': 'こちらの6キロタイプですと、毛布なども洗いやすいです。'},
+                ],
+            },
+            {'role': 'customer', 'text': 'じゃあ、その6キロのものを見たいです。'},
+            {
+                'role': 'staff',
+                'base_text': 'かしこまりました。こちらが6キロタイプでございます。価格と機能を順番にご説明いたします。',
+                'intent_parts': [
+                    {'intent': 'acceptance', 'text': 'かしこまりました。'},
+                    {'intent': 'explanation', 'text': 'こちらが6キロタイプでございます。'},
+                    {'intent': 'explanation', 'text': '価格と機能を順番にご説明いたします。'},
+                ],
+            },
+        ],
+    },
+    {
+        'id': 'electronics_return_headphones',
+        'venue': 'electronics_store',
+        'title': '謝罪系: 返品受付',
+        'turns': [
+            {'role': 'customer', 'text': '昨日買ったイヤホンなんですけど、片方から音が出なくて。'},
+            {
+                'role': 'staff',
+                'base_text': '申し訳ございません。ご不便をおかけしております。商品の状態を確認いたしますので、レシートを拝見してもよろしいでしょうか？',
+                'intent_parts': [
+                    {'intent': 'apology', 'text': '申し訳ございません。'},
+                    {'intent': 'apology', 'text': 'ご不便をおかけしております。'},
+                    {'intent': 'request', 'text': '商品の状態を確認いたしますので、レシートを拝見してもよろしいでしょうか？'},
+                ],
+            },
+            {'role': 'customer', 'text': 'はい、これです。'},
+            {
+                'role': 'staff',
+                'base_text': 'ありがとうございます。購入日を確認できました。初期不良の可能性がございますので、返品または交換で承ります。',
+                'intent_parts': [
+                    {'intent': 'gratitude', 'text': 'ありがとうございます。'},
+                    {'intent': 'explanation', 'text': '購入日を確認できました。'},
+                    {'intent': 'explanation', 'text': '初期不良の可能性がございますので、返品または交換で承ります。'},
+                ],
+            },
+            {'role': 'customer', 'text': '返品でお願いします。'},
+            {
+                'role': 'staff',
+                'base_text': 'かしこまりました。返品でお手続きいたします。このたびは申し訳ございませんでした。',
+                'intent_parts': [
+                    {'intent': 'acceptance', 'text': 'かしこまりました。'},
+                    {'intent': 'explanation', 'text': '返品でお手続きいたします。'},
+                    {'intent': 'apology', 'text': 'このたびは申し訳ございませんでした。'},
+                ],
+            },
+        ],
+    },
+    {
+        'id': 'electronics_purchase_microwave',
+        'venue': 'electronics_store',
+        'title': '手続き系: 商品購入',
+        'turns': [
+            {'role': 'customer', 'text': 'この電子レンジを買いたいです。'},
+            {
+                'role': 'staff',
+                'base_text': 'ありがとうございます。こちらの商品でございますね。在庫を確認いたしますので、少々お待ちくださいませ。',
+                'intent_parts': [
+                    {'intent': 'gratitude', 'text': 'ありがとうございます。'},
+                    {'intent': 'question', 'text': 'こちらの商品でございますね。'},
+                    {'intent': 'request', 'text': '在庫を確認いたしますので、少々お待ちくださいませ。'},
+                ],
+            },
+            {'role': 'customer', 'text': 'お願いします。'},
+            {
+                'role': 'staff',
+                'base_text': 'お待たせいたしました。在庫がございます。お持ち帰りと配送のどちらになさいますでしょうか？',
+                'intent_parts': [
+                    {'intent': 'explanation', 'text': 'お待たせいたしました。'},
+                    {'intent': 'explanation', 'text': '在庫がございます。'},
+                    {'intent': 'question', 'text': 'お持ち帰りと配送のどちらになさいますでしょうか？'},
+                ],
+            },
+            {'role': 'customer', 'text': '持ち帰ります。'},
+            {
+                'role': 'staff',
+                'base_text': 'かしこまりました。お会計は税込み18,800円でございます。お支払い方法はいかがなさいますでしょうか？',
+                'intent_parts': [
+                    {'intent': 'acceptance', 'text': 'かしこまりました。'},
+                    {'intent': 'explanation', 'text': 'お会計は税込み18,800円でございます。'},
+                    {'intent': 'question', 'text': 'お支払い方法はいかがなさいますでしょうか？'},
+                ],
+            },
+        ],
+    },
+    {
+        'id': 'electronics_question_laptop',
+        'venue': 'electronics_store',
+        'title': '質問系: パソコンの違いを聞く',
+        'turns': [
+            {'role': 'customer', 'text': 'この2つのパソコンって、何が違うんですか？'},
+            {
+                'role': 'staff',
+                'base_text': '主な違いは、処理速度と保存容量でございます。左の商品は動作が軽く、右の商品は写真や動画を多く保存しやすいです。',
+                'intent_parts': [
+                    {'intent': 'explanation', 'text': '主な違いは、処理速度と保存容量でございます。'},
+                    {'intent': 'explanation', 'text': '左の商品は動作が軽く、右の商品は写真や動画を多く保存しやすいです。'},
+                ],
+            },
+            {'role': 'customer', 'text': '大学のレポートを書くくらいなら、どちらがいいですか？'},
+            {
+                'role': 'staff',
+                'base_text': 'レポート作成が中心でしたら、左の商品で十分かと存じます。文書作成やインターネットの利用であれば問題なくお使いいただけます。',
+                'intent_parts': [
+                    {'intent': 'explanation', 'text': 'レポート作成が中心でしたら、左の商品で十分かと存じます。'},
+                    {'intent': 'explanation', 'text': '文書作成やインターネットの利用であれば問題なくお使いいただけます。'},
+                ],
+            },
+            {'role': 'customer', 'text': 'オンライン授業でも使えますか？'},
+            {
+                'role': 'staff',
+                'base_text': 'はい、オンライン授業にもお使いいただけます。カメラとマイクも内蔵されておりますので、そのまま利用できます。',
+                'intent_parts': [
+                    {'intent': 'acceptance', 'text': 'はい、オンライン授業にもお使いいただけます。'},
+                    {'intent': 'explanation', 'text': 'カメラとマイクも内蔵されておりますので、そのまま利用できます。'},
+                ],
+            },
+        ],
+    },
+]

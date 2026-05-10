@@ -1034,7 +1034,6 @@ class ListeningPoseTab(tk.Frame):
             on_speech_end=self.on_backchannel_speech_end,
             on_volume_update=self.on_backchannel_volume_update,
             status_var=self.status_var,
-            activity_mode="robot_act",
             act_threshold=1,
             start_hold_sec=LISTENING_BACKCHANNEL_START_HOLD_SEC_DEFAULT,
             silence_hold_sec=LISTENING_BACKCHANNEL_SILENCE_HOLD_SEC_DEFAULT,

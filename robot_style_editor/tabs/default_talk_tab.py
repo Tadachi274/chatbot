@@ -14,6 +14,7 @@ from .. import ui_style as ui
 from ..config import DEFAULT_TTS_CACHE_DIR
 from ..config_default_profile import build_default_profile
 from ..config_example import EXAMPLE_SCENES, EXAMPLE_VENUES
+from ..voice_instruction_utils import apply_speech_speed_to_tts_instructions
 
 
 class DefaultTalkTab(tk.Frame):
@@ -292,7 +293,10 @@ class DefaultTalkTab(tk.Frame):
                 for part in parts:
                     intent = part.get("intent", "explanation")
                     intent_data = self.get_intent_data(intent)
-                    instructions = intent_data.get("tts_instructions", {})
+                    instructions = apply_speech_speed_to_tts_instructions(
+                        intent_data.get("tts_instructions", {}),
+                        self.default_profile,
+                    )
                     for segment in self.split_speech_units(part.get("text", "")):
                         self.emit_prep_progress(
                             completed,
@@ -469,7 +473,6 @@ class DefaultTalkTab(tk.Frame):
             on_speech_start=self.on_run_customer_speech_start,
             on_speech_end=self.on_run_customer_speech_end,
             status_var=self.status_var,
-            activity_mode="robot_act",
             act_threshold=1,
         )
         self.mic_panel.pack(fill="x", pady=(ui.SPACING["small_gap"], 0))

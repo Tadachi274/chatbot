@@ -1,5 +1,5 @@
 {
-  "speaker": "nozomi_emo_22_standard",
+  "speaker": "kenta_emo_22_standard",
   "speaker_test_text": "話し手が変更されました",
   "politeness": {
     "id": "light_casual",
@@ -69,9 +69,9 @@
     "description": "参加者や場面に合わせて強く反映する自由記述の配慮条件。"
   },
   "speech_speed": {
-    "value": 1.3,
-    "label": "1.30 倍",
-    "prompt": "話すスピードは通常の 1.30 倍程度にしてください。ただし不自然に聞こえない範囲で調整してください。"
+    "value": 2.0,
+    "label": "2.00 倍",
+    "prompt": "話すスピードは通常の 2.00 倍程度にしてください。ただし不自然に聞こえない範囲で調整してください。"
   },
   "sentence_pause": {
     "value": 0.6,
@@ -194,8 +194,8 @@
     "phrases": [],
     "custom_text": "",
     "voice": {
-      "id": "neutral",
-      "label": "Neutral",
+      "id": "other",
+      "label": "その他",
       "params": {
         "volume": 1.3,
         "rate": 1.0,
@@ -205,11 +205,29 @@
         "anger": 0.0,
         "sadness": 0.0
       },
+      "editor": {
+        "base_preset": "neutral",
+        "controls": {
+          "friendly": 1.0,
+          "calm": 1.0,
+          "tension": 1.0
+        },
+        "params": {
+          "volume": 1.3,
+          "rate": 1.0,
+          "pitch": 1.0,
+          "emphasis": 1.0,
+          "joy": 0.0,
+          "anger": 0.0,
+          "sadness": 0.0
+        }
+      },
       "controls": {
         "friendly": 1.0,
         "calm": 1.0,
         "tension": 1.0
-      }
+      },
+      "base_preset": "neutral"
     },
     "tts_instructions": {
       "tts_volume": 1.3,
@@ -220,7 +238,7 @@
       "tts_emo_angry": 0.0,
       "tts_emo_sad": 0.0
     },
-    "prompt": "フィラーは使用しない。"
+    "prompt": "会話の間や文頭に挿入するフィラー。enabled が true のとき phrases から自然に選ぶ。"
   },
   "greeting": {
     "intent": "greeting",
@@ -239,8 +257,8 @@
       "time_topic": "時間帯に関する話題を入れる。朝・昼・夜や「お仕事帰り」など、現在の時間状況に言及する。"
     },
     "voice": {
-      "id": "neutral",
-      "label": "Neutral",
+      "id": "other",
+      "label": "その他",
       "params": {
         "volume": 1.3,
         "rate": 1.0,
@@ -250,11 +268,29 @@
         "anger": 0.0,
         "sadness": 0.0
       },
+      "editor": {
+        "base_preset": "neutral",
+        "controls": {
+          "friendly": 1.0,
+          "calm": 1.0,
+          "tension": 1.0
+        },
+        "params": {
+          "volume": 1.3,
+          "rate": 1.0,
+          "pitch": 1.0,
+          "emphasis": 1.0,
+          "joy": 0.0,
+          "anger": 0.0,
+          "sadness": 0.0
+        }
+      },
       "controls": {
         "friendly": 1.0,
         "calm": 1.0,
         "tension": 1.0
-      }
+      },
+      "base_preset": "neutral"
     },
     "tts_instructions": {
       "tts_volume": 1.3,
@@ -528,7 +564,13 @@
   "smalltalk": {
     "intent": "smalltalk",
     "label": "雑談時",
-    "text": "今日は過ごしやすいですね。",
+    "text": "今日はいい天気ですね。外に出るのも気持ちよさそうですね。",
+    "style": {
+      "politeness": "polite",
+      "intimacy": "middle",
+      "vocabulary": "easy",
+      "length": "middle"
+    },
     "face": {
       "id": "neutral",
       "label": "Neutral",
@@ -562,8 +604,7 @@
       "tts_emo_angry": 0.0,
       "tts_emo_sad": 0.0
     },
-    "techniques": [],
-    "prompt": "雑談時の発話。保存された text を読み上げる。"
+    "prompt": "雑談時の発話。保存された text を読み上げる。雑談用 style は基本設定とは別に保存する。"
   },
-  "updated_at": "2026-05-07T19:34:36"
+  "updated_at": "2026-05-08T18:12:03"
 }

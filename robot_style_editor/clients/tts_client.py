@@ -7,14 +7,14 @@ from datetime import datetime
 from pathlib import Path
 from uuid import uuid4
 
-from ..config import TTS_URL, DEFAULT_INSTRUCTIONS, TTS_GENERATED_WAV_DIR
+from ..config import DEFAULT_INSTRUCTIONS, TTS_GENERATED_WAV_DIR, get_tts_url
 from chatbot.tts import tts_nikola_data as tts
 from chatbot.tts.tts_audioplayer import AudioPlayer
 from ..audio.wav_silence import trim_silence_to_temp_wav
 
 class TTSClient:
-    def __init__(self, url=TTS_URL):
-        self.url = url
+    def __init__(self, url=None):
+        self.url = url or get_tts_url()
 
         # UIで使うWAVプレビュー用。
         # 事前音声は消したくないので autoremove=False

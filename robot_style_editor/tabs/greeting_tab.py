@@ -20,6 +20,7 @@ from ..config_intention import (
     TECHNIQUE_LABELS,
     voice_params_to_tts_instructions,
 )
+from ..voice_instruction_utils import apply_speech_speed_to_tts_instructions
 from ..clients.robot_command_client import RobotCommandClient
 from ..face_preset_store import load_face_presets
 from ..panels.face_editor_panel import FaceEditorPanel
@@ -131,6 +132,7 @@ class GreetingTab(tk.Frame):
             get_text=self.get_text,
             get_speaker=lambda: self.profile_store.get("speaker", None),
             on_changed=lambda _data: self.save_selection_only(update_status=False),
+            profile_source=self.profile_store,
         )
         self.voice_panel.pack(fill="x", pady=(ui.SPACING["small_gap"], 0))
 
@@ -681,7 +683,10 @@ class GreetingTab(tk.Frame):
 
     def get_tts_instructions(self):
         voice_data = self.get_voice_data()
-        return voice_params_to_tts_instructions(voice_data["params"])
+        return apply_speech_speed_to_tts_instructions(
+            voice_params_to_tts_instructions(voice_data["params"]),
+            self.profile_store,
+        )
 
     def infer_custom_face_level(self, name):
         if name and name[-1].isdigit():

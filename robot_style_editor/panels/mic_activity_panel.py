@@ -11,6 +11,7 @@ from ..config import (
     MIC_START_HOLD_SEC_DEFAULT,
     MIC_SILENCE_HOLD_SEC_DEFAULT,
     MIC_METER_UPDATE_INTERVAL_SEC,
+    get_default_mic_activity_mode,
 )
 from ..audio.voice_activity_source import MacMicVolumeActivitySource, RobotActActivitySource
 from .. import ui_style as ui
@@ -31,7 +32,7 @@ class MicActivityPanel(tk.Frame):
         end_threshold=MIC_VOLUME_END_THRESHOLD_DEFAULT,
         start_hold_sec=MIC_START_HOLD_SEC_DEFAULT,
         silence_hold_sec=MIC_SILENCE_HOLD_SEC_DEFAULT,
-        activity_mode="mic",
+        activity_mode=None,
         act_threshold=1,
     ):
         super().__init__(parent, bg=ui.COLORS["main_card"])
@@ -49,7 +50,7 @@ class MicActivityPanel(tk.Frame):
         self.end_threshold = end_threshold
         self.start_hold_sec = start_hold_sec
         self.silence_hold_sec = silence_hold_sec
-        self.activity_mode = activity_mode
+        self.activity_mode = activity_mode or get_default_mic_activity_mode()
         self.act_threshold = act_threshold
 
         self.state_label = tk.StringVar(value="停止中")

@@ -30,6 +30,7 @@ load_env_file()
 from .profile_store import ProfileStore
 from .clients.tts_client import TTSClient
 from . import ui_style as ui
+from .config import RUNTIME_ENV_PRESETS, apply_runtime_environment, get_runtime_environment
 from .config_default_profile import build_default_profile
 from .config_example import EXAMPLE_VENUES
 
@@ -57,6 +58,7 @@ from .tabs.response_delay_tab import ResponseDelayTab
 from .tabs.thinking_pose_tab import ThinkingPoseTab
 from .tabs.listening_pose_tab import ListeningPoseTab
 from .tabs.understanding_pose_tab import UnderstandingPoseTab
+from .tabs.request_history_tab import RequestHistoryTab
 
 
 class LazyTab(tk.Frame):
@@ -90,19 +92,83 @@ class RobotStyleEditorApp(tk.Tk):
         super().__init__()
 
         self.title("ロボット話し方設定")
-        self.geometry("1300x1000")
+        self.geometry("1300x1000-1200-1100")
         self.minsize(1100, 650)
 
         ui.apply_app_style(self)
+        self.runtime_env = self.choose_runtime_environment()
 
         self.profile_store = ProfileStore()
         self.tts_client = TTSClient()
-        self.status_var = tk.StringVar(value="準備完了")
+        self.status_var = tk.StringVar(value=f"準備完了: {RUNTIME_ENV_PRESETS[self.runtime_env]['label']}")
         self.session_active = False
 
         self.build_ui()
 
         self.protocol("WM_DELETE_WINDOW", self.on_close)
+
+    def choose_runtime_environment(self):
+        if os.environ.get("ROBOT_STYLE_ENV"):
+            return apply_runtime_environment(os.environ["ROBOT_STYLE_ENV"], override=True)
+
+        selected = tk.StringVar(value=get_runtime_environment())
+        dialog = tk.Toplevel(self)
+        dialog.title("実行環境の選択")
+        dialog.transient(self)
+        dialog.grab_set()
+        dialog.resizable(False, False)
+
+        body = ui.frame(dialog, bg="main_card")
+        body.pack(fill="both", expand=True, padx=24, pady=20)
+
+        ui.label(
+            body,
+            text="実行環境を選択",
+            font="page_title",
+            bg="main_card",
+        ).pack(anchor="w")
+        ui.label(
+            body,
+            text="mic、TTS、表情コマンドの接続先をまとめて切り替えます。",
+            font="body",
+            bg="main_card",
+            fg="sub_text",
+        ).pack(anchor="w", pady=(ui.SPACING["small_gap"], ui.SPACING["section_y"]))
+
+        for env_id in ("real", "mac"):
+            preset = RUNTIME_ENV_PRESETS[env_id]
+            card = ui.bordered_frame(body, bg="card", border="border")
+            card.pack(fill="x", pady=(0, ui.SPACING["small_gap"]))
+            ui.radio(
+                card,
+                text=preset["label"],
+                variable=selected,
+                value=env_id,
+                bg="card",
+            ).pack(anchor="w", padx=ui.SPACING["card_x"], pady=(ui.SPACING["compact_y"], 0))
+            ui.label(
+                card,
+                text=(
+                    f"TTS: {preset['TTS_URL']} / "
+                    f"Robot: {preset['ROBOT_TCP_HOST']}:{preset['ROBOT_TCP_PORT']} / "
+                    f"Mic: {preset['MIC_ACTIVITY_MODE']}"
+                ),
+                font="small",
+                bg="card",
+                fg="muted",
+                wraplength=720,
+                justify="left",
+            ).pack(anchor="w", padx=ui.SPACING["card_x"], pady=(0, ui.SPACING["compact_y"]))
+
+        def confirm():
+            apply_runtime_environment(selected.get(), override=True)
+            dialog.destroy()
+
+        ui.action_button(body, text="この環境で開始", command=confirm).pack(anchor="e", pady=(ui.SPACING["gap"], 0))
+
+        dialog.protocol("WM_DELETE_WINDOW", confirm)
+        self.wait_window(dialog)
+        return get_runtime_environment()
 
     def build_ui(self):
         outer = ui.frame(self, bg="app_bg")
@@ -167,6 +233,7 @@ class RobotStyleEditorApp(tk.Tk):
         response_frame, response_notebook = self.create_group_notebook()
         da_frame, da_notebook = self.create_group_notebook()
         example_frame, example_notebook = self.create_group_notebook()
+        request_history_frame, request_history_notebook = self.create_group_notebook()
 
         self.default_tab = DefaultProfileTab(
             self.notebook,
@@ -212,6 +279,10 @@ class RobotStyleEditorApp(tk.Tk):
             for venue in EXAMPLE_VENUES
         ]
         self.example_scene_tab = self.example_scene_tabs[0]
+        self.request_history_tabs = [
+            self.lazy_request_history_tab(request_history_notebook, venue["label"])
+            for venue in EXAMPLE_VENUES
+        ]
 
         self.add_top_tab(self.default_tab, "デフォルト")
         self.add_top_tab(speaker_tab, "話者")
@@ -249,6 +320,10 @@ class RobotStyleEditorApp(tk.Tk):
             self.add_child_tab(example_notebook, example_scene_tab, venue["label"])
         self.notebook.add(example_frame, text="接客例")
 
+        for venue, request_history_tab in zip(EXAMPLE_VENUES, self.request_history_tabs):
+            self.add_child_tab(request_history_notebook, request_history_tab, venue["label"])
+        self.notebook.add(request_history_frame, text="詳細要望一覧")
+
     def lazy_tab(self, parent, tab_class):
         return LazyTab(
             parent,
@@ -265,6 +340,19 @@ class RobotStyleEditorApp(tk.Tk):
         return LazyTab(
             parent,
             lambda container, label=venue_label: self.create_example_scene_tab(container, label),
+        )
+
+    def lazy_request_history_tab(self, parent, venue_label):
+        return LazyTab(
+            parent,
+            lambda container, label=venue_label: RequestHistoryTab(
+                container,
+                profile_store=self.profile_store,
+                tts_client=self.tts_client,
+                status_var=self.status_var,
+                on_saved=self.go_next_tab,
+                venue_label=label,
+            ),
         )
 
     def create_example_scene_tab(self, container, venue_label):

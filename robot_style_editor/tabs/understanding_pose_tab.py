@@ -503,7 +503,6 @@ class UnderstandingPoseTab(tk.Frame):
             on_speech_start=self.on_user_speech_start,
             on_speech_end=self.on_user_speech_end,
             status_var=self.status_var,
-            activity_mode="robot_act",
             act_threshold=1,
         )
         self.mic_panel.pack(fill="x", pady=(ui.SPACING["small_gap"], 0))
