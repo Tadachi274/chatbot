@@ -61,9 +61,13 @@ SPACING = {
 BASE_FONTS = dict(FONTS)
 BASE_SPACING = dict(SPACING)
 BASE_TAB_PADDING = (18, 8)
+BASE_BUTTON_PADY = 8
+BASE_BIG_BUTTON_PADY = 10
 
 LAYOUT = {
     "card_text_wrap": 315,
+    "button_pady": BASE_BUTTON_PADY,
+    "big_button_pady": BASE_BIG_BUTTON_PADY,
 }
 
 
@@ -75,16 +79,28 @@ def configure_density(root):
 
     if height <= 720:
         font_delta = -2
-        spacing_scale = 0.62
-        tab_padding = (10, 4)
+        spacing_scale = 0.54
+        tab_padding = (8, 3)
+        button_pady = 4
+        big_button_pady = 5
     elif height <= 850:
+        font_delta = -1
+        spacing_scale = 0.68
+        tab_padding = (10, 4)
+        button_pady = 5
+        big_button_pady = 6
+    elif height <= 950:
         font_delta = -1
         spacing_scale = 0.78
         tab_padding = (12, 5)
+        button_pady = 6
+        big_button_pady = 7
     else:
         font_delta = 0
         spacing_scale = 1.0
         tab_padding = BASE_TAB_PADDING
+        button_pady = BASE_BUTTON_PADY
+        big_button_pady = BASE_BIG_BUTTON_PADY
 
     for key, font in BASE_FONTS.items():
         family, size, *rest = font
@@ -95,6 +111,8 @@ def configure_density(root):
 
     LAYOUT["card_text_wrap"] = 260 if height <= 720 else 290 if height <= 850 else 315
     LAYOUT["tab_padding"] = tab_padding
+    LAYOUT["button_pady"] = button_pady
+    LAYOUT["big_button_pady"] = big_button_pady
 
 def apply_app_style(root):
     root.configure(bg=COLORS["app_bg"])
@@ -246,7 +264,7 @@ def action_button(parent, text, command, big=False, **kwargs):
         relief="raised",
         bd=1,
         padx=16,
-        pady=10 if big else 8,
+        pady=LAYOUT["big_button_pady"] if big else LAYOUT["button_pady"],
         cursor="hand2",
         **kwargs,
     )
@@ -273,7 +291,7 @@ def sub_button(parent, text, command, **kwargs):
         relief="raised",
         bd=1,
         padx=16,
-        pady=8,
+        pady=LAYOUT["button_pady"],
         cursor="hand2",
         **kwargs,
     )
