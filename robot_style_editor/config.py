@@ -5,7 +5,7 @@ RUNTIME_ENV_PRESETS = {
     "real": {
         "label": "実環境",
         "TTS_URL": "http://192.168.0.169:15001/synthesize",
-        "TTS_PLAYBACK_TARGET": "robot",
+        "TTS_PLAYBACK_TARGET": "local",
         "ROBOT_TTS_PLAY_URL": "http://nikola-humantracker:15003/speak",
         "ROBOT_TCP_HOST": "nikola-humantracker",
         "ROBOT_TCP_PORT": "8078",
