@@ -5,6 +5,7 @@ from ..config_intention import (
     VOICE_PRESETS,
     compute_voice_params,
 )
+from ..voice_instruction_utils import apply_speech_speed_to_tts_instructions
 from .voice_editor_panel import VoiceEditorPanel
 
 
@@ -18,6 +19,7 @@ class VoiceStylePanel(tk.Frame):
         get_speaker=None,
         on_changed=None,
         voice_presets=None,
+        profile_source=None,
     ):
         super().__init__(parent, bg=ui.COLORS["panel"])
 
@@ -28,6 +30,7 @@ class VoiceStylePanel(tk.Frame):
         self.get_speaker = get_speaker
         self.on_changed = on_changed
         self.voice_presets = voice_presets or VOICE_PRESETS
+        self.profile_source = profile_source
         self._loading = False
 
         default_voice_id = self.voice_presets[0]["id"]
@@ -132,6 +135,7 @@ class VoiceStylePanel(tk.Frame):
                 get_speaker=self.get_speaker,
                 on_changed=self.on_editor_changed,
                 voice_presets=self.voice_presets,
+                instruction_transform=self.apply_speech_speed,
             )
             self.editor.pack(fill="x")
 
@@ -142,6 +146,9 @@ class VoiceStylePanel(tk.Frame):
         self.editor_data = data
         if self.on_changed is not None:
             self.on_changed(self.get_data())
+
+    def apply_speech_speed(self, instructions):
+        return apply_speech_speed_to_tts_instructions(instructions, self.profile_source)
 
     def build_editor_data_from_preset(self, opt):
         controls = {

@@ -7,6 +7,7 @@ from ..config_intention import (
     FILLER_VOICE_PRESETS,
     voice_params_to_tts_instructions,
 )
+from ..voice_instruction_utils import apply_speech_speed_to_tts_instructions
 from ..panels.voice_style_panel import VoiceStylePanel
 
 
@@ -63,6 +64,7 @@ class FillerTab(tk.Frame):
             get_speaker=lambda: self.profile_store.get("speaker", None),
             on_changed=lambda _data: self.save_selection_only(update_status=False),
             voice_presets=FILLER_VOICE_PRESETS,
+            profile_source=self.profile_store,
         )
         self.voice_panel.pack(fill="x", pady=(ui.SPACING["small_gap"], 0))
 
@@ -211,7 +213,10 @@ class FillerTab(tk.Frame):
         self.save_selection_only(update_status=False)
         self.tts_client.speak(
             text=text,
-            instructions=voice_params_to_tts_instructions(self.get_voice_data()["params"]),
+            instructions=apply_speech_speed_to_tts_instructions(
+                voice_params_to_tts_instructions(self.get_voice_data()["params"]),
+                self.profile_store,
+            ),
             person=self.profile_store.get("speaker", None),
         )
         self.status_var.set("フィラーを再生しました")

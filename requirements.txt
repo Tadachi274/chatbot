@@ -9,3 +9,4 @@ pygame
 watchdog
 ffmpeg
 sounddevice
+numpy

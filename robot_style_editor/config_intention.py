@@ -466,6 +466,12 @@ REQUEST_PURPOSE_TEXT = {
     "casual": "確認したいので、",
 }
 
+REQUEST_TEXT_VARIANTS["light_casual"] = REQUEST_TEXT_VARIANTS["polite"]
+REQUEST_HEDGE_TEXT["light_casual"] = REQUEST_HEDGE_TEXT["polite"]
+REQUEST_CONSIDERATION_TEXT["light_casual"] = REQUEST_CONSIDERATION_TEXT["polite"]
+REQUEST_COMBINED_SOFTENER_TEXT["light_casual"] = REQUEST_COMBINED_SOFTENER_TEXT["polite"]
+REQUEST_PURPOSE_TEXT["light_casual"] = REQUEST_PURPOSE_TEXT["casual"]
+
 
 def get_request_softener_text(politeness_id, intimacy_id, has_hedge, has_consideration):
     """
@@ -616,9 +622,9 @@ GREETING_TECHNIQUE_ORDER = [
 GREETING_TECHNIQUE_COMBO_SENTENCES = {
     (): "",
     ("seasonal_topic",): "今日は少し過ごしやすい気候ですね。",
-    ("time_topic",): "お仕事帰りでしょうか。",
+    ("time_topic",): "お仕事帰りでしょうか？",
     ("consideration",): "もしよろしければ、ゆっくりご案内します。",
-    ("seasonal_topic", "time_topic"): "今日は過ごしやすい気候ですね。お仕事帰りでしょうか。",
+    ("seasonal_topic", "time_topic"): "今日は過ごしやすい気候ですね。お仕事帰りでしょうか？",
     ("seasonal_topic", "consideration"): "今日は過ごしやすい気候ですね。もしよろしければ、ゆっくりご案内します。",
     ("time_topic", "consideration"): "お仕事帰りでしたら、無理のない範囲でゆっくりご案内します。",
     (
@@ -631,9 +637,9 @@ GREETING_TECHNIQUE_COMBO_SENTENCES = {
 GREETING_SHORT_TECHNIQUE_COMBO_SENTENCES = {
     (): "",
     ("seasonal_topic",): "いい気候ですね。",
-    ("time_topic",): "お帰りですか。",
+    ("time_topic",): "お帰りですか？",
     ("consideration",): "ごゆっくりどうぞ。",
-    ("seasonal_topic", "time_topic"): "いい気候ですね。お帰りですか。",
+    ("seasonal_topic", "time_topic"): "いい気候ですね。お帰りですか？",
     ("seasonal_topic", "consideration"): "いい気候ですね。ごゆっくりどうぞ。",
     ("time_topic", "consideration"): "お帰りなら、無理せずどうぞ。",
     (
@@ -657,13 +663,13 @@ GREETING_OPENING_TEXT = {
     "polite": {
         "low": "こんにちは、いらっしゃいませ。",
         "middle": "こんにちは、いらっしゃいませ。",
-        "high": "こんにちは、いらっしゃいませ〜。",
+        "high": "こんにちは、いらっしゃいませぇ。",
     },
     "casual": {
         "low": "こんにちは。",
         "middle": "こんにちは。",
         "high": {
-            "nozomi": "こんにちは〜。",
+            "nozomi": "こんにちはぁ。",
             "kenta": "こんにちはっす。",
         },
     },
@@ -672,53 +678,53 @@ GREETING_OPENING_TEXT = {
 GREETING_NEED_SENTENCE = {
     "very_formal": {
         "easy": {
-            "low": "本日は何をお探しでしょうか。",
-            "middle": "本日は何をお探しでしょうか。",
-            "high": "本日は何をお探しでしょうか。",
+            "low": "本日は何をお探しでしょうか？",
+            "middle": "本日は何をお探しでしょうか？",
+            "high": "本日は何をお探しでしょうか？",
         },
         "middle": {
-            "low": "本日はどのようなご用件でしょうか。",
-            "middle": "本日はどのようなご用件でしょうか。",
-            "high": "本日はどのようなご用件でしょうか。",
+            "low": "本日はどのようなご用件でしょうか？",
+            "middle": "本日はどのようなご用件でしょうか？",
+            "high": "本日はどのようなご用件でしょうか？",
         },
         "hard": {
-            "low": "本日はどのようなご相談やお探し物がございますか。",
-            "middle": "本日はどのようなご相談やお探し物がございますか。",
-            "high": "本日はどのようなご相談やお探し物がございますか。",
+            "low": "本日はどのようなご相談やお探し物がございますか？",
+            "middle": "本日はどのようなご相談やお探し物がございますか？",
+            "high": "本日はどのようなご相談やお探し物がございますか？",
         },
     },
     "formal": {
         "easy": {
-            "low": "今日は何をお探しでしょうか。",
-            "middle": "今日は何をお探しでしょうか。",
-            "high": "今日は何をお探しでしょうか。",
+            "low": "今日は何をお探しでしょうか？",
+            "middle": "今日は何をお探しでしょうか？",
+            "high": "今日は何をお探しでしょうか？",
         },
         "middle": {
-            "low": "今日はどのようなご用件でしょうか。",
-            "middle": "今日はどのようなご用件でしょうか。",
-            "high": "今日はどのようなご用件でしょうか。",
+            "low": "今日はどのようなご用件でしょうか？",
+            "middle": "今日はどのようなご用件でしょうか？",
+            "high": "今日はどのようなご用件でしょうか？",
         },
         "hard": {
-            "low": "今日はどのようなご相談やお探し物でしょうか。",
-            "middle": "今日はどのようなご相談やお探し物でしょうか。",
-            "high": "今日はどのようなご相談やお探し物でしょうか。",
+            "low": "今日はどのようなご相談やお探し物でしょうか？",
+            "middle": "今日はどのようなご相談やお探し物でしょうか？",
+            "high": "今日はどのようなご相談やお探し物でしょうか？",
         },
     },
     "polite": {
         "easy": {
-            "low": "今日は何をお探しですか。",
-            "middle": "今日は何をお探しですか。",
-            "high": "今日は何をお探しですか〜。",
+            "low": "今日は何をお探しですか？",
+            "middle": "今日は何をお探しですか？",
+            "high": "今日は何をお探しですかぁっ？",
         },
         "middle": {
-            "low": "今日はどのような用件でしょうか。",
-            "middle": "今日はどのようなご用件でしょうか。",
-            "high": "今日はどのようなご用件でしょうか〜。",
+            "low": "今日はどのような用件でしょうか？",
+            "middle": "今日はどのようなご用件でしょうか？",
+            "high": "今日はどのようなご用件でしょうかぁっ？",
         },
         "hard": {
-            "low": "今日はどのようなご相談やお探し物でしょうか。",
-            "middle": "今日はどのようなご相談やお探し物でしょうか。",
-            "high": "今日はどのようなご相談やお探し物でしょうか〜。",
+            "low": "今日はどのようなご相談やお探し物でしょうか？",
+            "middle": "今日はどのようなご相談やお探し物でしょうか？",
+            "high": "今日はどのようなご相談やお探し物でしょうかぁっ？",
         },
     },
     "casual": {
@@ -726,24 +732,24 @@ GREETING_NEED_SENTENCE = {
             "low": "何を探してる？",
             "middle": "何を探してるの？",
             "high": {
-                "nozomi": "何を探してるの〜？",
-                "kenta": "何を探してるんすか。",
+                "nozomi": "何を探してるのぉっ？",
+                "kenta": "何を探してるんすか？",
             },
         },
         "middle": {
             "low": "今日はどうした？",
             "middle": "今日はどうしたの？",
             "high": {
-                "nozomi": "今日はどうしたの〜？",
-                "kenta": "今日はどうしたんすか。",
+                "nozomi": "今日はどうしたのぉっ？",
+                "kenta": "今日はどうしたんすか？",
             },
         },
         "hard": {
             "low": "今日はどんな相談？",
             "middle": "今日はどんな相談なの？",
             "high": {
-                "nozomi": "今日はどんな相談なの〜？",
-                "kenta": "今日はどんな相談っすか。",
+                "nozomi": "今日はどんな相談なのぉっ？",
+                "kenta": "今日はどんな相談っすか？",
             },
         },
     },
@@ -756,9 +762,13 @@ GREETING_LONG_EXTRA = {
     "casual": "よければ、一緒に見ていこう。",
 }
 
+GREETING_OPENING_TEXT["light_casual"] = GREETING_OPENING_TEXT["polite"]
+GREETING_NEED_SENTENCE["light_casual"] = GREETING_NEED_SENTENCE["polite"]
+GREETING_LONG_EXTRA["light_casual"] = "よければ、一緒に確認しながら案内します。"
+
 EXPLANATION_DEFAULT_TEXT = "チェックアウトは11時となっております。"
 
-QUESTION_DEFAULT_TEXT = "本日は一泊でよろしいでしょうか。"
+QUESTION_DEFAULT_TEXT = "本日は一泊でよろしいでしょうか？"
 
 ACCEPTANCE_DEFAULT_TEXT = "かしこまりました。"
 
@@ -810,7 +820,7 @@ EXPLANATION_TECHNIQUE_SENTENCES = {
     "step_by_step": "まずお荷物をまとめて、11時までにフロントへお越しください。",
     "proactive": "延長をご希望の場合は、空き状況をこちらで確認できます。",
     "goal_clarity": "チェックアウトの時間についてご案内します。",
-    "permission": "先にチェックアウト時間をお伝えしてもよろしいでしょうか。",
+    "permission": "先にチェックアウト時間をお伝えしてもよろしいでしょうか？",
 }
 
 

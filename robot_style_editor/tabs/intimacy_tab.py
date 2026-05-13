@@ -3,9 +3,10 @@ from tkinter import messagebox
 
 from ..config import INTIMACY_OPTIONS_BY_PERSON_AND_POLITENESS
 from .. import ui_style as ui
+from .style_sample_audio import StyleSampleAudioMixin
 
 
-class IntimacyTab(tk.Frame):
+class IntimacyTab(StyleSampleAudioMixin, tk.Frame):
     def __init__(self, parent, profile_store, tts_client, status_var, on_saved=None):
         super().__init__(parent, bg=ui.COLORS["main_card"])
 
@@ -142,6 +143,7 @@ class IntimacyTab(tk.Frame):
         bottom_row.pack(fill="x", pady=(ui.SPACING["small_gap"], 0))
 
         options = self.get_options()
+        self.prewarm_style_sample_wavs(options)
 
         top_options = options[:3]
         bottom_options = options[3:]
@@ -213,6 +215,15 @@ class IntimacyTab(tk.Frame):
                 anchor="w",
             ).pack(
                 fill="x",
+                padx=ui.SPACING["card_x"],
+                pady=(0, ui.SPACING["compact_y"]),
+            )
+            ui.sub_button(
+                parent,
+                text="例2を再生",
+                command=lambda item=opt: self.play_option_example(item, 2),
+            ).pack(
+                anchor="w",
                 padx=ui.SPACING["card_x"],
                 pady=(0, ui.SPACING["compact_y"]),
             )
@@ -384,6 +395,11 @@ class IntimacyTab(tk.Frame):
 
     def on_changed(self):
         self.save_selection_only()
+        self.play_option_example(self.find_option(self.selected_intimacy.get()), 1)
+
+    def play_option_example(self, opt, example_no=1):
+        text = opt.get(f"example{example_no}", "")
+        self.play_style_sample_text(text, label=f"親しみ {opt.get('label', '')} 例{example_no}")
 
     def refresh_from_profile(self):
         new_person_key = self.get_person_key()

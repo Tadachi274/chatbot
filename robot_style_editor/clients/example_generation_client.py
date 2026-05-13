@@ -1,5 +1,6 @@
 import json
 import os
+import re
 import urllib.error
 import urllib.request
 
@@ -21,7 +22,10 @@ class ExampleGenerationClient:
             schema=self._scene_schema(),
         )
         data = self._request(payload)
-        return self._parse_json_output(data)
+        return self._normalize_emotional_exclamation(
+            self._parse_json_output(data),
+            profile,
+        )
 
     def revise_scene(self, scene, profile, current_dialogue, global_request):
         self._require_api_key()
@@ -35,7 +39,10 @@ class ExampleGenerationClient:
             schema=self._scene_schema(),
         )
         data = self._request(payload)
-        return self._parse_json_output(data)
+        return self._normalize_emotional_exclamation(
+            self._parse_json_output(data),
+            profile,
+        )
 
     def revise_turn(self, scene, profile, current_dialogue, turn_index, turn_request):
         self._require_api_key()
@@ -50,7 +57,10 @@ class ExampleGenerationClient:
             schema=self._turn_schema(),
         )
         data = self._request(payload)
-        return self._parse_json_output(data)
+        return self._normalize_emotional_exclamation(
+            self._parse_json_output(data),
+            profile,
+        )
 
     def _require_api_key(self):
         if not self.api_key:
@@ -196,7 +206,38 @@ class ExampleGenerationClient:
             "客の発話は変更しない。",
             "場面の意味、商品名、金額、部屋番号などの事実は変えない。",
             "不自然なテクニックの積み上げを避け、1つの自然な店員発話としてまとめる。",
+            "profile.style_detail.selections.emotional_expression が high の場合、感情を強める記号は単なる「！」ではなく、TTSで跳ねて聞こえやすい小さい「っ！」を自然に使う。",
         ]
+
+    def _normalize_emotional_exclamation(self, result, profile):
+        if not self._uses_high_emotional_expression(profile):
+            return result
+
+        if isinstance(result, dict) and isinstance(result.get("turns"), list):
+            for turn in result["turns"]:
+                self._normalize_turn_emotional_exclamation(turn)
+
+        if isinstance(result, dict) and isinstance(result.get("turn"), dict):
+            self._normalize_turn_emotional_exclamation(result["turn"])
+
+        return result
+
+    def _uses_high_emotional_expression(self, profile):
+        style_detail = profile.get("style_detail", {}) if isinstance(profile, dict) else {}
+        selections = style_detail.get("selections", {}) if isinstance(style_detail, dict) else {}
+        return selections.get("emotional_expression") == "high"
+
+    def _normalize_turn_emotional_exclamation(self, turn):
+        if not isinstance(turn, dict) or turn.get("role") != "staff":
+            return
+
+        turn["text"] = self._replace_exclamation_with_small_tsu(turn.get("text", ""))
+        for part in turn.get("intent_parts", []) or []:
+            if isinstance(part, dict):
+                part["text"] = self._replace_exclamation_with_small_tsu(part.get("text", ""))
+
+    def _replace_exclamation_with_small_tsu(self, text):
+        return re.sub(r"(?<!っ)[!！]", "っ！", str(text or ""))
 
     def _style_prompts(self, profile):
         def item(key):

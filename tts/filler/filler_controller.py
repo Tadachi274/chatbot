@@ -6,8 +6,7 @@ import sys
 import os
 from pathlib import Path
 sys.path.append(os.path.dirname(os.path.dirname(__file__)))
-import tts_nikola_data as tts
-from tts_audioplayer import AudioPlayer
+from ..tts_audioplayer import AudioPlayer
 import random
 import wave
 
@@ -445,8 +444,7 @@ class FillerController:
         self._reload_face_cfg_if_needed()
         now = time.monotonic()
         act = self._get_act()
-        print(f"[tick] now:{now}")
-        # print(f"[tick] act:{act}")
+        print(f"[tick] now:{now} act:{act}")
         # print(f"[tick] last_interim_t:{self.last_interim_t}")
 
         interim_recent = (now - self.last_interim_t) <= self.INTERIM_OK_interval

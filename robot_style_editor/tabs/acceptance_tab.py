@@ -78,6 +78,8 @@ ACCEPTANCE_TEXT_VARIANTS = {
     },
 }
 
+ACCEPTANCE_TEXT_VARIANTS["light_casual"] = ACCEPTANCE_TEXT_VARIANTS["polite"]
+
 
 class AcceptanceTab(SimpleIntentTab):
     def __init__(self, parent, profile_store, tts_client, status_var, on_saved=None):

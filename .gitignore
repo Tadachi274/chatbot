@@ -6,3 +6,4 @@ __pycache__/
 *.DS_Store
 Usenot/
 *__pycache__/
+sample_audio/

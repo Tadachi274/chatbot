@@ -1,12 +1,15 @@
 import tkinter as tk
 from tkinter import ttk, messagebox
+import hashlib
+import json
+from pathlib import Path
+import shutil
+import threading
 import time
 import random
 import wave
 
-from ..config import MIC_VOLUME_END_THRESHOLD_DEFAULT
-
-
+from ..config import BACKCHANNEL_TTS_CACHE_DIR
 from ..config_face import (
     LISTENING_FACE_OPTIONS,
     LISTENING_FACE_PRIORITY,
@@ -29,6 +32,7 @@ from ..panels.face_editor_panel import FaceEditorPanel
 from ..face_preset_store import load_face_presets
 from ..clients.robot_command_client import RobotCommandClient
 from ..panels.mic_activity_panel import MicActivityPanel
+from ..audio.wav_silence import trim_silence_to_wav
 from .. import ui_style as ui
 
 
@@ -99,6 +103,9 @@ class ListeningPoseTab(tk.Frame):
         self.custom_word_text = tk.StringVar(
             value=voice.get("custom_text", "")
         )
+        self.reuse_custom_backchannel_wav = tk.BooleanVar(
+            value=bool(voice.get("reuse_tts_cache", True))
+        )
 
         amount = listening.get("amount", {})
         self.selected_amount = tk.StringVar(value=amount.get("id", "middle"))
@@ -108,6 +115,8 @@ class ListeningPoseTab(tk.Frame):
         self.current_silence_start_t = None
         self.backchannel_active = False
         self.last_backchannel_t = 0.0
+        self.backchannel_preview_running = False
+        self.backchannel_preview_lock = threading.Lock()
         self.backchannel_mic_panel = None
 
         self.build_main_view()
@@ -773,6 +782,32 @@ class ListeningPoseTab(tk.Frame):
             command=self.speak_custom_backchannel_word,
         ).pack(side="right", padx=(ui.SPACING["small_gap"], 0))
 
+        cache_row = ui.frame(word_card, bg="card")
+        cache_row.pack(
+            fill="x",
+            padx=ui.SPACING["card_x"],
+            pady=(0, ui.SPACING["compact_y"]),
+        )
+        tk.Checkbutton(
+            cache_row,
+            text="その他のTTS音声を保存して使い回す",
+            variable=self.reuse_custom_backchannel_wav,
+            command=lambda: self.save_selection_only(update_status=False),
+            font=ui.FONTS["small"],
+            bg=ui.COLORS["card"],
+            fg=ui.COLORS["sub_text"],
+            activebackground=ui.COLORS["card"],
+            activeforeground=ui.COLORS["text"],
+            selectcolor=ui.COLORS["main_card"],
+        ).pack(side="left")
+        ui.label(
+            cache_row,
+            text="保存先: sample_audio/wav/backchannel_cache",
+            font="small",
+            bg="card",
+            fg="muted",
+        ).pack(side="left", padx=(ui.SPACING["small_gap"], 0))
+
     def build_voice_probability_slider(self, parent):
         row = ui.frame(parent, bg="card")
         row.pack(
@@ -852,11 +887,55 @@ class ListeningPoseTab(tk.Frame):
         self.save_selection_only(update_status=False)
 
         try:
-            self.tts_client.speak_current_speaker(text=text)
-            self.status_var.set(f"その他の相槌をTTSで再生しました: {text}")
+            if self.reuse_custom_backchannel_wav.get():
+                wav_path, cache_hit = self.get_or_create_custom_backchannel_wav(text)
+                self.tts_client.play_preview_wav(wav_path, trim=False)
+                action = "保存済み音声を再生" if cache_hit else "TTSで作成して保存・再生"
+                self.status_var.set(f"その他の相槌を{action}しました: {text}")
+            else:
+                self.tts_client.speak_current_speaker(text=text)
+                self.status_var.set(f"その他の相槌をTTSで再生しました: {text}")
         except Exception as e:
             messagebox.showerror("TTSエラー", str(e))
             self.status_var.set(f"TTSエラー: {e}")
+
+    def custom_backchannel_cache_path(self, text):
+        speaker = self.profile_store.get("speaker", "")
+        payload = {
+            "text": text,
+            "speaker": speaker,
+            "cache_version": 1,
+        }
+        raw = json.dumps(payload, ensure_ascii=False, sort_keys=True, separators=(",", ":"))
+        digest = hashlib.sha256(raw.encode("utf-8")).hexdigest()[:20]
+        safe_text = "".join("_" if char in '\\/:*?"<>| \t\r\n' else char for char in text).strip("_")
+        safe_text = safe_text[:28] or "backchannel"
+        return BACKCHANNEL_TTS_CACHE_DIR / f"{digest}_{safe_text}.wav"
+
+    def get_or_create_custom_backchannel_wav(self, text):
+        cache_path = self.custom_backchannel_cache_path(text)
+        if cache_path.exists():
+            return cache_path, True
+
+        wav_path = self.tts_client.synthesize_to_wav(
+            text=text,
+            person=self.profile_store.get("speaker", None),
+        )
+        if wav_path is None:
+            raise RuntimeError("TTS音声を作成できませんでした。")
+
+        cache_path.parent.mkdir(parents=True, exist_ok=True)
+        wav_path = Path(wav_path)
+        try:
+            trim_silence_to_wav(wav_path, cache_path)
+            wav_path.unlink(missing_ok=True)
+        except Exception:
+            shutil.copy2(str(wav_path), str(cache_path))
+            try:
+                wav_path.unlink(missing_ok=True)
+            except Exception:
+                pass
+        return cache_path, False
 
     # =========================
     # 相槌：量
@@ -943,18 +1022,19 @@ class ListeningPoseTab(tk.Frame):
             parent,
             title="相槌のテスト",
             description=(
-                "下の文を声に出して読んでください。"
-                "短い沈黙を検出したら、設定中のうなづき・音声相槌を試します。"
+                "実環境の act 値が 1 以上の間を客の発話中として扱います。"
+                "発話中の短い act=0 の切れ目を検出したら、設定中のうなづき・音声相槌を試します。"
                 "句点や読点で区切ると、より相槌が入りやすくなります。"
             ),
             sample_text=(
-                "新しいセットアップを試したいなと思っているんですけど、"
+                "新しい服を試したいなと思っているんですけど、"
                 "何か最近流行りのものはありますか"
             ),
             on_speech_start=self.on_backchannel_speech_start,
             on_speech_end=self.on_backchannel_speech_end,
             on_volume_update=self.on_backchannel_volume_update,
             status_var=self.status_var,
+            act_threshold=1,
             start_hold_sec=LISTENING_BACKCHANNEL_START_HOLD_SEC_DEFAULT,
             silence_hold_sec=LISTENING_BACKCHANNEL_SILENCE_HOLD_SEC_DEFAULT,
         )
@@ -991,7 +1071,7 @@ class ListeningPoseTab(tk.Frame):
         now = time.monotonic()
         silence_sec = float(self.find_amount_option()["silence_sec"])
 
-        is_silent = volume < MIC_VOLUME_END_THRESHOLD_DEFAULT
+        is_silent = volume < 1.0
 
         if not is_silent:
             self.current_silence_start_t = None
@@ -1007,22 +1087,35 @@ class ListeningPoseTab(tk.Frame):
         if silence_duration < silence_sec:
             return
 
-        if self.backchannel_active:
+        if self.backchannel_active or self.backchannel_preview_running:
             return
 
-        self.trigger_backchannel_preview()
+        if now - self.last_backchannel_t < 1.0:
+            return
+
         self.backchannel_active = True
         self.last_backchannel_t = now
+        self.start_backchannel_preview_worker()
+
+    def start_backchannel_preview_worker(self):
+        with self.backchannel_preview_lock:
+            if self.backchannel_preview_running:
+                return
+            self.backchannel_preview_running = True
+
+        threading.Thread(target=self.trigger_backchannel_preview, daemon=True).start()
 
 
     def trigger_backchannel_preview(self):
         if self.backchannel_mic_panel is not None:
-            self.backchannel_mic_panel.set_result("相槌")
+            self.backchannel_mic_panel.set_result_threadsafe("相槌")
 
-        self.play_selected_nod()
-        self.play_selected_backchannel_voice()
-
-        self.status_var.set("相槌を試しました")
+        try:
+            self.play_selected_nod()
+            self.play_selected_backchannel_voice()
+        finally:
+            with self.backchannel_preview_lock:
+                self.backchannel_preview_running = False
 
 
     def play_selected_nod(self):
@@ -1039,7 +1132,8 @@ class ListeningPoseTab(tk.Frame):
                 priority=LISTENING_NOD_PRIORITY,
             )
         except Exception as e:
-            self.status_var.set(f"うなづき送信エラー: {e}")
+            if self.backchannel_mic_panel is not None:
+                self.backchannel_mic_panel.set_result_threadsafe(f"うなづき送信エラー: {e}")
 
 
     def play_selected_backchannel_voice(self):
@@ -1065,16 +1159,23 @@ class ListeningPoseTab(tk.Frame):
                 if not text:
                     return
 
-                if self.backchannel_mic_panel is not None:
-                    self.backchannel_mic_panel.pause_for(
-                        1.2,
-                        label="相槌再生中",
-                    )
-
-                self.tts_client.speak_current_speaker(text=text)
+                if voice.get("reuse_tts_cache"):
+                    wav_path, _cache_hit = self.get_or_create_custom_backchannel_wav(text)
+                    duration = self.tts_client.get_wav_duration_sec(wav_path)
+                    if self.backchannel_mic_panel is not None:
+                        self.backchannel_mic_panel.pause_for(duration + 0.15, label="相槌再生中")
+                    self.tts_client.play_preview_wav(wav_path, trim=False)
+                else:
+                    if self.backchannel_mic_panel is not None:
+                        self.backchannel_mic_panel.pause_for(
+                            1.2,
+                            label="相槌再生中",
+                        )
+                    self.tts_client.speak_current_speaker(text=text)
 
         except Exception as e:
-            self.status_var.set(f"相槌音声エラー: {e}")
+            if self.backchannel_mic_panel is not None:
+                self.backchannel_mic_panel.set_result_threadsafe(f"相槌音声エラー: {e}")
 
     # =========================
     # 保存
@@ -1193,6 +1294,8 @@ class ListeningPoseTab(tk.Frame):
                 "word_type": "tts",
                 "text": text,
                 "custom_text": text,
+                "reuse_tts_cache": bool(self.reuse_custom_backchannel_wav.get()),
+                "cache_dir": str(BACKCHANNEL_TTS_CACHE_DIR),
                 "wav_path": None,
                 "description": "うなづき時に、指定割合でTTS生成した相槌を再生する",
             }
@@ -1205,6 +1308,8 @@ class ListeningPoseTab(tk.Frame):
             "word_type": "wav",
             "text": word["text"],
             "custom_text": self.custom_word_text.get().strip(),
+            "reuse_tts_cache": bool(self.reuse_custom_backchannel_wav.get()),
+            "cache_dir": str(BACKCHANNEL_TTS_CACHE_DIR),
             "wav_path": str(word["wav_path"]),
             "description": "うなづき時に、指定割合で既存WAVの相槌を再生する",
         }

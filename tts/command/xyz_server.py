@@ -76,6 +76,11 @@ class XYZClient:
                         values = parse_numeric_line(line)
                         if values is None:
                             continue
+
+                        # print(
+                        #     f"[XYZ raw] timestamp={values[0]}, act={values[4]}, "
+                        #     f"x={values[5]}, y={values[6]}, z={values[7]}, humanId={values[16]}"
+                        # )
                         raw_z = values[7]
 
                         with self._lock:

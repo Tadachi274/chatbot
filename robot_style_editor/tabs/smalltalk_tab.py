@@ -14,6 +14,7 @@ from ..config_intention import (
     SMALLTALK_VOICE_PRESETS,
     voice_params_to_tts_instructions,
 )
+from ..voice_instruction_utils import apply_speech_speed_to_tts_instructions
 from ..face_preset_store import load_face_presets
 from ..panels.face_editor_panel import FaceEditorPanel
 from ..panels.voice_style_panel import VoiceStylePanel
@@ -24,6 +25,7 @@ SMALLTALK_STYLE_OPTIONS = {
         ("very_formal", "尊敬語・謙譲語"),
         ("formal", "軽い尊敬語"),
         ("polite", "丁寧語"),
+        ("light_casual", "軽くカジュアル"),
         ("casual", "カジュアル"),
     ],
     "intimacy": [
@@ -137,6 +139,7 @@ class SmalltalkTab(tk.Frame):
             get_speaker=lambda: self.profile_store.get("speaker", None),
             on_changed=lambda _data: self.save_selection_only(update_status=False),
             voice_presets=SMALLTALK_VOICE_PRESETS,
+            profile_source=self.profile_store,
         )
         self.voice_panel.pack(fill="x", pady=(ui.SPACING["small_gap"], 0))
         self.build_bottom_area(page)
@@ -351,7 +354,7 @@ class SmalltalkTab(tk.Frame):
             if vocabulary_id == "hard":
                 return "今日は穏やかで心地よい気候ですね。"
             return "今日は過ごしやすい気候ですね。"
-        if politeness_id == "polite":
+        if politeness_id in ("polite", "light_casual"):
             if vocabulary_id == "easy":
                 return "今日はいい天気ですね。"
             if vocabulary_id == "hard":
@@ -376,7 +379,7 @@ class SmalltalkTab(tk.Frame):
             if vocabulary_id == "hard":
                 return "心地よい気候ですね。"
             return "いい気候ですね。"
-        if politeness_id == "polite":
+        if politeness_id in ("polite", "light_casual"):
             if vocabulary_id == "hard":
                 return "心地よいですね。"
             return "いい天気ですね。"
@@ -413,7 +416,7 @@ class SmalltalkTab(tk.Frame):
     def apply_intimacy_to_text(self, text, politeness_id, intimacy_id, person_key):
         if intimacy_id == "low":
             return (
-                text.replace("〜。", "。")
+                text.replace("ーっ。", "。")
                 .replace("ですね。", "です。")
                 .replace("だね。", "だよ。")
                 .replace("よね。", "よ。")
@@ -423,8 +426,8 @@ class SmalltalkTab(tk.Frame):
         if person_key == "kenta":
             return self.apply_kenta_high_tone(text)
         if politeness_id == "casual":
-            return text.replace("だね。", "だね〜。").replace("よね。", "よね〜。").replace("そう。", "そう〜。")
-        return text.replace("ですね。", "ですね〜。").replace("ますね。", "ますね〜。")
+            return text.replace("だね。", "だねーっ。").replace("よね。", "よねーっ。").replace("そう。", "そうーっ。")
+        return text.replace("ですね。", "ですねーっ。").replace("ますね。", "ますねーっ。")
 
     def apply_kenta_high_tone(self, text):
         text = text.replace("ですね。", "っすね。")
@@ -467,7 +470,10 @@ class SmalltalkTab(tk.Frame):
 
     def get_tts_instructions(self):
         voice_data = self.get_voice_data()
-        return voice_params_to_tts_instructions(voice_data["params"])
+        return apply_speech_speed_to_tts_instructions(
+            voice_params_to_tts_instructions(voice_data["params"]),
+            self.profile_store,
+        )
 
     def infer_custom_face_level(self, name):
         if name and name[-1].isdigit():

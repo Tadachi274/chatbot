@@ -7,14 +7,14 @@ from datetime import datetime
 from pathlib import Path
 from uuid import uuid4
 
-from ..config import TTS_URL, DEFAULT_INSTRUCTIONS, TTS_GENERATED_WAV_DIR
+from ..config import DEFAULT_INSTRUCTIONS, TTS_GENERATED_WAV_DIR, get_tts_url
 from chatbot.tts import tts_nikola_data as tts
 from chatbot.tts.tts_audioplayer import AudioPlayer
 from ..audio.wav_silence import trim_silence_to_temp_wav
 
 class TTSClient:
-    def __init__(self, url=TTS_URL):
-        self.url = url
+    def __init__(self, url=None):
+        self.url = url or get_tts_url()
 
         # UIで使うWAVプレビュー用。
         # 事前音声は消したくないので autoremove=False
@@ -124,7 +124,7 @@ class TTSClient:
     # WAVプレビュー再生
     # =========================
 
-    def play_wav_pair_with_pause(self, wav1: Path, wav2: Path, pause_sec: float, on_pause_start=None):
+    def play_wav_pair_with_pause(self, wav1: Path, wav2: Path, pause_sec: float, on_pause_start=None, trim: bool = True):
         """
         wav1を再生 → pause_sec待つ → wav2を再生。
         文間ポーズ確認用。
@@ -143,19 +143,22 @@ class TTSClient:
         self._preview_stop.clear()
         self._preview_thread = threading.Thread(
             target=self._play_wav_pair_worker,
-            args=(wav1, wav2, float(pause_sec), on_pause_start),
+            args=(wav1, wav2, float(pause_sec), on_pause_start, trim),
             daemon=True,
         )
         self._preview_thread.start()
 
-    def _play_wav_pair_worker(self, wav1: Path, wav2: Path, pause_sec: float, on_pause_start=None):
+    def _play_wav_pair_worker(self, wav1: Path, wav2: Path, pause_sec: float, on_pause_start=None, trim: bool = True):
         temp_paths = []
 
         try:
-            trimmed_wav1 = trim_silence_to_temp_wav(wav1)
-            trimmed_wav2 = trim_silence_to_temp_wav(wav2)
-
-            temp_paths.extend([trimmed_wav1, trimmed_wav2])
+            if trim:
+                trimmed_wav1 = trim_silence_to_temp_wav(wav1)
+                trimmed_wav2 = trim_silence_to_temp_wav(wav2)
+                temp_paths.extend([trimmed_wav1, trimmed_wav2])
+            else:
+                trimmed_wav1 = wav1
+                trimmed_wav2 = wav2
 
             event1 = threading.Event()
             event2 = threading.Event()

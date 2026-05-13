@@ -10,13 +10,10 @@ import tkinter as tk
 from tkinter import ttk, messagebox
 
 from .. import ui_style as ui
-from ..audio.wav_silence import trim_silence_to_temp_wav
-from ..clients.example_generation_client import ExampleGenerationClient
-from ..clients.robot_command_client import RobotCommandClient
 from ..config import get_person_key_from_speaker
 from ..config_default_profile import build_default_profile
 from ..config_example import EXAMPLE_SCENES, EXAMPLE_VENUES
-from ..panels.mic_activity_panel import MicActivityPanel
+from ..voice_instruction_utils import apply_speech_speed_to_tts_instructions
 
 
 class ExampleSceneTab(tk.Frame):
@@ -36,8 +33,8 @@ class ExampleSceneTab(tk.Frame):
         self.status_var = status_var
         self.tts_client = tts_client
         self.on_saved = on_saved
-        self.generation_client = ExampleGenerationClient()
-        self.robot_client = RobotCommandClient()
+        self.generation_client = None
+        self.robot_client = None
         self.fixed_venue_label = venue_label
         self.default_only = default_only
         self.default_profile = build_default_profile()
@@ -66,21 +63,23 @@ class ExampleSceneTab(tk.Frame):
         self.prepared_dialogue = None
         self.generated_wav_paths = []
         self.delete_generated_wav_var = tk.BooleanVar(value=True)
-        self.prep_queue = queue.SimpleQueue()
+        self.prep_queue = None
         self.prep_thread = None
         self._event_read_fd = None
         self._event_write_fd = None
         self._filehandler_registered = False
+        self._queue_event_bound = False
         self.run_state = "idle"
         self.run_index = 0
         self.lyric_frame = None
         self.mic_panel = None
+        self._rendered_scene_key = None
 
         self.build_ui()
-        self.setup_ui_event_pipe()
         self.refresh_scene_choices()
 
     def build_ui(self):
+        self._rendered_scene_key = None
         page = ui.frame(self, bg="main_card")
         page.pack(
             fill="both",
@@ -107,6 +106,30 @@ class ExampleSceneTab(tk.Frame):
         if not self.default_only:
             self.build_feedback_area(content)
         self.build_bottom_area(page)
+
+    def ensure_generation_client(self):
+        if self.generation_client is None:
+            from ..clients.example_generation_client import ExampleGenerationClient
+
+            self.generation_client = ExampleGenerationClient()
+        return self.generation_client
+
+    def ensure_robot_client(self):
+        if self.robot_client is None:
+            from ..clients.robot_command_client import RobotCommandClient
+
+            self.robot_client = RobotCommandClient()
+        return self.robot_client
+
+    def ensure_prep_queue(self):
+        if self.prep_queue is None:
+            self.prep_queue = queue.SimpleQueue()
+        return self.prep_queue
+
+    def ensure_runtime_events(self):
+        self.ensure_prep_queue()
+        if not self._filehandler_registered and self._event_read_fd is None:
+            self.setup_ui_event_pipe()
 
     def build_selector_area(self, parent):
         section = ui.frame(parent, bg="panel")
@@ -532,13 +555,34 @@ class ExampleSceneTab(tk.Frame):
         self.render_current_scene()
 
     def render_current_scene(self):
+        if self.dialogue_frame is None:
+            return
+
         scene = self.current_scene()
         active, version = self.get_active_version(scene["id"])
         turns = version["turns"] if version else self.base_turns(scene)
         turns = self.apply_speaker_tone_to_turns(turns)
         turns = self.apply_fillers_to_turns(turns)
+        record = self.get_scene_record(scene["id"])
+        versions = record.get("versions", [])
+        version_label = f"{active + 1} / {len(versions)}" if version else f"デフォルト / {len(versions)}案"
+        self.version_var.set(version_label)
 
         self.render_style_summary()
+
+        render_key = (
+            scene["id"],
+            active,
+            version_label,
+            repr(turns),
+            repr(self.active_profile_data()),
+            tuple(sorted(self.expanded_meta)),
+            tuple(sorted(self.expanded_behavior)),
+        )
+        if self._rendered_scene_key == render_key and self.dialogue_frame.winfo_children():
+            self.refresh_staff_turn_choices(turns)
+            return
+        self._rendered_scene_key = render_key
 
         for child in self.dialogue_frame.winfo_children():
             child.destroy()
@@ -549,13 +593,6 @@ class ExampleSceneTab(tk.Frame):
             self.render_turn_card(self.dialogue_frame, index, turn)
 
         self.refresh_staff_turn_choices(turns)
-
-        record = self.get_scene_record(scene["id"])
-        versions = record.get("versions", [])
-        if version:
-            self.version_var.set(f"{active + 1} / {len(versions)}")
-        else:
-            self.version_var.set(f"デフォルト / {len(versions)}案")
 
     def render_style_summary(self):
         if self.style_summary_frame is None:
@@ -1169,6 +1206,8 @@ class ExampleSceneTab(tk.Frame):
     def generate_whole_scene(self):
         if self.generation_busy:
             return
+        self.ensure_runtime_events()
+        self.ensure_generation_client()
 
         scene = self.current_scene()
         self.profile_store.save()
@@ -1189,21 +1228,22 @@ class ExampleSceneTab(tk.Frame):
 
     def generate_whole_scene_worker(self, scene, profile, global_request, current_dialogue, active):
         try:
+            generation_client = self.ensure_generation_client()
             if current_dialogue is not None:
-                result = self.generation_client.revise_scene(
+                result = generation_client.revise_scene(
                     scene=scene,
                     profile=profile,
                     current_dialogue=current_dialogue,
                     global_request=global_request,
                 )
             else:
-                result = self.generation_client.generate_scene(
+                result = generation_client.generate_scene(
                     scene=scene,
                     profile=profile,
                     global_request=global_request,
                 )
 
-            self.prep_queue.put(
+            self.ensure_prep_queue().put(
                 {
                     "type": "scene_generation_done",
                     "scene_id": scene["id"],
@@ -1215,12 +1255,14 @@ class ExampleSceneTab(tk.Frame):
             )
             self.wake_ui_event_loop()
         except Exception as e:
-            self.prep_queue.put({"type": "scene_generation_error", "message": str(e)})
+            self.ensure_prep_queue().put({"type": "scene_generation_error", "message": str(e)})
             self.wake_ui_event_loop()
 
     def generate_one_turn(self):
         if self.generation_busy:
             return
+        self.ensure_runtime_events()
+        self.ensure_generation_client()
 
         scene = self.current_scene()
         request = self.get_turn_request()
@@ -1250,14 +1292,14 @@ class ExampleSceneTab(tk.Frame):
 
     def generate_one_turn_worker(self, scene, profile, current_turns, selected_index, request, active):
         try:
-            result = self.generation_client.revise_turn(
+            result = self.ensure_generation_client().revise_turn(
                 scene=scene,
                 profile=profile,
                 current_dialogue=current_turns,
                 turn_index=selected_index,
                 turn_request=request,
             )
-            self.prep_queue.put(
+            self.ensure_prep_queue().put(
                 {
                     "type": "turn_generation_done",
                     "scene_id": scene["id"],
@@ -1271,13 +1313,15 @@ class ExampleSceneTab(tk.Frame):
             )
             self.wake_ui_event_loop()
         except Exception as e:
-            self.prep_queue.put({"type": "turn_generation_error", "message": str(e)})
+            self.ensure_prep_queue().put({"type": "turn_generation_error", "message": str(e)})
             self.wake_ui_event_loop()
 
     def prepare_robot_run(self):
         if self.tts_client is None:
             messagebox.showerror("確認", "TTSクライアントが未設定です。")
             return
+        self.ensure_runtime_events()
+        self.ensure_robot_client()
 
         turns = self.apply_fillers_to_turns(
             self.apply_speaker_tone_to_turns(self.current_turns())
@@ -1298,6 +1342,7 @@ class ExampleSceneTab(tk.Frame):
         self.prep_thread.start()
 
     def clear_page(self):
+        self._rendered_scene_key = None
         if self.mic_panel is not None:
             try:
                 self.mic_panel.stop()
@@ -1383,7 +1428,10 @@ class ExampleSceneTab(tk.Frame):
                         continue
 
                     intent_data = self.get_intent_data(intent)
-                    instructions = intent_data.get("tts_instructions", {})
+                    instructions = apply_speech_speed_to_tts_instructions(
+                        intent_data.get("tts_instructions", {}),
+                        self.active_profile_data(),
+                    )
                     for segment in self.split_speech_units(text):
                         self.emit_prep_progress(
                             completed,
@@ -1416,10 +1464,10 @@ class ExampleSceneTab(tk.Frame):
                 prepared_turns.append(prepared)
 
             self.prepared_dialogue = prepared_turns
-            self.prep_queue.put({"type": "done"})
+            self.ensure_prep_queue().put({"type": "done"})
             self.wake_ui_event_loop()
         except Exception as e:
-            self.prep_queue.put({"type": "error", "message": str(e)})
+            self.ensure_prep_queue().put({"type": "error", "message": str(e)})
             self.wake_ui_event_loop()
 
     def split_speech_units(self, text):
@@ -1450,7 +1498,7 @@ class ExampleSceneTab(tk.Frame):
         return max(1, total)
 
     def emit_prep_progress(self, completed, total, message):
-        self.prep_queue.put(
+        self.ensure_prep_queue().put(
             {
                 "type": "progress",
                 "completed": completed,
@@ -1461,6 +1509,8 @@ class ExampleSceneTab(tk.Frame):
         self.wake_ui_event_loop()
 
     def on_robot_prep_progress(self, _event=None):
+        if self.prep_queue is None:
+            return
         while True:
             try:
                 item = self.prep_queue.get_nowait()
@@ -1535,8 +1585,15 @@ class ExampleSceneTab(tk.Frame):
         self.status_var.set("選択した店員発話を再生成しました")
 
     def setup_ui_event_pipe(self):
+        self.ensure_prep_queue()
+        if not self._queue_event_bound:
+            self.bind("<<ExampleSceneTabQueue>>", self._handle_queue_event, add="+")
+            self._queue_event_bound = True
+
         create_filehandler = getattr(self.tk, "createfilehandler", None)
         if create_filehandler is None:
+            return
+        if self._event_read_fd is not None:
             return
 
         self._event_read_fd, self._event_write_fd = os.pipe()
@@ -1550,19 +1607,32 @@ class ExampleSceneTab(tk.Frame):
         self._filehandler_registered = True
 
     def wake_ui_event_loop(self):
+        self.ensure_prep_queue()
         if self._event_write_fd is None:
             if threading.current_thread() is threading.main_thread():
                 self.on_robot_prep_progress()
+            else:
+                self.generate_queue_event()
             return
 
         try:
             os.write(self._event_write_fd, b"1")
         except (BlockingIOError, OSError):
             pass
+        self.generate_queue_event()
 
     def _handle_pipe_event(self, _fd=None, _mask=None):
         self.drain_event_pipe()
         self.on_robot_prep_progress()
+
+    def _handle_queue_event(self, _event=None):
+        self.on_robot_prep_progress()
+
+    def generate_queue_event(self):
+        try:
+            self.event_generate("<<ExampleSceneTabQueue>>", when="tail")
+        except Exception:
+            pass
 
     def drain_event_pipe(self):
         if self._event_read_fd is None:
@@ -1580,6 +1650,8 @@ class ExampleSceneTab(tk.Frame):
                 break
 
     def build_robot_run_view(self):
+        from ..panels.mic_activity_panel import MicActivityPanel
+
         self.clear_page()
         self.run_state = "ready"
         self.run_index = 0
@@ -1618,10 +1690,11 @@ class ExampleSceneTab(tk.Frame):
         self.mic_panel = MicActivityPanel(
             page,
             title="客発話の切れ目検出",
-            description="客の発話が終わったら、理解した姿を出して次のロボット発話へ進みます。",
+            description="実環境の act 値が 1 以上の間を客の発話中として扱い、発話終了後に次へ進みます。",
             on_speech_start=self.on_run_customer_speech_start,
             on_speech_end=self.on_run_customer_speech_end,
             status_var=self.status_var,
+            act_threshold=1,
         )
         self.mic_panel.pack(fill="x", pady=(ui.SPACING["small_gap"], 0))
         self.status_var.set("ロボット実演の準備ができました")
@@ -1741,13 +1814,15 @@ class ExampleSceneTab(tk.Frame):
                     self.apply_sentence_pause()
 
             self.run_index += 1
-            self.prep_queue.put({"type": "run_advance"})
+            self.ensure_prep_queue().put({"type": "run_advance"})
             self.wake_ui_event_loop()
         except Exception as e:
-            self.prep_queue.put({"type": "error", "message": str(e)})
+            self.ensure_prep_queue().put({"type": "error", "message": str(e)})
             self.wake_ui_event_loop()
 
     def play_prepared_wav(self, wav_path):
+        from ..audio.wav_silence import trim_silence_to_temp_wav
+
         trimmed = trim_silence_to_temp_wav(wav_path)
         done = threading.Event()
         duration = self.tts_client.get_wav_duration_sec(trimmed)
@@ -1764,7 +1839,7 @@ class ExampleSceneTab(tk.Frame):
         data = part.get("intent_data", {}) or {}
         face = data.get("face", {})
         if face:
-            self.robot_client.send_emotion(
+            self.ensure_robot_client().send_emotion(
                 face_type=face.get("type", "neutral"),
                 level=int(face.get("level", 1)),
                 priority=3,
@@ -1773,7 +1848,7 @@ class ExampleSceneTab(tk.Frame):
 
         bow = data.get("bow", {})
         if bow:
-            self.robot_client.send_nod(
+            self.ensure_robot_client().send_nod(
                 amplitude=int(bow.get("amplitude", 7)),
                 duration=int(bow.get("duration", 300)),
                 times=1,
@@ -1788,7 +1863,7 @@ class ExampleSceneTab(tk.Frame):
         if lookaway:
             if lookaway == "horizontal_random":
                 lookaway = random.choice(["l", "r"])
-            self.robot_client.send_lookaway(
+            self.ensure_robot_client().send_lookaway(
                 direction=lookaway,
                 priority=int(gaze.get("priority", 4)),
                 keeptime=int(gaze.get("keeptime", 800)),
@@ -1800,14 +1875,14 @@ class ExampleSceneTab(tk.Frame):
         face = listening.get("face", {})
         nod = listening.get("nod", {})
         if face:
-            self.robot_client.send_emotion(
+            self.ensure_robot_client().send_emotion(
                 face_type=face.get("type", "neutral"),
                 level=int(face.get("level", 1)),
                 priority=3,
                 keeptime=3000,
             )
         if nod and nod.get("id") != "none":
-            self.robot_client.send_nod(
+            self.ensure_robot_client().send_nod(
                 amplitude=int(nod.get("amplitude", 10)),
                 duration=int(nod.get("duration", 400)),
                 times=int(nod.get("times", 1)),
@@ -1826,14 +1901,14 @@ class ExampleSceneTab(tk.Frame):
         face = thinking.get("face", {})
         gaze = thinking.get("gaze", {})
         if face:
-            self.robot_client.send_emotion(
+            self.ensure_robot_client().send_emotion(
                 face_type=face.get("type", "neutral"),
                 level=int(face.get("level", 1)),
                 priority=3,
                 keeptime=3000,
             )
         if gaze:
-            self.robot_client.send_lookaway(
+            self.ensure_robot_client().send_lookaway(
                 direction=gaze.get("lookaway", "f"),
                 priority=int(gaze.get("priority", 4)),
                 keeptime=int(gaze.get("keeptime", 1500)),
@@ -1854,14 +1929,14 @@ class ExampleSceneTab(tk.Frame):
             delay = delay_data.get("wait_after_detection", 0.0)
         time.sleep(max(0.0, float(delay)))
         if face:
-            self.robot_client.send_emotion(
+            self.ensure_robot_client().send_emotion(
                 face_type=face.get("type", "neutral"),
                 level=int(face.get("level", 1)),
                 priority=3,
                 keeptime=3000,
             )
         if nod:
-            self.robot_client.send_nod(
+            self.ensure_robot_client().send_nod(
                 amplitude=int(nod.get("amplitude", 10)),
                 duration=int(nod.get("duration", 400)),
                 times=int(nod.get("count", 1)),
@@ -1936,7 +2011,8 @@ class ExampleSceneTab(tk.Frame):
             pass
 
         try:
-            self.robot_client.close()
+            if self.robot_client is not None:
+                self.robot_client.close()
         except Exception:
             pass
 

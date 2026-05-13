@@ -1,27 +1,96 @@
 import os
 from pathlib import Path
 
-TTS_URL = os.environ.get("TTS_URL", "http://192.168.0.169:15001/synthesize")
-# ROBOT_TCP_HOST = "nikola-humantracker"
-# ROBOT_TCP_PORT = 8078
-ROBOT_TCP_HOST = "127.0.0.1"
-ROBOT_TCP_PORT = 5000
-ROBOT_TCP_EOL = "lf"
-ROBOT_TCP_TIMEOUT = 5.0
+RUNTIME_ENV_PRESETS = {
+    "real": {
+        "label": "実環境",
+        "TTS_URL": "http://192.168.0.169:15001/synthesize",
+        "ROBOT_TCP_HOST": "nikola-humantracker",
+        "ROBOT_TCP_PORT": "8078",
+        "ROBOT_TCP_EOL": "lf",
+        "ROBOT_TCP_TIMEOUT": "1.0",
+        "MIC_ACTIVITY_MODE": "robot_act",
+    },
+    "mac": {
+        "label": "Mac上",
+        "TTS_URL": "http://127.0.0.1:15001/synthesize",
+        "ROBOT_TCP_HOST": "127.0.0.1",
+        "ROBOT_TCP_PORT": "5000",
+        "ROBOT_TCP_EOL": "lf",
+        "ROBOT_TCP_TIMEOUT": "1.0",
+        "MIC_ACTIVITY_MODE": "mic",
+    },
+}
+
+
+def normalize_runtime_env(env_name=None):
+    env_name = env_name or os.environ.get("ROBOT_STYLE_ENV", "real")
+    return env_name if env_name in RUNTIME_ENV_PRESETS else "real"
+
+
+def apply_runtime_environment(env_name, override=True):
+    env_name = normalize_runtime_env(env_name)
+    os.environ["ROBOT_STYLE_ENV"] = env_name
+    for key, value in RUNTIME_ENV_PRESETS[env_name].items():
+        if key == "label":
+            continue
+        if override or key not in os.environ:
+            os.environ[key] = str(value)
+    return env_name
+
+
+def get_runtime_environment():
+    return normalize_runtime_env()
+
+
+def get_tts_url():
+    return os.environ.get("TTS_URL", RUNTIME_ENV_PRESETS[get_runtime_environment()]["TTS_URL"])
+
+
+def get_robot_tcp_config():
+    preset = RUNTIME_ENV_PRESETS[get_runtime_environment()]
+    return {
+        "host": os.environ.get("ROBOT_TCP_HOST", preset["ROBOT_TCP_HOST"]),
+        "port": int(os.environ.get("ROBOT_TCP_PORT", preset["ROBOT_TCP_PORT"])),
+        "eol": os.environ.get("ROBOT_TCP_EOL", preset["ROBOT_TCP_EOL"]),
+        "timeout": float(os.environ.get("ROBOT_TCP_TIMEOUT", preset["ROBOT_TCP_TIMEOUT"])),
+    }
+
+
+def get_default_mic_activity_mode():
+    return os.environ.get(
+        "MIC_ACTIVITY_MODE",
+        RUNTIME_ENV_PRESETS[get_runtime_environment()]["MIC_ACTIVITY_MODE"],
+    )
+
+
+apply_runtime_environment(os.environ.get("ROBOT_STYLE_ENV", "real"), override=False)
+
+TTS_URL = get_tts_url()
+_ROBOT_TCP_CONFIG = get_robot_tcp_config()
+ROBOT_TCP_HOST = _ROBOT_TCP_CONFIG["host"]
+ROBOT_TCP_PORT = _ROBOT_TCP_CONFIG["port"]
+ROBOT_TCP_EOL = _ROBOT_TCP_CONFIG["eol"]
+ROBOT_TCP_TIMEOUT = _ROBOT_TCP_CONFIG["timeout"]
 
 BASE_DIR = Path(__file__).resolve().parent
 
 PROFILE_PATH = BASE_DIR / "robot_speech_profile.json"
 SAVE_JSON_DIR = BASE_DIR / "save_json"
 TTS_GENERATED_WAV_DIR = BASE_DIR / "sample_audio" / "wav"
+DEFAULT_TTS_CACHE_DIR = TTS_GENERATED_WAV_DIR / "default_cache"
+STYLE_SAMPLE_TTS_CACHE_DIR = TTS_GENERATED_WAV_DIR / "style_sample_cache"
+BACKCHANNEL_TTS_CACHE_DIR = TTS_GENERATED_WAV_DIR / "backchannel_cache"
 
-SPEED_SAMPLE_WAV_PATH = BASE_DIR / "sample_audio" / "speed_sample_要変更.wav"
+SPEED_SAMPLE_WAV_PATH = BASE_DIR / "sample_audio" / "speed_sample_ご本人様確認のため、身分証明書を拝見してもよろしいでしょうか.wav"
 
 SENTENCE_PAUSE_DEFAULT = 0.2
 SENTENCE_PAUSE_MIN = 0.0
 SENTENCE_PAUSE_MAX = 1.0
-SENTENCE_PAUSE_SAMPLE_WAV_1 = BASE_DIR / "sample_audio" / "えっと.wav"
-SENTENCE_PAUSE_SAMPLE_WAV_2 = BASE_DIR / "sample_audio" / "少々お待ちください.wav"
+SENTENCE_PAUSE_SAMPLE_WAV_1 = BASE_DIR / "sample_audio" / "sample_誠にありがとうございます。.wav"
+SENTENCE_PAUSE_SAMPLE_WAV_2 = BASE_DIR / "sample_audio" / "sample_確認が取れました。.wav"
+SENTENCE_PAUSE_TRIMMED_SAMPLE_WAV_1 = TTS_GENERATED_WAV_DIR / "sentence_pause_sample_1_trimmed.wav"
+SENTENCE_PAUSE_TRIMMED_SAMPLE_WAV_2 = TTS_GENERATED_WAV_DIR / "sentence_pause_sample_2_trimmed.wav"
 
 # 返答の間
 RESPONSE_DELAY_SAMPLE_WAV = BASE_DIR / "sample_audio" / "承知いたしました.wav"
@@ -57,48 +126,63 @@ POLITENESS_OPTIONS = [
         "id": "very_formal",
         "label": "尊敬語・謙譲語",
         "short": "かなり丁寧",
-        "example1": "本日はどのようなご用件でございますか。",
-        "example2": "恐れ入りますが、ご本人様確認のため、身分証明書を拝見してもよろしいでしょうか。",
+        "example1": "本日はどのようなご用件でございますか？",
+        "example2": "恐れ入りますが、ご本人様確認のため、身分証明書を拝見してもよろしいでしょうか？",
         "prompt": (
             "尊敬語・謙譲語を多く使い、かなり丁寧で改まった話し方にしてください。"
-            "例：「本日はどのようなご用件でございますか。」"
-            "「恐れ入りますが、ご本人様確認のため、身分証明書を拝見してもよろしいでしょうか。」"
+            "例：「本日はどのようなご用件でございますか？」"
+            "「恐れ入りますが、ご本人様確認のため、身分証明書を拝見してもよろしいでしょうか？」"
         ),
     },
     {
         "id": "formal",
         "label": "軽い尊敬語",
         "short": "丁寧で自然",
-        "example1": "本日はどのようなご用件でしょうか。",
-        "example2": "ご本人様確認のため、身分証明書を確認させていただいてもよろしいでしょうか。",
+        "example1": "本日はどのようなご用件でしょうか？",
+        "example2": "ご本人様確認のため、身分証明書を確認させていただいてもよろしいでしょうか？",
         "prompt": (
             "軽い尊敬語を使い、丁寧だが堅すぎない自然な話し方にしてください。"
-            "例：「本日はどのようなご用件でしょうか。」"
-            "「ご本人様確認のため、身分証明書を確認させていただいてもよろしいでしょうか。」"
+            "例：「本日はどのようなご用件でしょうか？」"
+            "「ご本人様確認のため、身分証明書を確認させていただいてもよろしいでしょうか？」"
         ),
     },
     {
         "id": "polite",
         "label": "丁寧語",
         "short": "標準的",
-        "example1": "今日はどのような用件でしょうか。",
-        "example2": "確認のため、身分証明書を見せてもらえますか。",
+        "example1": "今日はどのような用件でしょうか？",
+        "example2": "確認のため、身分証明書を見せてもらえますか？",
         "prompt": (
             "です・ますを中心にした標準的な丁寧語で話してください。"
             "尊敬語や謙譲語は必要以上に使わないでください。"
-            "例：「今日はどのような用件でしょうか。」"
-            "「確認のため、身分証明書を見せてもらえますか。」"
+            "例：「今日はどのような用件でしょうか？」"
+            "「確認のため、身分証明書を見せてもらえますか？」"
+        ),
+    },
+    {
+        "id": "light_casual",
+        "label": "軽くカジュアル",
+        "short": "丁寧語まじり",
+        "example1": "今日はどうしましたか？",
+        "example2": "確認したいので、身分証明書を見せてもらってもいいですか？",
+        "prompt": (
+            "丁寧語とカジュアルな表現を混ぜた、軽くカジュアルな話し方にしてください。"
+            "尊敬語や謙譲語は使いすぎず、「です・ます」は必要に応じて残してください。"
+            "例：「今日はどうしましたか？」"
+            "「確認したいので、身分証明書を見せてもらってもいいですか？」"
         ),
     },
     {
         "id": "casual",
         "label": "カジュアル",
-        "short": "親しみやすい",
+        "short": "丁寧語なし",
         "example1": "今日はどうしたの？",
         "example2": "確認したいから、身分証明書を見せてもらってもいい？",
         "prompt": (
             "カジュアルで親しみやすい話し方にしてください。"
-            "敬語は弱め、友好的でやわらかい表現にしてください。"
+            "丁寧語、尊敬語、謙譲語は使わないでください。"
+            "「です」「ます」「ください」「でしょうか」「いただく」「ございます」などの敬語表現は入れず、"
+            "友好的で自然な口語にしてください。"
             "例：「今日はどうしたの？」"
             "「確認したいから、身分証明書を見せてもらってもいい？」"
         ),
@@ -130,8 +214,8 @@ INTIMACY_OPTIONS_BY_PERSON_AND_POLITENESS = {
             {
                 "id": "middle",
                 "label": "中",
-                "example1": "本日はどのようなご用件でしょうか。",
-                "example2": "よろしければ、身分証明書を確認させていただけますか。",
+                "example1": "本日はどのようなご用件でしょうか？",
+                "example2": "よろしければ、身分証明書を確認させていただけますか？",
                 "prompt": (
                     "親しみは中程度にしてください。"
                     "丁寧さは保ちながら、少し柔らかく話しかけやすい表現にしてください。"
@@ -140,12 +224,14 @@ INTIMACY_OPTIONS_BY_PERSON_AND_POLITENESS = {
             {
                 "id": "high",
                 "label": "高",
-                "example1": "本日はどのようなご用件でしょうか〜？",
-                "example2": "すみません〜、確認のために身分証明書を見せていただけますか？",
+                "example1": "本日はどのようなご用件でしょうかぁ？",
+                "example2": "すみませぇん、確認のために身分証明書を見せていただけますかぁ？",
                 "prompt": (
                     "親しみは高めにしてください。"
                     "丁寧さは残しつつ、語尾に伸ばし棒などを使い、柔らかく親しげな話し方にしてください。"
                     "話者がのぞみの場合は、少しやわらかく、近い距離感の表現にしてください。"
+                    "伸ばし棒の～はttsに反映されないので、ーか小さいぁぃぅぇぉを使ってください"
+                    "ーか小さいぁぃぅぇぉを入れる際は後ろが。の場合はぁっやぃっのように伸ばし棒の後に小さいっを絶対に入れください"
                 ),
             },
             {
@@ -160,8 +246,8 @@ INTIMACY_OPTIONS_BY_PERSON_AND_POLITENESS = {
             {
                 "id": "low",
                 "label": "低",
-                "example1": "本日はどのようなご用件でしょうか。",
-                "example2": "身分証明書を確認させていただいてもよろしいでしょうか。",
+                "example1": "本日はどのようなご用件でしょうか？",
+                "example2": "身分証明書を確認させていただいてもよろしいでしょうか？",
                 "prompt": (
                     "親しみは低めにしてください。"
                     "丁寧で落ち着いた話し方にし、馴れ馴れしい表現は避けてください。"
@@ -170,8 +256,8 @@ INTIMACY_OPTIONS_BY_PERSON_AND_POLITENESS = {
             {
                 "id": "middle",
                 "label": "中",
-                "example1": "今日はどのようなご用件でしょうか。",
-                "example2": "確認のため、身分証明書を見せていただけますか。",
+                "example1": "今日はどのようなご用件でしょうか？",
+                "example2": "確認のため、身分証明書を見せていただけますか？",
                 "prompt": (
                     "親しみは中程度にしてください。"
                     "丁寧さを保ちながら、少し話しかけやすい自然な表現にしてください。"
@@ -180,12 +266,14 @@ INTIMACY_OPTIONS_BY_PERSON_AND_POLITENESS = {
             {
                 "id": "high",
                 "label": "高",
-                "example1": "今日はどんなご用件ですか〜？",
-                "example2": "確認したいので、身分証明書を見せてもらってもいいですか〜？",
+                "example1": "今日はどんなご用件ですかぁ？",
+                "example2": "確認したいので、身分証明書を見せてもらってもいいですかぁ？",
                 "prompt": (
                     "親しみは高めにしてください。"
                     "語尾に伸ばし棒などを使い、柔らかく親しげな話し方にしてください。"
                     "ただし接客として最低限の丁寧さは残してください。"
+                    "伸ばし棒の～はttsに反映されないので、ーか小さいぁぃぅぇぉを使ってください"
+                    "ーか小さいぁぃぅぇぉを入れる際は後ろが。の場合はぁっやぃっのように伸ばし棒の後に小さいっを絶対に入れください"
                 ),
             },
             {
@@ -210,8 +298,8 @@ INTIMACY_OPTIONS_BY_PERSON_AND_POLITENESS = {
             {
                 "id": "middle",
                 "label": "中",
-                "example1": "今日はどうされましたか。",
-                "example2": "確認したいので、身分証明書を見せてもらえますか。",
+                "example1": "今日はどうされましたか？",
+                "example2": "確認したいので、身分証明書を見せてもらえますか？",
                 "prompt": (
                     "親しみは中程度にしてください。"
                     "丁寧語を使いながら、少し柔らかく話しかけやすい表現にしてください。"
@@ -220,11 +308,13 @@ INTIMACY_OPTIONS_BY_PERSON_AND_POLITENESS = {
             {
                 "id": "high",
                 "label": "高",
-                "example1": "今日はどうしましたか〜？",
-                "example2": "ちょっと確認したいので、身分証明書を見せてもらってもいいですか〜？",
+                "example1": "今日はどうしましたかぁ？",
+                "example2": "ちょっと確認したいので、身分証明書を見せてもらってもいいですかぁ？",
                 "prompt": (
                     "親しみは高めにしてください。"
                     "語尾に伸ばし棒などを使い、柔らかく親しげな話し方にしてください。"
+                    "伸ばし棒の～はttsに反映されないので、ーか小さいぁぃぅぇぉを使ってください"
+                    "ーか小さいぁぃぅぇぉを入れる際は後ろが。の場合はぁっやぃっのように伸ばし棒の後に小さいっを絶対に入れください"
                 ),
             },
             {
@@ -259,11 +349,13 @@ INTIMACY_OPTIONS_BY_PERSON_AND_POLITENESS = {
             {
                 "id": "high",
                 "label": "高",
-                "example1": "今日はどうしたの〜？",
-                "example2": "ちょっと確認したいから、身分証明書見せてもらってもいい〜？",
+                "example1": "今日はどうしたのぉ？",
+                "example2": "ちょっと確認したいから、身分証明書見せてもらってもいいぃ？",
                 "prompt": (
                     "親しみは高めにしてください。"
                     "語尾に伸ばし棒などを使い、かなり親しげで柔らかい話し方にしてください。"
+                    "伸ばし棒の～はttsに反映されないので、ーか小さいぁぃぅぇぉを使ってください"
+                    "ーか小さいぁぃぅぇぉを入れる際は後ろが。の場合はぁっやぃっのように伸ばし棒の後に小さいっを絶対に入れください"
                 ),
             },
             {
@@ -292,8 +384,8 @@ INTIMACY_OPTIONS_BY_PERSON_AND_POLITENESS = {
             {
                 "id": "middle",
                 "label": "中",
-                "example1": "本日はどのようなご用件でしょうか。",
-                "example2": "よろしければ、身分証明書を確認させていただけますか。",
+                "example1": "本日はどのようなご用件でしょうか？",
+                "example2": "よろしければ、身分証明書を確認させていただけますか？",
                 "prompt": (
                     "親しみは中程度にしてください。"
                     "丁寧さを保ちながら、少し話しかけやすい表現にしてください。"
@@ -302,8 +394,8 @@ INTIMACY_OPTIONS_BY_PERSON_AND_POLITENESS = {
             {
                 "id": "high",
                 "label": "高",
-                "example1": "本日はどのようなご用件っすかね。",
-                "example2": "すみません、確認のために身分証明書を見せていただきたいっす。",
+                "example1": "本日はどのようなご用件っすかね？",
+                "example2": "すみません、確認のために身分証明書を見せていただきたいっす？",
                 "prompt": (
                     "親しみは高めにしてください。"
                     "話者がけんたの場合は、「〜っすね」「〜っすか」など、接客場面で許容される範囲の砕けた表現を使ってください。"
@@ -332,8 +424,8 @@ INTIMACY_OPTIONS_BY_PERSON_AND_POLITENESS = {
             {
                 "id": "middle",
                 "label": "中",
-                "example1": "今日はどのようなご用件でしょうかね。",
-                "example2": "確認のため、身分証明書を見せていただけますかね。",
+                "example1": "今日はどのようなご用件でしょうかね？",
+                "example2": "確認のため、身分証明書を見せていただけますかね？",
                 "prompt": (
                     "親しみは中程度にしてください。"
                     "丁寧さを保ちながら、少し話しかけやすい表現にしてください。"
@@ -342,8 +434,8 @@ INTIMACY_OPTIONS_BY_PERSON_AND_POLITENESS = {
             {
                 "id": "high",
                 "label": "高",
-                "example1": "今日はどんな用件っすか。",
-                "example2": "確認したいので、身分証明書を見せてもらってもいいっすか。",
+                "example1": "今日はどんな用件っすか？",
+                "example2": "確認したいので、身分証明書を見せてもらってもいいっすか？",
                 "prompt": (
                     "親しみは高めにしてください。"
                     "「〜っすね」「〜っすか」など、店員らしく砕けた表現を使ってください。"
@@ -372,8 +464,8 @@ INTIMACY_OPTIONS_BY_PERSON_AND_POLITENESS = {
             {
                 "id": "middle",
                 "label": "中",
-                "example1": "今日はどうされましたかね。",
-                "example2": "確認したいので、身分証明書を見せてもらえますかね。",
+                "example1": "今日はどうされましたかね？",
+                "example2": "確認したいので、身分証明書を見せてもらえますかね？",
                 "prompt": (
                     "親しみは中程度にしてください。"
                     "丁寧語を使いながら、少し話しかけやすい表現にしてください。"
@@ -382,8 +474,8 @@ INTIMACY_OPTIONS_BY_PERSON_AND_POLITENESS = {
             {
                 "id": "high",
                 "label": "高",
-                "example1": "今日はどうしたんすか。",
-                "example2": "ちょっと確認したいんで、身分証明書見せてもらってもいいっすか。",
+                "example1": "今日はどうしたんすか？",
+                "example2": "ちょっと確認したいんで、身分証明書見せてもらってもいいっすか？",
                 "prompt": (
                     "親しみは高めにしてください。"
                     "「〜っすね」「〜っすか」「〜なんすか」など、店員らしく砕けた表現を使ってください。"
@@ -422,8 +514,8 @@ INTIMACY_OPTIONS_BY_PERSON_AND_POLITENESS = {
             {
                 "id": "high",
                 "label": "高",
-                "example1": "今日はどうしたの〜？",
-                "example2": "確認したいから、身分証明書見せてもらってもいい〜？",
+                "example1": "今日はどうしたのぉ？",
+                "example2": "確認したいから、身分証明書見せてもらってもいいぃ？",
                 "prompt": (
                     "親しみは高めにしてください。"
                     "「〜っすね」「〜っすか」など、店員らしく砕けた表現を使ってください。"
@@ -439,6 +531,18 @@ INTIMACY_OPTIONS_BY_PERSON_AND_POLITENESS = {
         ],
     },
 }
+
+for _person_options in INTIMACY_OPTIONS_BY_PERSON_AND_POLITENESS.values():
+    _light_casual_options = []
+    for _item in _person_options["polite"]:
+        _copy = dict(_item)
+        if _copy["id"] != "other":
+            _copy["prompt"] = (
+                _copy["prompt"]
+                + "丁寧語とカジュアルな言い回しを混ぜ、軽くくだけた接客表現にしてください。"
+            )
+        _light_casual_options.append(_copy)
+    _person_options["light_casual"] = _light_casual_options
 
 VOCABULARY_BASE_OPTIONS = [
     {
@@ -492,8 +596,8 @@ VOCABULARY_STYLE_TEMPLATES = {
                 "example2": "{content}にございますよ。",
             },
             "high": {
-                "example1": "こちらは、{content}でございます〜。",
-                "example2": "{content}にございますよ〜。",
+                "example1": "こちらは、{content}でございますぅっ。",
+                "example2": "{content}にございますよぉっ。",
             },
         },
         "formal": {
@@ -506,8 +610,8 @@ VOCABULARY_STYLE_TEMPLATES = {
                 "example2": "{content}にありますよ。",
             },
             "high": {
-                "example1": "こちら、{content}ですよ〜。",
-                "example2": "{content}にありますよ〜。",
+                "example1": "こちら、{content}ですよぉっ。",
+                "example2": "{content}にありますよぉっ。",
             },
         },
         "polite": {
@@ -516,26 +620,26 @@ VOCABULARY_STYLE_TEMPLATES = {
                 "example2": "{content}にあります。",
             },
             "middle": {
-                "example1": "これは、{content}ですよ。",
+                "example1": "{content}ですよ。",
                 "example2": "{content}にありますよ。",
             },
             "high": {
-                "example1": "これ、{content}ですよ〜。",
-                "example2": "{content}にありますよ〜。",
+                "example1": "{content}ですよぉっ。",
+                "example2": "{content}にありますよぉっ。",
             },
         },
         "casual": {
             "low": {
-                "example1": "これは、{content}だよ。",
+                "example1": "{content}だよ。",
                 "example2": "{content}にあるよ。",
             },
             "middle": {
-                "example1": "これ、{content}だよ。",
+                "example1": "{content}だよ。",
                 "example2": "{content}にあるよ。",
             },
             "high": {
-                "example1": "これ、{content}だよ〜。",
-                "example2": "{content}にあるよ〜。",
+                "example1": "{content}だよぉっ。",
+                "example2": "{content}にあるよぉっ。",
             },
         },
     },
@@ -575,30 +679,36 @@ VOCABULARY_STYLE_TEMPLATES = {
                 "example2": "{content}にあります。",
             },
             "middle": {
-                "example1": "これは、{content}ですね。",
+                "example1": "{content}ですね。",
                 "example2": "{content}にありますね。",
             },
             "high": {
-                "example1": "これ、{content}っすね。",
+                "example1": "{content}っすね。",
                 "example2": "{content}にあるっすね。",
             },
         },
         "casual": {
             "low": {
-                "example1": "これは、{content}だよ。",
+                "example1": "{content}だよ。",
                 "example2": "{content}にあるよ。",
             },
             "middle": {
-                "example1": "これ、{content}だよね。",
+                "example1": "{content}だよね。",
                 "example2": "{content}にあるよね。",
             },
             "high": {
-                "example1": "これ、{content}っす。",
+                "example1": "{content}っす。",
                 "example2": "{content}にあるっす。",
             },
         },
     },
 }
+
+for _person_templates in VOCABULARY_STYLE_TEMPLATES.values():
+    _person_templates["light_casual"] = {
+        _intimacy_id: dict(_templates)
+        for _intimacy_id, _templates in _person_templates["polite"].items()
+    }
 
 LENGTH_BASE_OPTIONS = [
     {
@@ -655,7 +765,7 @@ def get_person_key_from_speaker(speaker_id: str) -> str:
 
 
 def normalize_politeness_id(politeness_id: str) -> str:
-    if politeness_id in ("very_formal", "formal", "polite", "casual"):
+    if politeness_id in ("very_formal", "formal", "polite", "light_casual", "casual"):
         return politeness_id
     return "formal"
 

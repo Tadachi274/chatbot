@@ -1,11 +1,7 @@
 import socket
+import threading
 
-from ..config import (
-    ROBOT_TCP_HOST,
-    ROBOT_TCP_PORT,
-    ROBOT_TCP_EOL,
-    ROBOT_TCP_TIMEOUT,
-)
+from ..config import get_robot_tcp_config
 
 try:
     from chatbot.tts.command.command import send_command as send_single_command
@@ -26,22 +22,24 @@ class RobotCommandClient:
 
     def __init__(
         self,
-        host: str = ROBOT_TCP_HOST,
-        port: int = ROBOT_TCP_PORT,
-        timeout: float = ROBOT_TCP_TIMEOUT,
-        eol: str = ROBOT_TCP_EOL,
+        host: str | None = None,
+        port: int | None = None,
+        timeout: float | None = None,
+        eol: str | None = None,
         persistent: bool = True,
         receive: bool = False,
     ):
-        self.host = host
-        self.port = port
-        self.timeout = timeout
-        self.eol = eol
+        config = get_robot_tcp_config()
+        self.host = host or config["host"]
+        self.port = int(port if port is not None else config["port"])
+        self.timeout = float(timeout if timeout is not None else config["timeout"])
+        self.eol = eol or config["eol"]
         self.persistent = persistent
         self.receive = receive
 
         self.sock = None
-        self.terminator = self._eol_bytes(eol)
+        self._lock = threading.Lock()
+        self.terminator = self._eol_bytes(self.eol)
 
     def _eol_bytes(self, eol: str) -> bytes:
         eol = eol.lower()
@@ -72,22 +70,32 @@ class RobotCommandClient:
     def send(self, command: str):
         print(f"[RobotCommandClient] > {command}")
 
-        if self.persistent:
-            self._send_persistent(command)
-        else:
-            self._send_single(command)
+        try:
+            if self.persistent:
+                self._send_persistent(command)
+            else:
+                self._send_single(command)
+        except Exception as e:
+            print(f"[RobotCommandClient] send error: {e}")
 
     def _send_persistent(self, command: str):
-        try:
-            if self.sock is None:
+        with self._lock:
+            try:
+                if self.sock is None:
+                    self.connect()
+
+                self.sock.sendall(command.encode("utf-8") + self.terminator)
+                return
+
+            except (BrokenPipeError, ConnectionResetError, OSError):
+                self.close()
+
+            try:
                 self.connect()
-
-            self.sock.sendall(command.encode("utf-8") + self.terminator)
-
-        except (BrokenPipeError, ConnectionResetError, OSError):
-            self.close()
-            self.connect()
-            self.sock.sendall(command.encode("utf-8") + self.terminator)
+                self.sock.sendall(command.encode("utf-8") + self.terminator)
+            except Exception as e:
+                self.close()
+                print(f"[RobotCommandClient] persistent send failed: {e}")
 
     def _send_single(self, command: str):
         if send_single_command is None:

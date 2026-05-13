@@ -3,6 +3,9 @@ import tempfile
 from pathlib import Path
 
 import pygame
+import imageio_ffmpeg
+
+FFMPEG_PATH = imageio_ffmpeg.get_ffmpeg_exe()
 
 
 class SpeedAudioPlayer:
@@ -26,7 +29,7 @@ class SpeedAudioPlayer:
         temp.close()
 
         cmd = [
-            "ffmpeg",
+            FFMPEG_PATH,
             "-y",
             "-i", str(src_path),
             "-filter:a", f"atempo={speed}",

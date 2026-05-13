@@ -11,8 +11,9 @@ from ..config import (
     MIC_START_HOLD_SEC_DEFAULT,
     MIC_SILENCE_HOLD_SEC_DEFAULT,
     MIC_METER_UPDATE_INTERVAL_SEC,
+    get_default_mic_activity_mode,
 )
-from ..audio.voice_activity_source import MacMicVolumeActivitySource
+from ..audio.voice_activity_source import MacMicVolumeActivitySource, RobotActActivitySource
 from .. import ui_style as ui
 
 
@@ -31,6 +32,8 @@ class MicActivityPanel(tk.Frame):
         end_threshold=MIC_VOLUME_END_THRESHOLD_DEFAULT,
         start_hold_sec=MIC_START_HOLD_SEC_DEFAULT,
         silence_hold_sec=MIC_SILENCE_HOLD_SEC_DEFAULT,
+        activity_mode=None,
+        act_threshold=1,
     ):
         super().__init__(parent, bg=ui.COLORS["main_card"])
 
@@ -47,12 +50,15 @@ class MicActivityPanel(tk.Frame):
         self.end_threshold = end_threshold
         self.start_hold_sec = start_hold_sec
         self.silence_hold_sec = silence_hold_sec
+        self.activity_mode = activity_mode or get_default_mic_activity_mode()
+        self.act_threshold = act_threshold
 
         self.state_label = tk.StringVar(value="停止中")
         self.result_label = tk.StringVar(value="")
-        self.volume_label = tk.StringVar(value="音量: 0.000")
+        self.volume_label = tk.StringVar(value="act: 0" if self.activity_mode == "robot_act" else "音量: 0.000")
 
         self.activity_source = None
+        self.xyz_client = None
         self.ignore_until_t = 0.0
         self.paused_label_text = "再生中"
         self._event_queue = queue.SimpleQueue()
@@ -64,7 +70,6 @@ class MicActivityPanel(tk.Frame):
 
         self.build_ui()
         self.setup_ui_event_pipe()
-        self.start_meter_updates()
 
     def build_ui(self):
         section = ui.frame(self, bg="panel")
@@ -189,16 +194,10 @@ class MicActivityPanel(tk.Frame):
 
             self.result_label.set("")
 
-            self.activity_source = MacMicVolumeActivitySource(
-                start_threshold=self.start_threshold,
-                end_threshold=self.end_threshold,
-                start_hold_sec=self.start_hold_sec,
-                silence_hold_sec=self.silence_hold_sec,
-                on_start=self.on_speech_start,
-                on_end=self.on_speech_end,
-            )
+            self.activity_source = self.create_activity_source()
 
             self.activity_source.start()
+            self.start_meter_updates()
             self.state_label.set("認識中")
 
             if self.status_var is not None:
@@ -209,6 +208,32 @@ class MicActivityPanel(tk.Frame):
             if self.status_var is not None:
                 self.status_var.set(f"マイクエラー: {e}")
 
+    def create_activity_source(self):
+        if self.activity_mode == "robot_act":
+            try:
+                from chatbot.tts.command.xyz_server import XYZClient
+            except Exception as e:
+                raise RuntimeError(f"XYZClient を読み込めませんでした: {e}") from e
+
+            self.xyz_client = XYZClient()
+            self.xyz_client.start()
+            return RobotActActivitySource(
+                xyz_client=self.xyz_client,
+                act_threshold=self.act_threshold,
+                silence_hold_sec=self.silence_hold_sec,
+                on_start=self.on_speech_start,
+                on_end=self.on_speech_end,
+            )
+
+        return MacMicVolumeActivitySource(
+            start_threshold=self.start_threshold,
+            end_threshold=self.end_threshold,
+            start_hold_sec=self.start_hold_sec,
+            silence_hold_sec=self.silence_hold_sec,
+            on_start=self.on_speech_start,
+            on_end=self.on_speech_end,
+        )
+
     def stop(self):
         if self.activity_source is not None:
             try:
@@ -216,6 +241,13 @@ class MicActivityPanel(tk.Frame):
             except Exception:
                 pass
             self.activity_source = None
+        if self.xyz_client is not None:
+            try:
+                self.xyz_client.stop()
+            except Exception:
+                pass
+            self.xyz_client = None
+        self.stop_meter_updates()
 
         self.state_label.set("停止中")
         self.result_label.set("")
@@ -240,8 +272,8 @@ class MicActivityPanel(tk.Frame):
         duration_sec = max(0.0, float(duration_sec))
         self.ignore_until_t = max(self.ignore_until_t, time.monotonic() + duration_sec)
         self.paused_label_text = label
-        self.set_state(label)
-        self.set_result("")
+        self.set_state_threadsafe(label)
+        self.set_result_threadsafe("")
 
 
     def is_paused(self):
@@ -253,9 +285,6 @@ class MicActivityPanel(tk.Frame):
 
     def start_meter_updates(self):
         if self._meter_running:
-            return
-
-        if not self._filehandler_registered:
             return
 
         self._meter_running = True
@@ -287,25 +316,32 @@ class MicActivityPanel(tk.Frame):
 
 
     def setup_ui_event_pipe(self):
+        self.bind("<<MicActivityPanelQueue>>", self._handle_virtual_event, add="+")
+
         create_filehandler = getattr(self.tk, "createfilehandler", None)
         if create_filehandler is None:
             return
 
-        self._event_read_fd, self._event_write_fd = os.pipe()
-        os.set_blocking(self._event_read_fd, False)
-        os.set_blocking(self._event_write_fd, False)
-        create_filehandler(
-            self._event_read_fd,
-            tk.READABLE,
-            self._handle_pipe_event,
-        )
-        self._filehandler_registered = True
+        try:
+            self._event_read_fd, self._event_write_fd = os.pipe()
+            os.set_blocking(self._event_read_fd, False)
+            os.set_blocking(self._event_write_fd, False)
+            create_filehandler(
+                self._event_read_fd,
+                tk.READABLE,
+                self._handle_pipe_event,
+            )
+            self._filehandler_registered = True
+        except Exception:
+            self.close_ui_event_pipe()
 
 
     def wake_ui_event_loop(self):
         if self._event_write_fd is None:
             if threading.current_thread() is threading.main_thread():
                 self._handle_queued_events()
+            else:
+                self.generate_queue_event()
             return
 
         try:
@@ -317,6 +353,17 @@ class MicActivityPanel(tk.Frame):
     def _handle_pipe_event(self, _fd=None, _mask=None):
         self.drain_event_pipe()
         self._handle_queued_events()
+
+
+    def _handle_virtual_event(self, _event=None):
+        self._handle_queued_events()
+
+
+    def generate_queue_event(self):
+        try:
+            self.event_generate("<<MicActivityPanelQueue>>", when="tail")
+        except Exception:
+            pass
 
 
     def drain_event_pipe(self):
@@ -388,11 +435,14 @@ class MicActivityPanel(tk.Frame):
             remain = self.get_remaining_pause_sec()
             self.state_label.set(f"{self.paused_label_text} {remain:.1f}s")
             self.result_label.set("")
-            self.volume_label.set("音量: --")
+            self.volume_label.set("act: --" if self.activity_mode == "robot_act" else "音量: --")
             self.draw_volume_bar(0.0)
             return
 
-        self.volume_label.set(f"音量: {volume:.3f}")
+        if self.activity_mode == "robot_act":
+            self.volume_label.set(f"act: {int(volume)}")
+        else:
+            self.volume_label.set(f"音量: {volume:.3f}")
         self.draw_volume_bar(volume)
 
         if self.on_volume_update_callback is not None:
@@ -404,7 +454,8 @@ class MicActivityPanel(tk.Frame):
         width = max(1, self.volume_bar.winfo_width())
         height = max(1, self.volume_bar.winfo_height())
 
-        ratio = min(1.0, volume / max(0.001, self.start_threshold))
+        threshold = float(self.act_threshold if self.activity_mode == "robot_act" else self.start_threshold)
+        ratio = min(1.0, volume / max(0.001, threshold))
         fill_width = int(width * ratio)
 
         self.volume_bar.create_rectangle(
@@ -416,9 +467,12 @@ class MicActivityPanel(tk.Frame):
             outline="",
         )
 
-        threshold_x = int(
-            width * min(1.0, self.end_threshold / max(0.001, self.start_threshold))
-        )
+        if self.activity_mode == "robot_act":
+            threshold_ratio = 1.0
+        else:
+            threshold_ratio = min(1.0, self.end_threshold / max(0.001, self.start_threshold))
+
+        threshold_x = int(width * threshold_ratio)
 
         self.volume_bar.create_line(
             threshold_x,

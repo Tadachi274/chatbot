@@ -3,9 +3,10 @@ from tkinter import messagebox
 
 from ..config import LENGTH_BASE_OPTIONS
 from .. import ui_style as ui
+from .style_sample_audio import StyleSampleAudioMixin
 
 
-class LengthTab(tk.Frame):
+class LengthTab(StyleSampleAudioMixin, tk.Frame):
     def __init__(self, parent, profile_store, tts_client, status_var, on_saved=None):
         super().__init__(parent, bg=ui.COLORS["main_card"])
 
@@ -100,6 +101,7 @@ class LengthTab(tk.Frame):
 
         normal_options = [opt for opt in LENGTH_BASE_OPTIONS if opt["id"] != "other"]
         other_options = [opt for opt in LENGTH_BASE_OPTIONS if opt["id"] == "other"]
+        self.prewarm_style_sample_wavs(LENGTH_BASE_OPTIONS)
 
         for opt in normal_options:
             card = ui.bordered_frame(top_row, bg="card", border="border")
@@ -166,6 +168,15 @@ class LengthTab(tk.Frame):
                 anchor="w",
             ).pack(
                 fill="x",
+                padx=ui.SPACING["card_x"],
+                pady=(0, ui.SPACING["compact_y"]),
+            )
+            ui.sub_button(
+                parent,
+                text="例2を再生",
+                command=lambda item=opt: self.play_option_example(item, 2),
+            ).pack(
+                anchor="w",
                 padx=ui.SPACING["card_x"],
                 pady=(0, ui.SPACING["compact_y"]),
             )
@@ -340,6 +351,11 @@ class LengthTab(tk.Frame):
 
     def on_changed(self):
         self.save_selection_only()
+        self.play_option_example(self.find_option(self.selected_length.get()), 1)
+
+    def play_option_example(self, opt, example_no=1):
+        text = opt.get(f"example{example_no}", "")
+        self.play_style_sample_text(text, label=f"長さ {opt.get('label', '')} 例{example_no}")
 
     def speak_sample(self):
         text = self.length_test_text.get().strip()

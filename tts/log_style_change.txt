@@ -2199,3 +2199,15 @@ output: [
   {"utterance": "どうぞごゆっくりおくつろぎくださいませ。", "type": "CLOSING"}
 ]
 
+input: こんにちは
+output: こんにちは。チェックインでよろしいでしょうか？
+
+input: こんにちは
+output: こんにちは。チェックインでよろしいでしょうか？
+
+input: こんにちは
+output: [
+  {"utterance": "こんにちは、ようこそお越しくださいました。", "type": "OPENING"},
+  {"utterance": "本日はチェックインでお間違いないでしょうか。", "type": "QUESTION"}
+]
+

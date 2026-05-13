@@ -80,3 +80,20 @@ def trim_silence_to_temp_wav(
         out.writeframes(trimmed_frames)
 
     return temp_path
+
+
+def trim_silence_to_wav(
+    src_path: Path,
+    dst_path: Path,
+    threshold: int = 400,
+    keep_silence_ms: int = 50,
+) -> Path:
+    temp_path = trim_silence_to_temp_wav(
+        src_path=src_path,
+        threshold=threshold,
+        keep_silence_ms=keep_silence_ms,
+    )
+    dst_path = Path(dst_path)
+    dst_path.parent.mkdir(parents=True, exist_ok=True)
+    Path(temp_path).replace(dst_path)
+    return dst_path
