@@ -286,10 +286,12 @@ class DefaultProfileTab(tk.Frame):
         except Exception as e:
             messagebox.showerror("作成エラー", str(e))
 
-    def show_default_talk_tab(self):
+    def show_default_talk_tab(self, venue_label=None):
         if self.inner_notebook is not None and self.default_talk_frame is not None:
             self.inner_notebook.select(self.default_talk_frame)
             tab = self.ensure_default_talk_tab()
+            if venue_label and hasattr(tab, "select_venue"):
+                tab.select_venue(venue_label)
             if hasattr(tab, "refresh_from_profile"):
                 tab.refresh_from_profile()
 

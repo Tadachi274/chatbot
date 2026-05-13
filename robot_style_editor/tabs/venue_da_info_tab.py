@@ -34,14 +34,14 @@ class VenueDAInfoTab(tk.Frame):
         ui.label(page, text="DA設定範囲", font="page_title", bg="main_card").pack(anchor="w")
         ui.label(
             page,
-            text=f"{self.venue_label}の接客例で使うDAだけを設定します。",
+            text=f"{self.venue_label}では、雑談以外のDAを共通で設定します。",
             font="body",
             bg="main_card",
             fg="sub_text",
         ).pack(anchor="w", pady=(ui.SPACING["small_gap"], ui.SPACING["section_y"]))
 
-        self.render_group(page, "この店舗で設定するDA", self.required_intents, "使われる発話意図です。")
-        self.render_group(page, "この店舗では設定しないDA", self.unused_intents, "接客例に出ないため今回は調整対象外です。")
+        self.render_group(page, "この店舗で設定するDA", self.required_intents, "雑談以外を設定します。")
+        self.render_group(page, "この店舗では設定しないDA", self.unused_intents, "今回は調整対象外です。")
 
     def render_group(self, parent, title, items, empty_text):
         section = ui.frame(parent, bg="panel")

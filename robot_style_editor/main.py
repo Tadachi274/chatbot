@@ -349,20 +349,7 @@ class RobotStyleEditorApp(tk.Tk):
         ]
 
     def required_intent_keys(self):
-        venues = self.active_venues()
-        venue_ids = {venue["id"] for venue in venues}
-        keys = set()
-        for scene in EXAMPLE_SCENES:
-            if scene.get("venue") not in venue_ids:
-                continue
-            for turn in scene.get("turns", []):
-                for part in turn.get("intent_parts", []) or []:
-                    intent = part.get("intent")
-                    if intent:
-                        keys.add(intent)
-        if not keys:
-            keys = {key for key, _label in self.intent_tab_labels()}
-        return keys
+        return {key for key, _label in self.intent_tab_labels() if key != "smalltalk"}
 
     def intent_scope_items(self, required_keys):
         labels = dict(self.intent_tab_labels())
@@ -382,9 +369,9 @@ class RobotStyleEditorApp(tk.Tk):
         for key, label in self.intent_tab_labels():
             titles = "、".join(sorted(scene_titles.get(key, [])))
             if key in required_keys:
-                required.append({"key": key, "label": label, "reason": titles or "この店舗の接客例で使用"})
+                required.append({"key": key, "label": label, "reason": titles or "全店舗で共通して設定"})
             else:
-                unused.append({"key": key, "label": label, "reason": "この店舗の接客例では未使用"})
+                unused.append({"key": key, "label": label, "reason": "接客場面設定では対象外"})
         return required, unused
 
     def lazy_tab(self, parent, tab_class):
@@ -504,8 +491,8 @@ class RobotStyleEditorApp(tk.Tk):
         self.session_active = True
         self.status_var.set(f"{venue['label']}の設定を開始しました: {saved_path.name}")
         self.rebuild_tabs_from_profile()
-        if len(self.tab_sequence) > 1:
-            self.select_actual_tab(self.tab_sequence[1])
+        self.select_actual_tab(self.default_tab)
+        self.default_tab.show_default_talk_tab(venue["label"])
         return saved_path
 
     def continue_current_user(self):

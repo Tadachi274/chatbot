@@ -27,7 +27,7 @@ class DefaultTalkTab(tk.Frame):
         self.default_profile = build_default_profile()
         self.robot_client = None
 
-        self.venue_var = tk.StringVar(value=EXAMPLE_VENUES[0]["label"])
+        self.venue_var = tk.StringVar(value=self.initial_venue_label())
         self.scene_var = tk.StringVar()
         self.delete_generated_wav_var = tk.BooleanVar(value=True)
         self.trim_run_wav_var = tk.BooleanVar(value=os.environ.get("ROBOT_RUN_TRIM_WAV", "0") == "1")
@@ -46,6 +46,13 @@ class DefaultTalkTab(tk.Frame):
         self.bind("<<DefaultTalkTabQueue>>", self.on_queue_event, add="+")
         self.build_ui()
         self.refresh_scene_choices()
+
+    def initial_venue_label(self):
+        venue_id = getattr(self.profile_store, "current_venue_id", None)
+        for venue in EXAMPLE_VENUES:
+            if venue["id"] == venue_id:
+                return venue["label"]
+        return EXAMPLE_VENUES[0]["label"]
 
     def ensure_robot_client(self):
         if self.robot_client is None:
@@ -114,6 +121,8 @@ class DefaultTalkTab(tk.Frame):
             tab = ui.frame(self.venue_notebook, bg="panel")
             self.venue_notebook.add(tab, text=venue["label"])
             self.venue_tab_labels[str(tab)] = venue["label"]
+            if venue["label"] == self.venue_var.get():
+                self.venue_notebook.select(tab)
 
         card = ui.bordered_frame(section, bg="card", border="border")
         card.pack(fill="x", padx=ui.SPACING["section_x"], pady=(0, ui.SPACING["section_y"]))
@@ -149,6 +158,17 @@ class DefaultTalkTab(tk.Frame):
         if label and self.venue_var.get() != label:
             self.venue_var.set(label)
             self.refresh_scene_choices()
+
+    def select_venue(self, venue_label):
+        if not venue_label:
+            return
+        self.venue_var.set(venue_label)
+        if self.venue_notebook is not None:
+            for tab_id, label in self.venue_tab_labels.items():
+                if label == venue_label:
+                    self.venue_notebook.select(tab_id)
+                    break
+        self.refresh_scene_choices()
 
     def current_venue_id(self):
         for venue in EXAMPLE_VENUES:
