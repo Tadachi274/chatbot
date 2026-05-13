@@ -1461,21 +1461,32 @@ class ExampleSceneTab(tk.Frame):
                             total,
                             f"{turn_index + 1}. {self.intent_label(intent)} を生成中: {segment[:28]}",
                         )
-                        wav_path = self.tts_client.synthesize_to_wav(
-                            text=segment,
-                            instructions=instructions,
-                            person=self.active_profile_get("speaker", None),
-                        )
-                        if wav_path is not None:
-                            self.generated_wav_paths.append(str(wav_path))
-                        prepared_parts.append(
-                            {
-                                "intent": intent,
-                                "text": segment,
-                                "wav_path": str(wav_path),
-                                "intent_data": intent_data,
-                            }
-                        )
+                        prepared_part = {
+                            "intent": intent,
+                            "text": segment,
+                            "intent_data": intent_data,
+                        }
+                        if self.tts_client.is_robot_playback():
+                            remote = self.tts_client.prepare_remote_audio(
+                                text=segment,
+                                instructions=instructions,
+                                person=self.active_profile_get("speaker", None),
+                            )
+                            if not remote:
+                                continue
+                            prepared_part["remote_audio_id"] = remote["audio_id"]
+                            prepared_part["duration"] = float(remote.get("duration", 0.0))
+                        else:
+                            wav_path = self.tts_client.synthesize_to_wav(
+                                text=segment,
+                                instructions=instructions,
+                                person=self.active_profile_get("speaker", None),
+                            )
+                            if wav_path is not None:
+                                self.generated_wav_paths.append(str(wav_path))
+                            prepared_part["wav_path"] = str(wav_path)
+
+                        prepared_parts.append(prepared_part)
                         completed += 1
                         self.emit_prep_progress(
                             completed,
@@ -1866,7 +1877,7 @@ class ExampleSceneTab(tk.Frame):
                 if self.run_state != "running":
                     return
                 self.apply_intent_motion(part)
-                self.play_prepared_wav(part["wav_path"])
+                self.play_prepared_audio(part)
 
                 if part_index + 1 < len(parts):
                     self.apply_sentence_pause()
@@ -1877,6 +1888,20 @@ class ExampleSceneTab(tk.Frame):
         except Exception as e:
             self.ensure_prep_queue().put({"type": "error", "message": str(e)})
             self.wake_ui_event_loop()
+
+    def play_prepared_audio(self, part):
+        if self.tts_client.is_robot_playback() and part.get("remote_audio_id"):
+            duration = float(part.get("duration", 0.0))
+            if self.mic_panel is not None:
+                self.mic_panel.pause_for(duration + 0.2, label="ロボット発話中")
+            self.tts_client.play_remote_audio(
+                part["remote_audio_id"],
+                wait=True,
+                timeout=duration + 5.0,
+            )
+            return
+
+        self.play_prepared_wav(part["wav_path"])
 
     def play_prepared_wav(self, wav_path):
         should_trim = self.trim_run_wav_var.get()

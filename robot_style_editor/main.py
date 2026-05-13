@@ -30,7 +30,12 @@ load_env_file()
 from .profile_store import ProfileStore
 from .clients.tts_client import TTSClient
 from . import ui_style as ui
-from .config import RUNTIME_ENV_PRESETS, apply_runtime_environment, get_runtime_environment
+from .config import (
+    RUNTIME_ENV_PRESETS,
+    apply_runtime_environment,
+    get_runtime_environment,
+    get_tts_playback_target,
+)
 from .config_example import EXAMPLE_SCENES, EXAMPLE_VENUES
 
 from .tabs.speaker_tab import SpeakerTab
@@ -102,6 +107,7 @@ class RobotStyleEditorApp(tk.Tk):
         self.profile_store = ProfileStore()
         self.tts_client = TTSClient()
         self.status_var = tk.StringVar(value=f"準備完了: {RUNTIME_ENV_PRESETS[self.runtime_env]['label']}")
+        self.tts_playback_var = tk.StringVar(value=get_tts_playback_target())
         self.session_active = False
         self.user_active = False
         self.selected_venue = None
@@ -216,11 +222,43 @@ class RobotStyleEditorApp(tk.Tk):
             fg="sub_text",
         ).pack(side="left")
 
+        playback_frame = ui.frame(footer, bg="main_card")
+        playback_frame.pack(side="right", padx=(ui.SPACING["gap"], 0))
+        ui.label(
+            playback_frame,
+            text="音声再生",
+            font="small",
+            bg="main_card",
+            fg="sub_text",
+        ).pack(side="left")
+        ui.radio(
+            playback_frame,
+            text="ノートPC",
+            variable=self.tts_playback_var,
+            value="local",
+            command=self.on_tts_playback_changed,
+            bg="main_card",
+        ).pack(side="left")
+        ui.radio(
+            playback_frame,
+            text="ニコラ",
+            variable=self.tts_playback_var,
+            value="robot",
+            command=self.on_tts_playback_changed,
+            bg="main_card",
+        ).pack(side="left")
+
         ui.action_button(
             footer,
             text="全体を保存",
             command=self.save_all,
         ).pack(side="right")
+
+    def on_tts_playback_changed(self):
+        target = self.tts_playback_var.get()
+        self.tts_client.set_playback_target(target)
+        label = "ニコラPC" if target == "robot" else "ノートPC"
+        self.status_var.set(f"音声再生先を{label}にしました")
 
     def add_tabs(self):
         self.tab_sequence = []
