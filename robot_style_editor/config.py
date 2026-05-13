@@ -6,7 +6,9 @@ RUNTIME_ENV_PRESETS = {
         "label": "実環境",
         "TTS_URL": "http://192.168.0.169:15001/synthesize",
         "TTS_PLAYBACK_TARGET": "local",
-        "ROBOT_TTS_PLAY_URL": "http://nikola-humantracker:15003/speak",
+        "ROBOT_TTS_PLAY_URL": "http://192.168.0.168:15003/speak",
+        "ROBOT_TTS_PREPARE_URL": "http://192.168.0.168:15003/prepare",
+        "ROBOT_TTS_PLAY_AUDIO_URL": "http://192.168.0.168:15003/play",
         "ROBOT_TCP_HOST": "nikola-humantracker",
         "ROBOT_TCP_PORT": "8078",
         "ROBOT_TCP_EOL": "lf",
@@ -18,6 +20,8 @@ RUNTIME_ENV_PRESETS = {
         "TTS_URL": "http://127.0.0.1:15001/synthesize",
         "TTS_PLAYBACK_TARGET": "local",
         "ROBOT_TTS_PLAY_URL": "http://127.0.0.1:15003/speak",
+        "ROBOT_TTS_PREPARE_URL": "http://127.0.0.1:15003/prepare",
+        "ROBOT_TTS_PLAY_AUDIO_URL": "http://127.0.0.1:15003/play",
         "ROBOT_TCP_HOST": "127.0.0.1",
         "ROBOT_TCP_PORT": "5000",
         "ROBOT_TCP_EOL": "lf",
@@ -58,10 +62,30 @@ def get_tts_playback_target():
     )
 
 
+def set_tts_playback_target(target):
+    target = target if target in {"local", "robot"} else "local"
+    os.environ["TTS_PLAYBACK_TARGET"] = target
+    return target
+
+
 def get_robot_tts_play_url():
     return os.environ.get(
         "ROBOT_TTS_PLAY_URL",
         RUNTIME_ENV_PRESETS[get_runtime_environment()]["ROBOT_TTS_PLAY_URL"],
+    )
+
+
+def get_robot_tts_prepare_url():
+    return os.environ.get(
+        "ROBOT_TTS_PREPARE_URL",
+        RUNTIME_ENV_PRESETS[get_runtime_environment()]["ROBOT_TTS_PREPARE_URL"],
+    )
+
+
+def get_robot_tts_play_audio_url():
+    return os.environ.get(
+        "ROBOT_TTS_PLAY_AUDIO_URL",
+        RUNTIME_ENV_PRESETS[get_runtime_environment()]["ROBOT_TTS_PLAY_AUDIO_URL"],
     )
 
 

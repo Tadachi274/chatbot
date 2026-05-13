@@ -8,6 +8,10 @@ from .config import PROFILE_PATH, SAVE_JSON_DIR
 class ProfileStore:
     def __init__(self, path=PROFILE_PATH):
         self.path = path
+        self.user_dir = path.parent if path.parent != Path(".") else SAVE_JSON_DIR
+        self.user_name = None
+        self.current_venue_id = None
+        self.current_venue_label = None
         self.data = self.load()
         self.example_results = self.data.pop("example_results", {}) or {}
         self.last_example_results_path = None
@@ -72,6 +76,86 @@ class ProfileStore:
         directory.mkdir(parents=True, exist_ok=True)
         return directory / target_name
 
+    def resolve_user_dir(self, username, directory=SAVE_JSON_DIR):
+        username = (username or "").strip()
+        if not username:
+            raise ValueError("ユーザー名を入力してください")
+
+        target_name = Path(username).name
+        if target_name != username:
+            raise ValueError("ユーザー名にはフォルダ区切りを含めないでください")
+
+        directory = Path(directory)
+        directory.mkdir(parents=True, exist_ok=True)
+        return directory / target_name
+
+    def start_new_user_folder(self, username, directory=SAVE_JSON_DIR):
+        target = self.resolve_user_dir(username, directory)
+        if target.exists() and not target.is_dir():
+            raise FileExistsError(f"同名のファイルが既にあります: {target.name}")
+        if target.exists() and any(target.iterdir()):
+            raise FileExistsError(f"同名のユーザーフォルダが既にあります: {target.name}")
+
+        target.mkdir(parents=True, exist_ok=True)
+        self.user_dir = target
+        self.user_name = target.name
+        self.current_venue_id = None
+        self.current_venue_label = None
+        self.path = target / "_未選択.json"
+        self.data = {}
+        self.example_results = {}
+        self.last_example_results_path = None
+        return target
+
+    def load_user_folder(self, path):
+        target = Path(path)
+        if target.is_file():
+            return self.load_from(target)
+        if not target.exists() or not target.is_dir():
+            raise ValueError("ユーザーフォルダを選択してください")
+
+        self.user_dir = target
+        self.user_name = target.name
+        self.current_venue_id = None
+        self.current_venue_label = None
+        self.path = target / "_未選択.json"
+        self.data = {}
+        self.example_results = {}
+        self.last_example_results_path = None
+        return target
+
+    def venue_profile_path(self, venue_id):
+        if self.user_dir is None:
+            raise ValueError("先にユーザーを開始してください")
+        return Path(self.user_dir) / f"{venue_id}.json"
+
+    def select_venue_session(self, venue_id, venue_label=None):
+        from .config_default_profile import build_default_profile
+
+        target = self.venue_profile_path(venue_id)
+        self.current_venue_id = venue_id
+        self.current_venue_label = venue_label or venue_id
+        self.path = target
+
+        if target.exists():
+            self.load_from(target, persist_active=False)
+            self.current_venue_id = venue_id
+            self.current_venue_label = venue_label or self.data.get("venue_label") or venue_id
+            self.data["user_name"] = self.user_name
+            self.data["venue_id"] = self.current_venue_id
+            self.data["venue_label"] = self.current_venue_label
+            self.save()
+            return target
+
+        self.data = build_default_profile()
+        self.example_results = {}
+        self.last_example_results_path = None
+        self.data["user_name"] = self.user_name
+        self.data["venue_id"] = self.current_venue_id
+        self.data["venue_label"] = self.current_venue_label
+        self.save()
+        return target
+
     def start_new_session(self, filename, directory=SAVE_JSON_DIR):
         target = self.resolve_save_path(filename, directory)
         example_target = self.example_results_path_for(target)
@@ -100,6 +184,10 @@ class ProfileStore:
         self.data = data
         self.example_results = self.data.pop("example_results", {}) or {}
         self.path = source
+        self.user_dir = source.parent
+        self.user_name = source.parent.name if source.parent != SAVE_JSON_DIR else source.stem
+        self.current_venue_id = self.data.get("venue_id")
+        self.current_venue_label = self.data.get("venue_label")
         self.load_companion_example_results(source)
         if persist_active:
             self.save()

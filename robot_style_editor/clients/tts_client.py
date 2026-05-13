@@ -13,9 +13,12 @@ from uuid import uuid4
 from ..config import (
     DEFAULT_INSTRUCTIONS,
     TTS_GENERATED_WAV_DIR,
+    get_robot_tts_play_audio_url,
+    get_robot_tts_prepare_url,
     get_robot_tts_play_url,
     get_tts_playback_target,
     get_tts_url,
+    set_tts_playback_target,
 )
 from chatbot.tts import tts_nikola_data as tts
 from chatbot.tts.tts_audioplayer import AudioPlayer
@@ -26,6 +29,8 @@ class TTSClient:
         self.url = url or get_tts_url()
         self.playback_target = get_tts_playback_target()
         self.robot_play_url = get_robot_tts_play_url()
+        self.robot_prepare_url = get_robot_tts_prepare_url()
+        self.robot_play_audio_url = get_robot_tts_play_audio_url()
 
         # UIで使うWAVプレビュー用。
         # 事前音声は消したくないので autoremove=False
@@ -33,6 +38,15 @@ class TTSClient:
 
         self._preview_stop = threading.Event()
         self._preview_thread = None
+
+    def set_playback_target(self, target: str):
+        self.playback_target = set_tts_playback_target(target)
+        self.robot_play_url = get_robot_tts_play_url()
+        self.robot_prepare_url = get_robot_tts_prepare_url()
+        self.robot_play_audio_url = get_robot_tts_play_audio_url()
+
+    def is_robot_playback(self):
+        return self.playback_target == "robot"
 
     def speak(self, text: str, instructions: dict | None = None, person: str | None = None):
         text = text.strip()
@@ -97,6 +111,52 @@ class TTSClient:
                 res.read()
         except Exception as e:
             print(f"[TTSClient] robot speak failed: {e}")
+
+    def prepare_remote_audio(self, text: str, instructions: dict | None = None, person: str | None = None):
+        text = text.strip()
+        if not text:
+            return None
+
+        merged = {
+            **DEFAULT_INSTRUCTIONS,
+            **(instructions or {}),
+        }
+        resolved_person = person or merged.get("tts_speaker_change") or tts.DEFAULT_PERSON
+        payload = {
+            "text": text,
+            "instructions": merged,
+            "person": resolved_person,
+            "tts_url": self.url,
+        }
+        return self._post_json(self.robot_prepare_url, payload, timeout=60)
+
+    def play_remote_audio(self, audio_id: str, wait: bool = True, timeout: float | None = None):
+        payload = {
+            "audio_id": audio_id,
+            "wait": bool(wait),
+        }
+        if timeout is not None:
+            payload["timeout"] = float(timeout)
+        return self._post_json(
+            self.robot_play_audio_url,
+            payload,
+            timeout=max(5.0, float(timeout or 5.0) + 2.0),
+        )
+
+    def _post_json(self, url: str, payload: dict, timeout: float = 10.0):
+        data = json.dumps(payload, ensure_ascii=False).encode("utf-8")
+        req = urllib.request.Request(
+            url,
+            data=data,
+            headers={"Content-Type": "application/json"},
+            method="POST",
+        )
+        with urllib.request.urlopen(req, timeout=timeout) as res:
+            raw = res.read()
+        result = json.loads(raw.decode("utf-8")) if raw else {}
+        if not result.get("ok", False):
+            raise RuntimeError(result.get("error") or f"remote TTS request failed: {url}")
+        return result
 
     def change_speaker_and_speak(self, text: str, speaker: str):
         instructions = {

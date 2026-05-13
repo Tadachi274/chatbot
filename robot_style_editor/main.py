@@ -30,9 +30,13 @@ load_env_file()
 from .profile_store import ProfileStore
 from .clients.tts_client import TTSClient
 from . import ui_style as ui
-from .config import RUNTIME_ENV_PRESETS, apply_runtime_environment, get_runtime_environment
-from .config_default_profile import build_default_profile
-from .config_example import EXAMPLE_VENUES
+from .config import (
+    RUNTIME_ENV_PRESETS,
+    apply_runtime_environment,
+    get_runtime_environment,
+    get_tts_playback_target,
+)
+from .config_example import EXAMPLE_SCENES, EXAMPLE_VENUES
 
 from .tabs.speaker_tab import SpeakerTab
 from .tabs.default_profile_tab import DefaultProfileTab
@@ -59,6 +63,7 @@ from .tabs.thinking_pose_tab import ThinkingPoseTab
 from .tabs.listening_pose_tab import ListeningPoseTab
 from .tabs.understanding_pose_tab import UnderstandingPoseTab
 from .tabs.request_history_tab import RequestHistoryTab
+from .tabs.venue_da_info_tab import VenueDAInfoTab
 
 
 class LazyTab(tk.Frame):
@@ -102,7 +107,10 @@ class RobotStyleEditorApp(tk.Tk):
         self.profile_store = ProfileStore()
         self.tts_client = TTSClient()
         self.status_var = tk.StringVar(value=f"準備完了: {RUNTIME_ENV_PRESETS[self.runtime_env]['label']}")
+        self.tts_playback_var = tk.StringVar(value=get_tts_playback_target())
         self.session_active = False
+        self.user_active = False
+        self.selected_venue = None
 
         self.build_ui()
 
@@ -214,11 +222,43 @@ class RobotStyleEditorApp(tk.Tk):
             fg="sub_text",
         ).pack(side="left")
 
+        playback_frame = ui.frame(footer, bg="main_card")
+        playback_frame.pack(side="right", padx=(ui.SPACING["gap"], 0))
+        ui.label(
+            playback_frame,
+            text="音声再生",
+            font="small",
+            bg="main_card",
+            fg="sub_text",
+        ).pack(side="left")
+        ui.radio(
+            playback_frame,
+            text="ノートPC",
+            variable=self.tts_playback_var,
+            value="local",
+            command=self.on_tts_playback_changed,
+            bg="main_card",
+        ).pack(side="left")
+        ui.radio(
+            playback_frame,
+            text="ニコラ",
+            variable=self.tts_playback_var,
+            value="robot",
+            command=self.on_tts_playback_changed,
+            bg="main_card",
+        ).pack(side="left")
+
         ui.action_button(
             footer,
             text="全体を保存",
             command=self.save_all,
         ).pack(side="right")
+
+    def on_tts_playback_changed(self):
+        target = self.tts_playback_var.get()
+        self.tts_client.set_playback_target(target)
+        label = "ニコラPC" if target == "robot" else "ノートPC"
+        self.status_var.set(f"音声再生先を{label}にしました")
 
     def add_tabs(self):
         self.tab_sequence = []
@@ -231,6 +271,9 @@ class RobotStyleEditorApp(tk.Tk):
         da_frame, da_notebook = self.create_group_notebook()
         example_frame, example_notebook = self.create_group_notebook()
         request_history_frame, request_history_notebook = self.create_group_notebook()
+        active_venues = self.active_venues()
+        required_intent_keys = self.required_intent_keys()
+        required_intents, unused_intents = self.intent_scope_items(required_intent_keys)
 
         self.default_tab = DefaultProfileTab(
             self.notebook,
@@ -240,6 +283,7 @@ class RobotStyleEditorApp(tk.Tk):
             on_create_user=self.create_new_user_session,
             on_load_user=self.load_user_session,
             on_continue_user=self.continue_current_user,
+            on_select_venue=self.select_venue_session,
             on_finish=self.on_close,
             can_use_default_talk=lambda: True,
         )
@@ -259,26 +303,28 @@ class RobotStyleEditorApp(tk.Tk):
         listening_pose_tab = self.lazy_tab(response_notebook, ListeningPoseTab)
         understanding_pose_tab = self.lazy_tab(response_notebook, UnderstandingPoseTab)
 
-        greeting_tab = self.lazy_tab(da_notebook, GreetingTab)
-        explanation_tab = self.lazy_tab(da_notebook, ExplanationTab)
-        question_tab = self.lazy_tab(da_notebook, QuestionTab)
-        acceptance_tab = self.lazy_tab(da_notebook, AcceptanceTab)
-        request_tab = self.lazy_tab(da_notebook, RequestTab)
-        apology_tab = self.lazy_tab(da_notebook, ApologyTab)
-        gratitude_tab = self.lazy_tab(da_notebook, GratitudeTab)
-        smalltalk_tab = self.lazy_tab(da_notebook, SmalltalkTab)
+        intent_tabs = {
+            "greeting": self.lazy_tab(da_notebook, GreetingTab),
+            "explanation": self.lazy_tab(da_notebook, ExplanationTab),
+            "question": self.lazy_tab(da_notebook, QuestionTab),
+            "acceptance": self.lazy_tab(da_notebook, AcceptanceTab),
+            "request": self.lazy_tab(da_notebook, RequestTab),
+            "apology": self.lazy_tab(da_notebook, ApologyTab),
+            "gratitude": self.lazy_tab(da_notebook, GratitudeTab),
+            "smalltalk": self.lazy_tab(da_notebook, SmalltalkTab),
+        }
         filler_tab = self.lazy_tab(da_notebook, FillerTab)
 
         settings_review_tab = self.lazy_tab(self.notebook, SettingsReviewTab)
 
         self.example_scene_tabs = [
             self.lazy_example_tab(example_notebook, venue["label"])
-            for venue in EXAMPLE_VENUES
+            for venue in active_venues
         ]
         self.example_scene_tab = self.example_scene_tabs[0]
         self.request_history_tabs = [
             self.lazy_request_history_tab(request_history_notebook, venue["label"])
-            for venue in EXAMPLE_VENUES
+            for venue in active_venues
         ]
 
         self.add_top_tab(self.default_tab, "デフォルト")
@@ -300,26 +346,71 @@ class RobotStyleEditorApp(tk.Tk):
         self.add_child_tab(response_notebook, understanding_pose_tab, "理解詳細")
         self.notebook.add(response_frame, text="応答・間合い")
 
-        self.add_child_tab(da_notebook, greeting_tab, "挨拶")
-        self.add_child_tab(da_notebook, explanation_tab, "説明")
-        self.add_child_tab(da_notebook, question_tab, "質問")
-        self.add_child_tab(da_notebook, acceptance_tab, "承諾")
-        self.add_child_tab(da_notebook, request_tab, "要求")
-        self.add_child_tab(da_notebook, apology_tab, "謝罪")
-        self.add_child_tab(da_notebook, gratitude_tab, "感謝")
-        self.add_child_tab(da_notebook, smalltalk_tab, "雑談")
+        da_info_tab = self.lazy_da_info_tab(da_notebook, required_intents, unused_intents)
+        self.add_child_tab(da_notebook, da_info_tab, "設定範囲")
+        for intent_key, label in self.intent_tab_labels():
+            if intent_key in required_intent_keys:
+                self.add_child_tab(da_notebook, intent_tabs[intent_key], label)
         self.add_child_tab(da_notebook, filler_tab, "フィラー")
         self.notebook.add(da_frame, text="DA")
 
         self.add_top_tab(settings_review_tab, "設定確認")
 
-        for venue, example_scene_tab in zip(EXAMPLE_VENUES, self.example_scene_tabs):
+        for venue, example_scene_tab in zip(active_venues, self.example_scene_tabs):
             self.add_child_tab(example_notebook, example_scene_tab, venue["label"])
         self.notebook.add(example_frame, text="接客例")
 
-        for venue, request_history_tab in zip(EXAMPLE_VENUES, self.request_history_tabs):
+        for venue, request_history_tab in zip(active_venues, self.request_history_tabs):
             self.add_child_tab(request_history_notebook, request_history_tab, venue["label"])
         self.notebook.add(request_history_frame, text="詳細要望一覧")
+
+    def active_venues(self):
+        if self.selected_venue is not None:
+            return [self.selected_venue]
+        venue_id = getattr(self.profile_store, "current_venue_id", None)
+        if venue_id:
+            for venue in EXAMPLE_VENUES:
+                if venue["id"] == venue_id:
+                    return [venue]
+        return EXAMPLE_VENUES
+
+    def intent_tab_labels(self):
+        return [
+            ("greeting", "挨拶"),
+            ("explanation", "説明"),
+            ("question", "質問"),
+            ("acceptance", "承諾"),
+            ("request", "要求"),
+            ("apology", "謝罪"),
+            ("gratitude", "感謝"),
+            ("smalltalk", "雑談"),
+        ]
+
+    def required_intent_keys(self):
+        return {key for key, _label in self.intent_tab_labels() if key != "smalltalk"}
+
+    def intent_scope_items(self, required_keys):
+        labels = dict(self.intent_tab_labels())
+        scene_titles = {}
+        venue_ids = {venue["id"] for venue in self.active_venues()}
+        for scene in EXAMPLE_SCENES:
+            if scene.get("venue") not in venue_ids:
+                continue
+            for turn in scene.get("turns", []):
+                for part in turn.get("intent_parts", []) or []:
+                    intent = part.get("intent")
+                    if intent:
+                        scene_titles.setdefault(intent, set()).add(scene.get("title", "接客例"))
+
+        required = []
+        unused = []
+        for key, label in self.intent_tab_labels():
+            titles = "、".join(sorted(scene_titles.get(key, [])))
+            if key in required_keys:
+                required.append({"key": key, "label": label, "reason": titles or "全店舗で共通して設定"})
+            else:
+                unused.append({"key": key, "label": label, "reason": "接客場面設定では対象外"})
+        return required, unused
 
     def lazy_tab(self, parent, tab_class):
         return LazyTab(
@@ -349,6 +440,21 @@ class RobotStyleEditorApp(tk.Tk):
                 status_var=self.status_var,
                 on_saved=self.go_next_tab,
                 venue_label=label,
+            ),
+        )
+
+    def lazy_da_info_tab(self, parent, required_intents, unused_intents):
+        return LazyTab(
+            parent,
+            lambda container: VenueDAInfoTab(
+                container,
+                profile_store=self.profile_store,
+                tts_client=self.tts_client,
+                status_var=self.status_var,
+                on_saved=self.go_next_tab,
+                required_intents=required_intents,
+                unused_intents=unused_intents,
+                venue_label=(self.selected_venue or {}).get("label"),
             ),
         )
 
@@ -399,25 +505,39 @@ class RobotStyleEditorApp(tk.Tk):
         self.add_tabs()
 
     def create_new_user_session(self, filename):
-        self.profile_store.data = build_default_profile()
-        saved_path = self.profile_store.start_new_session(filename)
-        self.session_active = True
+        saved_path = self.profile_store.start_new_user_folder(filename)
+        self.user_active = True
+        self.session_active = False
+        self.selected_venue = None
         self.status_var.set(f"新しいユーザーを開始しました: {saved_path.name}")
-        self.rebuild_tabs_from_profile()
         self.select_actual_tab(self.default_tab)
-        self.default_tab.show_default_talk_tab()
         return saved_path
 
     def load_user_session(self, path):
-        loaded_path = self.profile_store.load_from(path)
-        self.session_active = True
-        self.status_var.set(f"保存データを読み込みました: {loaded_path.name}")
-        self.rebuild_tabs_from_profile()
-        if len(self.tab_sequence) > 1:
-            self.select_actual_tab(self.tab_sequence[1])
+        loaded_path = self.profile_store.load_user_folder(path)
+        self.user_active = True
+        self.session_active = False
+        self.selected_venue = None
+        self.status_var.set(f"ユーザーを読み込みました: {loaded_path.name}")
+        self.select_actual_tab(self.default_tab)
         return loaded_path
 
+    def select_venue_session(self, venue):
+        saved_path = self.profile_store.select_venue_session(venue["id"], venue["label"])
+        self.selected_venue = venue
+        self.user_active = True
+        self.session_active = True
+        self.status_var.set(f"{venue['label']}の設定を開始しました: {saved_path.name}")
+        self.rebuild_tabs_from_profile()
+        self.select_actual_tab(self.default_tab)
+        self.default_tab.show_default_talk_tab(venue["label"])
+        return saved_path
+
     def continue_current_user(self):
+        if self.selected_venue is None:
+            self.select_actual_tab(self.default_tab)
+            self.status_var.set("設定する店舗を選択してください")
+            return
         self.session_active = True
         self.status_var.set(f"同じユーザーで続けます: {self.profile_store.path.name}")
         if len(self.tab_sequence) > 1:

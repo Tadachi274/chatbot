@@ -27,7 +27,7 @@ class DefaultTalkTab(tk.Frame):
         self.default_profile = build_default_profile()
         self.robot_client = None
 
-        self.venue_var = tk.StringVar(value=EXAMPLE_VENUES[0]["label"])
+        self.venue_var = tk.StringVar(value=self.initial_venue_label())
         self.scene_var = tk.StringVar()
         self.delete_generated_wav_var = tk.BooleanVar(value=True)
         self.trim_run_wav_var = tk.BooleanVar(value=os.environ.get("ROBOT_RUN_TRIM_WAV", "0") == "1")
@@ -42,10 +42,21 @@ class DefaultTalkTab(tk.Frame):
         self.dialogue_frame = None
         self.lyric_frame = None
         self.mic_panel = None
+        self._event_read_fd = None
+        self._event_write_fd = None
+        self._filehandler_registered = False
 
         self.bind("<<DefaultTalkTabQueue>>", self.on_queue_event, add="+")
+        self.setup_ui_event_pipe()
         self.build_ui()
         self.refresh_scene_choices()
+
+    def initial_venue_label(self):
+        venue_id = getattr(self.profile_store, "current_venue_id", None)
+        for venue in EXAMPLE_VENUES:
+            if venue["id"] == venue_id:
+                return venue["label"]
+        return EXAMPLE_VENUES[0]["label"]
 
     def ensure_robot_client(self):
         if self.robot_client is None:
@@ -114,6 +125,8 @@ class DefaultTalkTab(tk.Frame):
             tab = ui.frame(self.venue_notebook, bg="panel")
             self.venue_notebook.add(tab, text=venue["label"])
             self.venue_tab_labels[str(tab)] = venue["label"]
+            if venue["label"] == self.venue_var.get():
+                self.venue_notebook.select(tab)
 
         card = ui.bordered_frame(section, bg="card", border="border")
         card.pack(fill="x", padx=ui.SPACING["section_x"], pady=(0, ui.SPACING["section_y"]))
@@ -149,6 +162,17 @@ class DefaultTalkTab(tk.Frame):
         if label and self.venue_var.get() != label:
             self.venue_var.set(label)
             self.refresh_scene_choices()
+
+    def select_venue(self, venue_label):
+        if not venue_label:
+            return
+        self.venue_var.set(venue_label)
+        if self.venue_notebook is not None:
+            for tab_id, label in self.venue_tab_labels.items():
+                if label == venue_label:
+                    self.venue_notebook.select(tab_id)
+                    break
+        self.refresh_scene_choices()
 
     def current_venue_id(self):
         for venue in EXAMPLE_VENUES:
@@ -248,6 +272,11 @@ class DefaultTalkTab(tk.Frame):
 
         turns = self.current_turns()
         total = self.count_tts_units(turns)
+        self.prep_queue = queue.SimpleQueue()
+        print(
+            f"[DEFAULT_RUN] prepare start total={total} playback={self.tts_client.playback_target}",
+            flush=True,
+        )
         self.cleanup_generated_wavs()
         self.generated_wav_paths = []
         self.clear_page()
@@ -316,21 +345,33 @@ class DefaultTalkTab(tk.Frame):
                             total,
                             f"{turn_index + 1}. {self.intent_label(intent)} を準備中: {segment[:28]}",
                         )
-                        wav_path, cache_hit = self.get_or_create_default_wav(
-                            text=segment,
-                            instructions=instructions,
-                            person=self.active_profile_get("speaker", None),
-                        )
-                        if wav_path is None:
-                            continue
-                        prepared_parts.append(
-                            {
-                                "intent": intent,
-                                "text": segment,
-                                "wav_path": str(wav_path),
-                                "intent_data": intent_data,
-                            }
-                        )
+                        prepared_part = {
+                            "intent": intent,
+                            "text": segment,
+                            "intent_data": intent_data,
+                        }
+                        cache_hit = False
+                        if self.tts_client.is_robot_playback():
+                            remote = self.tts_client.prepare_remote_audio(
+                                text=segment,
+                                instructions=instructions,
+                                person=self.active_profile_get("speaker", None),
+                            )
+                            if not remote:
+                                continue
+                            prepared_part["remote_audio_id"] = remote["audio_id"]
+                            prepared_part["duration"] = float(remote.get("duration", 0.0))
+                        else:
+                            wav_path, cache_hit = self.get_or_create_default_wav(
+                                text=segment,
+                                instructions=instructions,
+                                person=self.active_profile_get("speaker", None),
+                            )
+                            if wav_path is None:
+                                continue
+                            prepared_part["wav_path"] = str(wav_path)
+
+                        prepared_parts.append(prepared_part)
                         completed += 1
                         action = "読み込み" if cache_hit else "生成"
                         self.emit_prep_progress(completed, total, f"{completed} / {total} 件のWAVを{action}しました")
@@ -339,9 +380,11 @@ class DefaultTalkTab(tk.Frame):
                 prepared_turns.append(prepared)
 
             self.prepared_dialogue = prepared_turns
+            print("[DEFAULT_RUN] prepare done queued", flush=True)
             self.prep_queue.put({"type": "done"})
             self.wake_ui()
         except Exception as e:
+            print(f"[DEFAULT_RUN] prepare error queued: {e}", flush=True)
             self.prep_queue.put({"type": "error", "message": str(e)})
             self.wake_ui()
 
@@ -420,10 +463,72 @@ class DefaultTalkTab(tk.Frame):
         self.wake_ui()
 
     def wake_ui(self):
+        if self._event_write_fd is not None:
+            try:
+                os.write(self._event_write_fd, b"1")
+            except (BlockingIOError, OSError):
+                pass
         try:
             self.event_generate("<<DefaultTalkTabQueue>>", when="tail")
         except Exception:
             pass
+
+    def setup_ui_event_pipe(self):
+        create_filehandler = getattr(self.tk, "createfilehandler", None)
+        if create_filehandler is None:
+            return
+        if self._event_read_fd is not None:
+            return
+
+        try:
+            self._event_read_fd, self._event_write_fd = os.pipe()
+            os.set_blocking(self._event_read_fd, False)
+            os.set_blocking(self._event_write_fd, False)
+            create_filehandler(
+                self._event_read_fd,
+                tk.READABLE,
+                self._handle_pipe_event,
+            )
+            self._filehandler_registered = True
+        except Exception:
+            self.close_ui_event_pipe()
+
+    def _handle_pipe_event(self, _fd=None, _mask=None):
+        self.drain_event_pipe()
+        self.on_queue_event()
+
+    def drain_event_pipe(self):
+        if self._event_read_fd is None:
+            return
+
+        while True:
+            try:
+                data = os.read(self._event_read_fd, 1024)
+            except BlockingIOError:
+                break
+            except OSError:
+                break
+
+            if not data:
+                break
+
+    def close_ui_event_pipe(self):
+        if self._filehandler_registered and self._event_read_fd is not None:
+            try:
+                self.tk.deletefilehandler(self._event_read_fd)
+            except Exception:
+                pass
+        self._filehandler_registered = False
+
+        for fd in (self._event_read_fd, self._event_write_fd):
+            if fd is None:
+                continue
+            try:
+                os.close(fd)
+            except OSError:
+                pass
+        self._event_read_fd = None
+        self._event_write_fd = None
 
     def on_queue_event(self, _event=None):
         while True:
@@ -432,11 +537,13 @@ class DefaultTalkTab(tk.Frame):
             except queue.Empty:
                 break
 
+            print(f"[DEFAULT_RUN] ui queue item={item.get('type')}", flush=True)
             if item["type"] == "progress":
                 self.prep_progress_var.set(item["completed"])
                 self.prep_count_var.set(f"{item['completed']} / {item['total']}")
                 self.prep_message_var.set(item["message"])
             elif item["type"] == "done":
+                print("[DEFAULT_RUN] build robot run view", flush=True)
                 self.build_robot_run_view()
             elif item["type"] == "run_advance":
                 self.advance_robot_run()
@@ -620,7 +727,7 @@ class DefaultTalkTab(tk.Frame):
                 if self.run_state != "running":
                     return
                 self.apply_intent_motion(part)
-                self.play_prepared_wav(part["wav_path"])
+                self.play_prepared_audio(part)
                 if part_index + 1 < len(parts):
                     self.apply_sentence_pause()
 
@@ -630,6 +737,20 @@ class DefaultTalkTab(tk.Frame):
         except Exception as e:
             self.prep_queue.put({"type": "error", "message": str(e)})
             self.wake_ui()
+
+    def play_prepared_audio(self, part):
+        if self.tts_client.is_robot_playback() and part.get("remote_audio_id"):
+            duration = float(part.get("duration", 0.0))
+            if self.mic_panel is not None:
+                self.mic_panel.pause_for(duration + 0.2, label="ロボット発話中")
+            self.tts_client.play_remote_audio(
+                part["remote_audio_id"],
+                wait=True,
+                timeout=duration + 5.0,
+            )
+            return
+
+        self.play_prepared_wav(part["wav_path"])
 
     def play_prepared_wav(self, wav_path):
         should_trim = self.trim_run_wav_var.get()
