@@ -571,17 +571,24 @@ class DefaultTalkTab(tk.Frame):
         threading.Thread(target=self.play_staff_turn_worker, args=(turn,), daemon=True).start()
 
     def on_run_customer_speech_start(self, _t):
+        print("[RUN] customer speech start enter", flush=True)
         self.apply_listening_pose_for_run()
+        print("[RUN] after apply_listening_pose_for_run", flush=True)
         self.status_var.set("客の発話中です")
+        print("[RUN] customer speech start exit", flush=True)
 
     def on_run_customer_speech_end(self, _t):
+        print("[RUN] customer speech end enter", flush=True)
         if self.run_state != "running":
+            print("[RUN] customer speech end ignored: not running", flush=True)
             return
         turns = self.prepared_dialogue or []
         if self.run_index >= len(turns) or turns[self.run_index].get("role") != "customer":
+            print("[RUN] customer speech end ignored: current turn is not customer", flush=True)
             return
         if self.mic_panel is not None:
             self.mic_panel.stop()
+        print("[RUN] customer speech end worker start", flush=True)
         threading.Thread(target=self.customer_speech_end_worker, daemon=True).start()
 
     def use_mic_detection_for_run(self):
@@ -589,15 +596,20 @@ class DefaultTalkTab(tk.Frame):
 
     def customer_speech_end_worker(self):
         try:
+            print("[RUN] customer_speech_end_worker enter", flush=True)
             self.apply_understanding_pose_for_run(
                 use_thinking_delay=self.should_use_thinking_after_customer()
             )
+            print("[RUN] after apply_understanding_pose_for_run", flush=True)
             if self.run_state != "running":
+                print("[RUN] customer_speech_end_worker ignored: not running", flush=True)
                 return
             self.run_index += 1
             self.prep_queue.put({"type": "run_advance"})
             self.wake_ui()
+            print("[RUN] customer_speech_end_worker exit", flush=True)
         except Exception as e:
+            print(f"[RUN] customer_speech_end_worker error: {e}", flush=True)
             self.prep_queue.put({"type": "error", "message": str(e)})
             self.wake_ui()
 
@@ -675,23 +687,29 @@ class DefaultTalkTab(tk.Frame):
         time.sleep(max(0.0, value))
 
     def apply_listening_pose_for_run(self):
+        print("[RUN] apply_listening_pose enter", flush=True)
         listening = self.active_profile_get_nested("listening_pose", {}) or {}
         face = listening.get("face", {})
         nod = listening.get("nod", {})
         if face:
+            print(f"[RUN] before send listening face {face}", flush=True)
             self.ensure_robot_client().send_emotion(
                 face_type=face.get("type", "neutral"),
                 level=int(face.get("level", 1)),
                 priority=3,
                 keeptime=3000,
             )
+            print("[RUN] after send listening face", flush=True)
         if nod and nod.get("id") != "none":
+            print(f"[RUN] before send listening nod {nod}", flush=True)
             self.ensure_robot_client().send_nod(
                 amplitude=int(nod.get("amplitude", 10)),
                 duration=int(nod.get("duration", 400)),
                 times=int(nod.get("times", 1)),
                 priority=int(nod.get("priority", 3)),
             )
+            print("[RUN] after send listening nod", flush=True)
+        print("[RUN] apply_listening_pose exit", flush=True)
 
     def should_use_thinking_after_customer(self):
         turns = self.prepared_dialogue or []

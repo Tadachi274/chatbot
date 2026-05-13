@@ -410,7 +410,9 @@ class MicActivityPanel(tk.Frame):
 
 
     def handle_speech_start(self, t):
+        print("[MIC] handle_speech_start enter", t, flush=True)
         if self.is_paused():
+            print("[MIC] handle_speech_start paused return", flush=True)
             return
 
         self.state_label.set("発話中")
@@ -420,12 +422,16 @@ class MicActivityPanel(tk.Frame):
             self.volume_label.set("act: 1以上")
             self.draw_volume_bar(float(self.act_threshold))
 
+        print("[MIC] before on_speech_start_callback", flush=True)
         if self.on_speech_start_callback is not None:
             self.on_speech_start_callback(t)
+        print("[MIC] after on_speech_start_callback", flush=True)
 
 
     def handle_speech_end(self, t):
+        print("[MIC] handle_speech_end enter", t, flush=True)
         if self.is_paused():
+            print("[MIC] handle_speech_end paused return", flush=True)
             return
 
         self.state_label.set("認識中")
@@ -434,8 +440,10 @@ class MicActivityPanel(tk.Frame):
             self.volume_label.set("act: 0")
             self.draw_volume_bar(0.0)
 
+        print("[MIC] before on_speech_end_callback", flush=True)
         if self.on_speech_end_callback is not None:
             self.on_speech_end_callback(t)
+        print("[MIC] after on_speech_end_callback", flush=True)
 
 
     def update_meter(self):

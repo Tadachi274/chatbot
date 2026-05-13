@@ -176,6 +176,7 @@ class RobotActActivitySource(BaseVoiceActivitySource):
         self._running = False
         self._thread = None
         self._last_active_t = 0.0
+        self._last_logged_active = None
 
     def start(self):
         if self._running:
@@ -213,6 +214,9 @@ class RobotActActivitySource(BaseVoiceActivitySource):
             now = time.monotonic()
             act = self._get_act()
             active = act >= self.act_threshold
+            if active != self._last_logged_active:
+                print(f"[ACT] active={active} act={act}", flush=True)
+                self._last_logged_active = active
 
             with self._lock:
                 was_speaking = self._state.speaking
