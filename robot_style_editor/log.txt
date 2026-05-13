@@ -1,0 +1,22 @@
+[ACT] active=False act=0
+[ACT] active=True act=1
+[MIC] handle_speech_start enter 461816.578
+[MIC] before on_speech_start_callback
+[RUN] customer speech start enter
+[RUN] apply_listening_pose enter
+[RUN] before send listening face {'id': 'neutral', 'label': 'Neutral', 'type': 'neutral', 'level': 1}
+[RobotCommandClient] > /emotion neutral 1 3 3000
+[ROBOT] send enter /emotion neutral 1 3 3000
+[ROBOT] persistent enter
+[ROBOT] lock acquired
+[ROBOT] before connect
+[ACT] active=False act=0
+[ROBOT] after connect
+[ROBOT] before sendall
+[ROBOT] after sendall
+[ROBOT] send exit /emotion neutral 1 3 3000
+[RUN] after send listening face
+[RUN] apply_listening_pose exit
+[RUN] after apply_listening_pose_for_run
+[RUN] customer speech start exit
+[MIC] after on_speech_start_callback

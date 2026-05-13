@@ -63,6 +63,7 @@ class ExampleSceneTab(tk.Frame):
         self.prepared_dialogue = None
         self.generated_wav_paths = []
         self.delete_generated_wav_var = tk.BooleanVar(value=True)
+        self.trim_run_wav_var = tk.BooleanVar(value=os.environ.get("ROBOT_RUN_TRIM_WAV", "0") == "1")
         self.prep_queue = None
         self.prep_thread = None
         self._event_read_fd = None
@@ -352,6 +353,17 @@ class ExampleSceneTab(tk.Frame):
                 activeforeground=ui.COLORS["text"],
                 selectcolor=ui.COLORS["card"],
             ).pack(side="left", padx=(ui.SPACING["gap"], 0))
+            tk.Checkbutton(
+                bottom,
+                text="再生前にWAVをtrim",
+                variable=self.trim_run_wav_var,
+                font=ui.FONTS["small"],
+                bg=ui.COLORS["main_card"],
+                fg=ui.COLORS["sub_text"],
+                activebackground=ui.COLORS["main_card"],
+                activeforeground=ui.COLORS["text"],
+                selectcolor=ui.COLORS["card"],
+            ).pack(side="left", padx=(ui.SPACING["gap"], 0))
             return
 
         generate_button = ui.action_button(bottom, text="選択場面を生成", command=self.generate_whole_scene)
@@ -380,6 +392,17 @@ class ExampleSceneTab(tk.Frame):
             bottom,
             text="実演後に生成WAVを削除",
             variable=self.delete_generated_wav_var,
+            font=ui.FONTS["small"],
+            bg=ui.COLORS["main_card"],
+            fg=ui.COLORS["sub_text"],
+            activebackground=ui.COLORS["main_card"],
+            activeforeground=ui.COLORS["text"],
+            selectcolor=ui.COLORS["card"],
+        ).pack(side="left", padx=(ui.SPACING["gap"], 0))
+        tk.Checkbutton(
+            bottom,
+            text="再生前にWAVをtrim",
+            variable=self.trim_run_wav_var,
             font=ui.FONTS["small"],
             bg=ui.COLORS["main_card"],
             fg=ui.COLORS["sub_text"],
@@ -1685,6 +1708,10 @@ class ExampleSceneTab(tk.Frame):
             side="left",
             padx=(ui.SPACING["small_gap"], 0),
         )
+        ui.sub_button(controls, text="客発話完了", command=lambda: self.on_run_customer_speech_end(None)).pack(
+            side="left",
+            padx=(ui.SPACING["small_gap"], 0),
+        )
         ui.sub_button(controls, text="接客例に戻る", command=self.return_to_example_view).pack(side="right")
 
         self.mic_panel = MicActivityPanel(
@@ -1774,8 +1801,11 @@ class ExampleSceneTab(tk.Frame):
         turn = turns[self.run_index]
 
         if turn.get("role") == "customer":
-            self.status_var.set("客の発話待ちです")
-            if self.mic_panel is not None:
+            if self.use_mic_detection_for_run():
+                self.status_var.set("客の発話待ちです")
+            else:
+                self.status_var.set("客の発話後に「客発話完了」を押してください")
+            if self.mic_panel is not None and self.use_mic_detection_for_run():
                 self.mic_panel.start()
             return
 
@@ -1785,21 +1815,49 @@ class ExampleSceneTab(tk.Frame):
         threading.Thread(target=self.play_staff_turn_worker, args=(turn,), daemon=True).start()
 
     def on_run_customer_speech_start(self, _t):
+        print("[RUN] customer speech start enter", flush=True)
         self.apply_listening_pose_for_run()
+        print("[RUN] after apply_listening_pose_for_run", flush=True)
         self.status_var.set("客の発話中です")
+        print("[RUN] customer speech start exit", flush=True)
 
     def on_run_customer_speech_end(self, _t):
+        print("[RUN] customer speech end enter", flush=True)
         if self.run_state != "running":
+            print("[RUN] customer speech end ignored: not running", flush=True)
+            return
+        turns = self.prepared_dialogue or []
+        if self.run_index >= len(turns) or turns[self.run_index].get("role") != "customer":
+            print("[RUN] customer speech end ignored: current turn is not customer", flush=True)
             return
 
         if self.mic_panel is not None:
             self.mic_panel.stop()
 
-        self.apply_understanding_pose_for_run(
-            use_thinking_delay=self.should_use_thinking_after_customer()
-        )
-        self.run_index += 1
-        self.advance_robot_run()
+        print("[RUN] customer speech end worker start", flush=True)
+        threading.Thread(target=self.customer_speech_end_worker, daemon=True).start()
+
+    def use_mic_detection_for_run(self):
+        return os.environ.get("ROBOT_RUN_USE_MIC", "1") != "0"
+
+    def customer_speech_end_worker(self):
+        try:
+            print("[RUN] customer_speech_end_worker enter", flush=True)
+            self.apply_understanding_pose_for_run(
+                use_thinking_delay=self.should_use_thinking_after_customer()
+            )
+            print("[RUN] after apply_understanding_pose_for_run", flush=True)
+            if self.run_state != "running":
+                print("[RUN] customer_speech_end_worker ignored: not running", flush=True)
+                return
+            self.run_index += 1
+            self.ensure_prep_queue().put({"type": "run_advance"})
+            self.wake_ui_event_loop()
+            print("[RUN] customer_speech_end_worker exit", flush=True)
+        except Exception as e:
+            print(f"[RUN] customer_speech_end_worker error: {e}", flush=True)
+            self.ensure_prep_queue().put({"type": "error", "message": str(e)})
+            self.wake_ui_event_loop()
 
     def play_staff_turn_worker(self, turn):
         try:
@@ -1821,19 +1879,25 @@ class ExampleSceneTab(tk.Frame):
             self.wake_ui_event_loop()
 
     def play_prepared_wav(self, wav_path):
-        from ..audio.wav_silence import trim_silence_to_temp_wav
+        should_trim = self.trim_run_wav_var.get()
+        if should_trim:
+            from ..audio.wav_silence import trim_silence_to_temp_wav
 
-        trimmed = trim_silence_to_temp_wav(wav_path)
+            trimmed = trim_silence_to_temp_wav(wav_path)
+        else:
+            trimmed = Path(wav_path)
         done = threading.Event()
         duration = self.tts_client.get_wav_duration_sec(trimmed)
         if self.mic_panel is not None:
             self.mic_panel.pause_for(duration + 0.2, label="ロボット発話中")
         self.tts_client.preview_player.play_later(trimmed, done_event=done)
-        done.wait()
-        try:
-            trimmed.unlink(missing_ok=True)
-        except Exception:
-            pass
+        if not done.wait(timeout=duration + 5.0):
+            self.tts_client.preview_player.stop_current()
+        if should_trim:
+            try:
+                trimmed.unlink(missing_ok=True)
+            except Exception:
+                pass
 
     def apply_intent_motion(self, part):
         data = part.get("intent_data", {}) or {}
@@ -1871,23 +1935,29 @@ class ExampleSceneTab(tk.Frame):
         time.sleep(max(0.0, value))
 
     def apply_listening_pose_for_run(self):
+        print("[RUN] apply_listening_pose enter", flush=True)
         listening = self.active_profile_get_nested("listening_pose", {}) or {}
         face = listening.get("face", {})
         nod = listening.get("nod", {})
         if face:
+            print(f"[RUN] before send listening face {face}", flush=True)
             self.ensure_robot_client().send_emotion(
                 face_type=face.get("type", "neutral"),
                 level=int(face.get("level", 1)),
                 priority=3,
                 keeptime=3000,
             )
+            print("[RUN] after send listening face", flush=True)
         if nod and nod.get("id") != "none":
+            print(f"[RUN] before send listening nod {nod}", flush=True)
             self.ensure_robot_client().send_nod(
                 amplitude=int(nod.get("amplitude", 10)),
                 duration=int(nod.get("duration", 400)),
                 times=int(nod.get("times", 1)),
                 priority=int(nod.get("priority", 3)),
             )
+            print("[RUN] after send listening nod", flush=True)
+        print("[RUN] apply_listening_pose exit", flush=True)
 
     def should_use_thinking_after_customer(self):
         turns = self.prepared_dialogue or []

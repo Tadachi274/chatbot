@@ -69,6 +69,7 @@ class RobotCommandClient:
 
     def send(self, command: str):
         print(f"[RobotCommandClient] > {command}")
+        print(f"[ROBOT] send enter {command}", flush=True)
 
         try:
             if self.persistent:
@@ -77,22 +78,34 @@ class RobotCommandClient:
                 self._send_single(command)
         except Exception as e:
             print(f"[RobotCommandClient] send error: {e}")
+        print(f"[ROBOT] send exit {command}", flush=True)
 
     def _send_persistent(self, command: str):
+        print("[ROBOT] persistent enter", flush=True)
         with self._lock:
+            print("[ROBOT] lock acquired", flush=True)
             try:
                 if self.sock is None:
+                    print("[ROBOT] before connect", flush=True)
                     self.connect()
+                    print("[ROBOT] after connect", flush=True)
 
+                print("[ROBOT] before sendall", flush=True)
                 self.sock.sendall(command.encode("utf-8") + self.terminator)
+                print("[ROBOT] after sendall", flush=True)
                 return
 
             except (BrokenPipeError, ConnectionResetError, OSError):
+                print("[ROBOT] persistent send retry after socket error", flush=True)
                 self.close()
 
             try:
+                print("[ROBOT] before reconnect", flush=True)
                 self.connect()
+                print("[ROBOT] after reconnect", flush=True)
+                print("[ROBOT] before resendall", flush=True)
                 self.sock.sendall(command.encode("utf-8") + self.terminator)
+                print("[ROBOT] after resendall", flush=True)
             except Exception as e:
                 self.close()
                 print(f"[RobotCommandClient] persistent send failed: {e}")

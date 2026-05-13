@@ -67,6 +67,7 @@ class MicActivityPanel(tk.Frame):
         self._event_read_fd = None
         self._event_write_fd = None
         self._filehandler_registered = False
+        self._last_meter_speaking = None
 
         self.build_ui()
         self.setup_ui_event_pipe()
@@ -199,6 +200,10 @@ class MicActivityPanel(tk.Frame):
             self.activity_source.start()
             self.start_meter_updates()
             self.state_label.set("認識中")
+            self._last_meter_speaking = None
+            if self.activity_mode == "robot_act":
+                self.volume_label.set("act: 0")
+                self.draw_volume_bar(0.0)
 
             if self.status_var is not None:
                 self.status_var.set("マイク認識を開始しました")
@@ -221,6 +226,7 @@ class MicActivityPanel(tk.Frame):
                 xyz_client=self.xyz_client,
                 act_threshold=self.act_threshold,
                 silence_hold_sec=self.silence_hold_sec,
+                poll_interval=float(os.environ.get("ROBOT_ACT_POLL_INTERVAL", "0.08")),
                 on_start=self.on_speech_start,
                 on_end=self.on_speech_end,
             )
@@ -248,6 +254,7 @@ class MicActivityPanel(tk.Frame):
                 pass
             self.xyz_client = None
         self.stop_meter_updates()
+        self._last_meter_speaking = None
 
         self.state_label.set("停止中")
         self.result_label.set("")
@@ -304,9 +311,10 @@ class MicActivityPanel(tk.Frame):
 
 
     def meter_update_loop(self):
+        interval = 0.2 if self.activity_mode == "robot_act" else MIC_METER_UPDATE_INTERVAL_SEC
         while self._meter_running:
             self.queue_ui_event("meter")
-            time.sleep(MIC_METER_UPDATE_INTERVAL_SEC)
+            time.sleep(interval)
 
 
     def queue_ui_event(self, event_type, payload=None):
@@ -402,24 +410,40 @@ class MicActivityPanel(tk.Frame):
 
 
     def handle_speech_start(self, t):
+        print("[MIC] handle_speech_start enter", t, flush=True)
         if self.is_paused():
+            print("[MIC] handle_speech_start paused return", flush=True)
             return
 
         self.state_label.set("発話中")
         self.result_label.set("")
+        if self.activity_mode == "robot_act":
+            self._last_meter_speaking = True
+            self.volume_label.set("act: 1以上")
+            self.draw_volume_bar(float(self.act_threshold))
 
+        print("[MIC] before on_speech_start_callback", flush=True)
         if self.on_speech_start_callback is not None:
             self.on_speech_start_callback(t)
+        print("[MIC] after on_speech_start_callback", flush=True)
 
 
     def handle_speech_end(self, t):
+        print("[MIC] handle_speech_end enter", t, flush=True)
         if self.is_paused():
+            print("[MIC] handle_speech_end paused return", flush=True)
             return
 
         self.state_label.set("認識中")
+        if self.activity_mode == "robot_act":
+            self._last_meter_speaking = False
+            self.volume_label.set("act: 0")
+            self.draw_volume_bar(0.0)
 
+        print("[MIC] before on_speech_end_callback", flush=True)
         if self.on_speech_end_callback is not None:
             self.on_speech_end_callback(t)
+        print("[MIC] after on_speech_end_callback", flush=True)
 
 
     def update_meter(self):
@@ -440,9 +464,23 @@ class MicActivityPanel(tk.Frame):
             return
 
         if self.activity_mode == "robot_act":
-            self.volume_label.set(f"act: {int(volume)}")
-        else:
-            self.volume_label.set(f"音量: {volume:.3f}")
+            active = bool(speaking or volume >= float(self.act_threshold))
+            if self._last_meter_speaking is active:
+                return
+
+            self._last_meter_speaking = active
+            if active:
+                self.volume_label.set("act: 1以上")
+                self.draw_volume_bar(float(self.act_threshold))
+            else:
+                self.volume_label.set("act: 0")
+                self.draw_volume_bar(0.0)
+
+            if self.on_volume_update_callback is not None:
+                self.on_volume_update_callback(float(self.act_threshold if active else 0), active)
+            return
+
+        self.volume_label.set(f"音量: {volume:.3f}")
         self.draw_volume_bar(volume)
 
         if self.on_volume_update_callback is not None:
