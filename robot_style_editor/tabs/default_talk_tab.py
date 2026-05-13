@@ -30,6 +30,7 @@ class DefaultTalkTab(tk.Frame):
         self.venue_var = tk.StringVar(value=EXAMPLE_VENUES[0]["label"])
         self.scene_var = tk.StringVar()
         self.delete_generated_wav_var = tk.BooleanVar(value=True)
+        self.trim_run_wav_var = tk.BooleanVar(value=os.environ.get("ROBOT_RUN_TRIM_WAV", "0") == "1")
         self.prep_queue = queue.SimpleQueue()
         self.prepared_dialogue = None
         self.generated_wav_paths = []
@@ -79,6 +80,17 @@ class DefaultTalkTab(tk.Frame):
             bg="main_card",
             fg="sub_text",
             text="デフォルト音声は一度生成した後、次回以降も再利用します",
+        ).pack(side="left", padx=(ui.SPACING["gap"], 0))
+        tk.Checkbutton(
+            bottom,
+            text="再生前にWAVをtrim",
+            variable=self.trim_run_wav_var,
+            font=ui.FONTS["small"],
+            bg=ui.COLORS["main_card"],
+            fg=ui.COLORS["sub_text"],
+            activebackground=ui.COLORS["main_card"],
+            activeforeground=ui.COLORS["text"],
+            selectcolor=ui.COLORS["card"],
         ).pack(side="left", padx=(ui.SPACING["gap"], 0))
 
     def build_selector_area(self, parent):
@@ -608,7 +620,7 @@ class DefaultTalkTab(tk.Frame):
             self.wake_ui()
 
     def play_prepared_wav(self, wav_path):
-        should_trim = os.environ.get("ROBOT_RUN_TRIM_WAV", "0") == "1"
+        should_trim = self.trim_run_wav_var.get()
         if should_trim:
             from ..audio.wav_silence import trim_silence_to_temp_wav
 

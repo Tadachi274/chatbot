@@ -63,6 +63,7 @@ class ExampleSceneTab(tk.Frame):
         self.prepared_dialogue = None
         self.generated_wav_paths = []
         self.delete_generated_wav_var = tk.BooleanVar(value=True)
+        self.trim_run_wav_var = tk.BooleanVar(value=os.environ.get("ROBOT_RUN_TRIM_WAV", "0") == "1")
         self.prep_queue = None
         self.prep_thread = None
         self._event_read_fd = None
@@ -352,6 +353,17 @@ class ExampleSceneTab(tk.Frame):
                 activeforeground=ui.COLORS["text"],
                 selectcolor=ui.COLORS["card"],
             ).pack(side="left", padx=(ui.SPACING["gap"], 0))
+            tk.Checkbutton(
+                bottom,
+                text="再生前にWAVをtrim",
+                variable=self.trim_run_wav_var,
+                font=ui.FONTS["small"],
+                bg=ui.COLORS["main_card"],
+                fg=ui.COLORS["sub_text"],
+                activebackground=ui.COLORS["main_card"],
+                activeforeground=ui.COLORS["text"],
+                selectcolor=ui.COLORS["card"],
+            ).pack(side="left", padx=(ui.SPACING["gap"], 0))
             return
 
         generate_button = ui.action_button(bottom, text="選択場面を生成", command=self.generate_whole_scene)
@@ -380,6 +392,17 @@ class ExampleSceneTab(tk.Frame):
             bottom,
             text="実演後に生成WAVを削除",
             variable=self.delete_generated_wav_var,
+            font=ui.FONTS["small"],
+            bg=ui.COLORS["main_card"],
+            fg=ui.COLORS["sub_text"],
+            activebackground=ui.COLORS["main_card"],
+            activeforeground=ui.COLORS["text"],
+            selectcolor=ui.COLORS["card"],
+        ).pack(side="left", padx=(ui.SPACING["gap"], 0))
+        tk.Checkbutton(
+            bottom,
+            text="再生前にWAVをtrim",
+            variable=self.trim_run_wav_var,
             font=ui.FONTS["small"],
             bg=ui.COLORS["main_card"],
             fg=ui.COLORS["sub_text"],
@@ -1844,7 +1867,7 @@ class ExampleSceneTab(tk.Frame):
             self.wake_ui_event_loop()
 
     def play_prepared_wav(self, wav_path):
-        should_trim = os.environ.get("ROBOT_RUN_TRIM_WAV", "0") == "1"
+        should_trim = self.trim_run_wav_var.get()
         if should_trim:
             from ..audio.wav_silence import trim_silence_to_temp_wav
 
