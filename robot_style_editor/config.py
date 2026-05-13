@@ -5,6 +5,8 @@ RUNTIME_ENV_PRESETS = {
     "real": {
         "label": "実環境",
         "TTS_URL": "http://192.168.0.169:15001/synthesize",
+        "TTS_PLAYBACK_TARGET": "robot",
+        "ROBOT_TTS_PLAY_URL": "http://nikola-humantracker:15003/speak",
         "ROBOT_TCP_HOST": "nikola-humantracker",
         "ROBOT_TCP_PORT": "8078",
         "ROBOT_TCP_EOL": "lf",
@@ -14,6 +16,8 @@ RUNTIME_ENV_PRESETS = {
     "mac": {
         "label": "Mac上",
         "TTS_URL": "http://127.0.0.1:15001/synthesize",
+        "TTS_PLAYBACK_TARGET": "local",
+        "ROBOT_TTS_PLAY_URL": "http://127.0.0.1:15003/speak",
         "ROBOT_TCP_HOST": "127.0.0.1",
         "ROBOT_TCP_PORT": "5000",
         "ROBOT_TCP_EOL": "lf",
@@ -45,6 +49,20 @@ def get_runtime_environment():
 
 def get_tts_url():
     return os.environ.get("TTS_URL", RUNTIME_ENV_PRESETS[get_runtime_environment()]["TTS_URL"])
+
+
+def get_tts_playback_target():
+    return os.environ.get(
+        "TTS_PLAYBACK_TARGET",
+        RUNTIME_ENV_PRESETS[get_runtime_environment()]["TTS_PLAYBACK_TARGET"],
+    )
+
+
+def get_robot_tts_play_url():
+    return os.environ.get(
+        "ROBOT_TTS_PLAY_URL",
+        RUNTIME_ENV_PRESETS[get_runtime_environment()]["ROBOT_TTS_PLAY_URL"],
+    )
 
 
 def get_robot_tcp_config():

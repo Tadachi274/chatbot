@@ -3,11 +3,20 @@ import wave
 import time
 import re
 import shutil
+import json
+import urllib.error
+import urllib.request
 from datetime import datetime
 from pathlib import Path
 from uuid import uuid4
 
-from ..config import DEFAULT_INSTRUCTIONS, TTS_GENERATED_WAV_DIR, get_tts_url
+from ..config import (
+    DEFAULT_INSTRUCTIONS,
+    TTS_GENERATED_WAV_DIR,
+    get_robot_tts_play_url,
+    get_tts_playback_target,
+    get_tts_url,
+)
 from chatbot.tts import tts_nikola_data as tts
 from chatbot.tts.tts_audioplayer import AudioPlayer
 from ..audio.wav_silence import trim_silence_to_temp_wav
@@ -15,6 +24,8 @@ from ..audio.wav_silence import trim_silence_to_temp_wav
 class TTSClient:
     def __init__(self, url=None):
         self.url = url or get_tts_url()
+        self.playback_target = get_tts_playback_target()
+        self.robot_play_url = get_robot_tts_play_url()
 
         # UIで使うWAVプレビュー用。
         # 事前音声は消したくないので autoremove=False
@@ -35,6 +46,13 @@ class TTSClient:
 
         resolved_person = person or merged.get("tts_speaker_change") or tts.DEFAULT_PERSON
 
+        if self.playback_target == "robot":
+            return self.speak_on_robot(
+                text=text,
+                instructions=merged,
+                person=resolved_person,
+            )
+
         if resolved_person is None:
             return tts.speak_async(
                 text=text,
@@ -48,6 +66,37 @@ class TTSClient:
             url=self.url,
             person=resolved_person,
         )
+
+    def speak_on_robot(self, text: str, instructions: dict, person: str | None):
+        thread = threading.Thread(
+            target=self._post_robot_speak,
+            args=(text, instructions, person),
+            name="RobotTTSSpeak",
+            daemon=True,
+        )
+        thread.start()
+        return thread
+
+    def _post_robot_speak(self, text: str, instructions: dict, person: str | None):
+        payload = {
+            "text": text,
+            "instructions": instructions,
+            "person": person or tts.DEFAULT_PERSON,
+            "tts_url": self.url,
+        }
+        data = json.dumps(payload, ensure_ascii=False).encode("utf-8")
+        req = urllib.request.Request(
+            self.robot_play_url,
+            data=data,
+            headers={"Content-Type": "application/json"},
+            method="POST",
+        )
+
+        try:
+            with urllib.request.urlopen(req, timeout=5) as res:
+                res.read()
+        except Exception as e:
+            print(f"[TTSClient] robot speak failed: {e}")
 
     def change_speaker_and_speak(self, text: str, speaker: str):
         instructions = {
