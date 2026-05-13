@@ -9,3 +9,5 @@ watchdog
 ffmpeg
 sounddevice
 numpy
+pillow
+imageio_ffmpeg

@@ -58,9 +58,43 @@ SPACING = {
     "compact_x": 10,
 }
 
+BASE_FONTS = dict(FONTS)
+BASE_SPACING = dict(SPACING)
+BASE_TAB_PADDING = (18, 8)
+
 LAYOUT = {
     "card_text_wrap": 315,
 }
+
+
+def configure_density(root):
+    try:
+        height = int(root.winfo_screenheight())
+    except Exception:
+        height = 1000
+
+    if height <= 720:
+        font_delta = -2
+        spacing_scale = 0.62
+        tab_padding = (10, 4)
+    elif height <= 850:
+        font_delta = -1
+        spacing_scale = 0.78
+        tab_padding = (12, 5)
+    else:
+        font_delta = 0
+        spacing_scale = 1.0
+        tab_padding = BASE_TAB_PADDING
+
+    for key, font in BASE_FONTS.items():
+        family, size, *rest = font
+        FONTS[key] = (family, max(8, int(size) + font_delta), *rest)
+
+    for key, value in BASE_SPACING.items():
+        SPACING[key] = max(3, int(round(value * spacing_scale)))
+
+    LAYOUT["card_text_wrap"] = 260 if height <= 720 else 290 if height <= 850 else 315
+    LAYOUT["tab_padding"] = tab_padding
 
 def apply_app_style(root):
     root.configure(bg=COLORS["app_bg"])
@@ -77,7 +111,7 @@ def apply_app_style(root):
     style.configure(
         "Research.TNotebook.Tab",
         font=FONTS["body_bold"],
-        padding=(18, 8),
+        padding=LAYOUT.get("tab_padding", BASE_TAB_PADDING),
         background=COLORS["tab_bg"],
         foreground=COLORS["sub_text"],
         borderwidth=1,
