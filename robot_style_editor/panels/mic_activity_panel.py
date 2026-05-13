@@ -70,7 +70,6 @@ class MicActivityPanel(tk.Frame):
 
         self.build_ui()
         self.setup_ui_event_pipe()
-        self.start_meter_updates()
 
     def build_ui(self):
         section = ui.frame(self, bg="panel")
@@ -198,6 +197,7 @@ class MicActivityPanel(tk.Frame):
             self.activity_source = self.create_activity_source()
 
             self.activity_source.start()
+            self.start_meter_updates()
             self.state_label.set("認識中")
 
             if self.status_var is not None:
@@ -247,6 +247,7 @@ class MicActivityPanel(tk.Frame):
             except Exception:
                 pass
             self.xyz_client = None
+        self.stop_meter_updates()
 
         self.state_label.set("停止中")
         self.result_label.set("")
@@ -321,15 +322,18 @@ class MicActivityPanel(tk.Frame):
         if create_filehandler is None:
             return
 
-        self._event_read_fd, self._event_write_fd = os.pipe()
-        os.set_blocking(self._event_read_fd, False)
-        os.set_blocking(self._event_write_fd, False)
-        create_filehandler(
-            self._event_read_fd,
-            tk.READABLE,
-            self._handle_pipe_event,
-        )
-        self._filehandler_registered = True
+        try:
+            self._event_read_fd, self._event_write_fd = os.pipe()
+            os.set_blocking(self._event_read_fd, False)
+            os.set_blocking(self._event_write_fd, False)
+            create_filehandler(
+                self._event_read_fd,
+                tk.READABLE,
+                self._handle_pipe_event,
+            )
+            self._filehandler_registered = True
+        except Exception:
+            self.close_ui_event_pipe()
 
 
     def wake_ui_event_loop(self):
@@ -344,7 +348,6 @@ class MicActivityPanel(tk.Frame):
             os.write(self._event_write_fd, b"1")
         except (BlockingIOError, OSError):
             pass
-        self.generate_queue_event()
 
 
     def _handle_pipe_event(self, _fd=None, _mask=None):
