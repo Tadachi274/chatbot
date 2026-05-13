@@ -183,6 +183,8 @@ class RobotActActivitySource(BaseVoiceActivitySource):
             return
 
         self._running = True
+        self._last_active_t = time.monotonic()
+        self._last_logged_active = None
         self._thread = threading.Thread(target=self._poll_loop, daemon=True)
         self._thread.start()
 
@@ -212,12 +214,19 @@ class RobotActActivitySource(BaseVoiceActivitySource):
     def _poll_loop(self):
         while self._running:
             now = time.monotonic()
-            act = self._get_act()
+            try:
+                act = self._get_act()
+            except Exception as e:
+                print(f"[ACT] get_act error: {e}", flush=True)
+                time.sleep(self.poll_interval)
+                continue
             active = act >= self.act_threshold
             if active != self._last_logged_active:
                 print(f"[ACT] active={active} act={act}", flush=True)
                 self._last_logged_active = active
 
+            callback = None
+            callback_t = None
             with self._lock:
                 was_speaking = self._state.speaking
                 self._state.volume = float(act)
@@ -230,15 +239,31 @@ class RobotActActivitySource(BaseVoiceActivitySource):
                         self._state.started_at = now
                         self._state.ended_at = None
 
-                        if self.on_start:
-                            self.on_start(now)
+                        callback = self.on_start
+                        callback_t = now
 
                 else:
                     if was_speaking and (now - self._last_active_t) >= self.silence_hold_sec:
+                        print(
+                            f"[ACT] speech end detected silence={now - self._last_active_t:.3f}s",
+                            flush=True,
+                        )
                         self._state.speaking = False
                         self._state.ended_at = now
 
-                        if self.on_end:
-                            self.on_end(now)
+                        callback = self.on_end
+                        callback_t = now
+
+            if callback is not None:
+                try:
+                    print(
+                        "[ACT] callback start"
+                        if callback is self.on_start
+                        else "[ACT] callback end",
+                        flush=True,
+                    )
+                    callback(callback_t)
+                except Exception as e:
+                    print(f"[ACT] callback error: {e}", flush=True)
 
             time.sleep(self.poll_interval)
