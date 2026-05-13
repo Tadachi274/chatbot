@@ -3,7 +3,45 @@
 from pathlib import Path
 import tempfile
 import wave
-import audioop
+
+import numpy as np
+
+
+def _pcm_bytes_to_float_samples(frames: bytes, sample_width: int) -> np.ndarray:
+    if not frames:
+        return np.array([], dtype=np.float64)
+
+    if sample_width == 1:
+        samples = np.frombuffer(frames, dtype=np.uint8).astype(np.float64)
+        return samples - 128.0
+
+    if sample_width == 2:
+        return np.frombuffer(frames, dtype="<i2").astype(np.float64)
+
+    if sample_width == 3:
+        raw = np.frombuffer(frames, dtype=np.uint8)
+        if raw.size % 3:
+            raw = raw[: raw.size - (raw.size % 3)]
+        if raw.size == 0:
+            return np.array([], dtype=np.float64)
+
+        triples = raw.reshape(-1, 3).astype(np.int32)
+        samples = triples[:, 0] | (triples[:, 1] << 8) | (triples[:, 2] << 16)
+        sign_bit = 1 << 23
+        samples = (samples ^ sign_bit) - sign_bit
+        return samples.astype(np.float64)
+
+    if sample_width == 4:
+        return np.frombuffer(frames, dtype="<i4").astype(np.float64)
+
+    raise ValueError(f"Unsupported WAV sample width: {sample_width}")
+
+
+def _pcm_rms(frames: bytes, sample_width: int) -> float:
+    samples = _pcm_bytes_to_float_samples(frames, sample_width)
+    if samples.size == 0:
+        return 0.0
+    return float(np.sqrt(np.mean(samples * samples)))
 
 
 def trim_silence_to_temp_wav(
@@ -43,9 +81,7 @@ def trim_silence_to_temp_wav(
         start_byte = start_frame * frame_size
         end_byte = end_frame * frame_size
         chunk = frames[start_byte:end_byte]
-        if not chunk:
-            return 0
-        return audioop.rms(chunk, sample_width)
+        return _pcm_rms(chunk, sample_width)
 
     start = 0
     while start < total_frames:

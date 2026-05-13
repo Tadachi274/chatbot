@@ -7,10 +7,7 @@ import random
 import tkinter as tk
 from tkinter import ttk
 from tkinter.scrolledtext import ScrolledText
-from urllib import request, error
 import socket  # 追加
-import requests
-import simpleaudio as sa
 import sys
 import os
 from pathlib import Path
