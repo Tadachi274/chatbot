@@ -4,6 +4,7 @@ from tkinter import ttk, filedialog, messagebox
 from .. import ui_style as ui
 from ..config import SAVE_JSON_DIR
 from ..config_default_profile import build_default_profile
+from ..config_example import EXAMPLE_VENUES
 
 
 class DefaultProfileTab(tk.Frame):
@@ -16,6 +17,7 @@ class DefaultProfileTab(tk.Frame):
         on_create_user=None,
         on_load_user=None,
         on_continue_user=None,
+        on_select_venue=None,
         on_finish=None,
         can_use_default_talk=None,
     ):
@@ -26,6 +28,7 @@ class DefaultProfileTab(tk.Frame):
         self.on_create_user = on_create_user
         self.on_load_user = on_load_user
         self.on_continue_user = on_continue_user
+        self.on_select_venue = on_select_venue
         self.on_finish = on_finish
         self.can_use_default_talk = can_use_default_talk
         self.default_profile = build_default_profile()
@@ -35,6 +38,8 @@ class DefaultProfileTab(tk.Frame):
         self.inner_notebook = None
         self.default_talk_tab = None
         self.default_talk_frame = None
+        self.venue_selection_frame = None
+        self.venue_message_var = tk.StringVar(value="")
         self.build_ui()
 
     def build_ui(self):
@@ -64,7 +69,8 @@ class DefaultProfileTab(tk.Frame):
         self.inner_notebook.add(settings_tab, text="デフォルト設定")
         content = ui.scrollable_frame(settings_tab)
         self.build_user_area(content)
-        self.build_summary_area(content)
+        self.build_venue_selection_area(content)
+        # self.build_summary_area(content)
         self.build_bottom_area(settings_tab)
 
         self.default_talk_frame = ui.frame(self.inner_notebook, bg="main_card")
@@ -161,6 +167,46 @@ class DefaultProfileTab(tk.Frame):
             command=self.finish_app,
         ).pack(side="left", padx=(ui.SPACING["small_gap"], 0))
 
+    def build_venue_selection_area(self, parent):
+        self.venue_selection_frame = ui.frame(parent, bg="panel")
+
+        ui.label(self.venue_selection_frame, text="設定する店舗", font="section_title", bg="panel").pack(
+            anchor="w",
+            padx=ui.SPACING["section_x"],
+            pady=(ui.SPACING["section_y"], ui.SPACING["small_gap"]),
+        )
+
+        card = ui.bordered_frame(self.venue_selection_frame, bg="card", border="border")
+        card.pack(fill="x", padx=ui.SPACING["section_x"], pady=(0, ui.SPACING["section_y"]))
+
+        ui.variable_label(
+            card,
+            textvariable=self.venue_message_var,
+            font="body",
+            bg="card",
+            fg="sub_text",
+            justify="left",
+            wraplength=900,
+        ).pack(anchor="w", padx=ui.SPACING["card_x"], pady=(ui.SPACING["card_y"], ui.SPACING["small_gap"]))
+
+        grid = ui.frame(card, bg="card")
+        grid.pack(fill="x", padx=ui.SPACING["card_x"], pady=(0, ui.SPACING["card_y"]))
+
+        for index, venue in enumerate(EXAMPLE_VENUES):
+            button = ui.action_button(
+                grid,
+                text=venue["label"],
+                command=lambda selected=venue: self.select_venue(selected),
+            )
+            button.grid(
+                row=index // 3,
+                column=index % 3,
+                sticky="ew",
+                padx=(0, ui.SPACING["small_gap"]),
+                pady=(0, ui.SPACING["small_gap"]),
+            )
+            grid.columnconfigure(index % 3, weight=1)
+
     def build_summary_area(self, parent):
         section = ui.frame(parent, bg="panel")
         section.pack(fill="x")
@@ -231,7 +277,8 @@ class DefaultProfileTab(tk.Frame):
             return
 
         try:
-            self.on_create_user(filename)
+            user_path = self.on_create_user(filename)
+            self.show_venue_selection(user_path.name)
         except FileExistsError as e:
             messagebox.showerror("作成できません", str(e))
         except ValueError as e:
@@ -248,22 +295,41 @@ class DefaultProfileTab(tk.Frame):
 
     def load_saved_profile(self):
         SAVE_JSON_DIR.mkdir(parents=True, exist_ok=True)
-        path = filedialog.askopenfilename(
-            title="保存データを読み込む",
+        path = filedialog.askdirectory(
+            title="ユーザーフォルダを選択",
             initialdir=str(SAVE_JSON_DIR),
-            filetypes=[("JSON files", "*.json")],
         )
         if not path:
             return
 
         try:
             if self.on_load_user is not None:
-                self.on_load_user(path)
+                loaded_path = self.on_load_user(path)
+                self.show_venue_selection(loaded_path.name)
             else:
-                loaded_path = self.profile_store.load_from(path)
-                self.status_var.set(f"保存データを読み込みました: {loaded_path.name}")
+                loaded_path = self.profile_store.load_user_folder(path)
+                self.status_var.set(f"ユーザーを読み込みました: {loaded_path.name}")
+                self.show_venue_selection(loaded_path.name)
         except Exception as e:
             messagebox.showerror("読み込みエラー", str(e))
+
+    def show_venue_selection(self, username):
+        if self.venue_selection_frame is None:
+            return
+        if self.inner_notebook is not None and hasattr(self, "settings_tab"):
+            self.inner_notebook.select(self.settings_tab)
+        self.venue_message_var.set(
+            f"{username}さんの設定を開始します。店舗ごとに望む話し方を別々に保存します。"
+        )
+        self.venue_selection_frame.pack(fill="x")
+
+    def select_venue(self, venue):
+        if self.on_select_venue is None:
+            return
+        try:
+            self.on_select_venue(venue)
+        except Exception as e:
+            messagebox.showerror("店舗を開始できません", str(e))
 
     def show_saved_actions(self, saved_path, example_path=None):
         if self.saved_actions_frame is None:
@@ -281,6 +347,8 @@ class DefaultProfileTab(tk.Frame):
     def reset_user_entry(self):
         if self.saved_actions_frame is not None:
             self.saved_actions_frame.pack_forget()
+        if self.venue_selection_frame is not None:
+            self.venue_selection_frame.pack_forget()
         self.filename_var.set("")
         self.status_var.set("次のユーザー名を入力してください")
 
