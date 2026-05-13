@@ -106,6 +106,8 @@ class MacMicVolumeActivitySource(BaseVoiceActivitySource):
 
         volume = float(np.sqrt(np.mean(indata.astype(np.float32) ** 2)))
         now = time.monotonic()
+        callback = None
+        callback_t = None
 
         with self._lock:
             was_speaking = self._state.speaking
@@ -126,26 +128,29 @@ class MacMicVolumeActivitySource(BaseVoiceActivitySource):
                         self._last_above_end_t = now
                         self._above_start_since = None
 
-                        if self.on_start:
-                            self.on_start(now)
+                        callback = self.on_start
+                        callback_t = now
                 else:
                     self._above_start_since = None
 
-                return
+            else:
+                # -------------------------
+                # 発話中の場合
+                # -------------------------
+                if volume >= self.end_threshold:
+                    self._last_above_end_t = now
+                elif now - self._last_above_end_t >= self.silence_hold_sec:
+                    self._state.speaking = False
+                    self._state.ended_at = now
 
-            # -------------------------
-            # 発話中の場合
-            # -------------------------
-            if volume >= self.end_threshold:
-                self._last_above_end_t = now
-                return
+                    callback = self.on_end
+                    callback_t = now
 
-            if now - self._last_above_end_t >= self.silence_hold_sec:
-                self._state.speaking = False
-                self._state.ended_at = now
-
-                if self.on_end:
-                    self.on_end(now)
+        if callback is not None:
+            try:
+                callback(callback_t)
+            except Exception as e:
+                print(f"[MIC_SOURCE] callback error: {e}", flush=True)
 
 
 class RobotActActivitySource(BaseVoiceActivitySource):

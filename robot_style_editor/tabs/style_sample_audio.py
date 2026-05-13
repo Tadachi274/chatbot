@@ -8,7 +8,7 @@ from ..config import STYLE_SAMPLE_TTS_CACHE_DIR
 from ..audio.wav_silence import trim_silence_to_wav
 
 
-_CACHE_LOCKS = {}
+_CACHE_IN_PROGRESS = {}
 _CACHE_LOCKS_GUARD = threading.Lock()
 
 
@@ -38,18 +38,25 @@ class StyleSampleAudioMixin:
         if cache_path.exists():
             return cache_path, True
 
-        with _CACHE_LOCKS_GUARD:
-            lock = _CACHE_LOCKS.setdefault(str(cache_path), threading.Lock())
-
-        with lock:
+        cache_key = str(cache_path)
+        creator = False
+        while True:
             if cache_path.exists():
                 return cache_path, True
 
+            with _CACHE_LOCKS_GUARD:
+                event = _CACHE_IN_PROGRESS.get(cache_key)
+                if event is None:
+                    event = threading.Event()
+                    _CACHE_IN_PROGRESS[cache_key] = event
+                    creator = True
+                    break
+
+            event.wait()
+
+        try:
             cache_path.parent.mkdir(parents=True, exist_ok=True)
-            wav_path = self.tts_client.synthesize_to_wav(
-                text=text,
-                person=person,
-            )
+            wav_path = self.tts_client.synthesize_to_wav(text=text, person=person)
             if wav_path is None:
                 return None, False
 
@@ -64,6 +71,12 @@ class StyleSampleAudioMixin:
                 except Exception:
                     pass
             return cache_path, False
+        finally:
+            if creator:
+                with _CACHE_LOCKS_GUARD:
+                    event = _CACHE_IN_PROGRESS.pop(cache_key, None)
+                    if event is not None:
+                        event.set()
 
     def play_style_sample_text(self, text, label="スタイル例文"):
         text = (text or "").strip()
