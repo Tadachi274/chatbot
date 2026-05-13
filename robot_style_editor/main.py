@@ -92,9 +92,10 @@ class RobotStyleEditorApp(tk.Tk):
         super().__init__()
 
         self.title("ロボット話し方設定")
-        self.geometry("1300x1000-1200-1100")
-        self.minsize(1100, 650)
+        self.geometry(self.initial_geometry())
+        self.minsize(980, 560)
 
+        ui.configure_density(self)
         ui.apply_app_style(self)
         self.runtime_env = self.choose_runtime_environment()
 
@@ -170,44 +171,40 @@ class RobotStyleEditorApp(tk.Tk):
         self.wait_window(dialog)
         return get_runtime_environment()
 
+    def initial_geometry(self):
+        width = min(1300, max(980, self.winfo_screenwidth() - 80))
+        height = min(1000, max(620, self.winfo_screenheight() - 120))
+        return f"{width}x{height}"
+
     def build_ui(self):
         outer = ui.frame(self, bg="app_bg")
-        outer.pack(fill="both", expand=True, padx=18, pady=18)
-
-        header = ui.frame(outer, bg="app_bg")
-        header.pack(fill="x", pady=(0, 10))
-
-        ui.label(
-            header,
-            text="ロボット話し方設定",
-            font="app_title",
-            bg="app_bg",
-        ).pack(side="left")
-
-        ui.label(
-            header,
-            text="各項目を選択し、音声を確認してください",
-            font="body",
-            bg="app_bg",
-            fg="sub_text",
-        ).pack(side="right", padx=8)
+        outer.pack(fill="both", expand=True, padx=ui.SPACING["small_gap"], pady=ui.SPACING["small_gap"])
 
         main_card = ui.bordered_frame(
             outer,
             bg="main_card",
             border="frame_border",
-            thickness=5,
+            thickness=1,
         )
         main_card.pack(fill="both", expand=True)
 
         self.notebook = ttk.Notebook(main_card, style="Research.TNotebook")
-        self.notebook.pack(fill="both", expand=True, padx=16, pady=16)
+        self.notebook.pack(
+            fill="both",
+            expand=True,
+            padx=ui.SPACING["small_gap"],
+            pady=ui.SPACING["small_gap"],
+        )
 
         self.add_tabs()
         self.notebook.bind("<<NotebookTabChanged>>", self.on_tab_changed)
 
         footer = ui.frame(main_card, bg="main_card")
-        footer.pack(fill="x", padx=16, pady=(0, 12))
+        footer.pack(
+            fill="x",
+            padx=ui.SPACING["small_gap"],
+            pady=(0, ui.SPACING["small_gap"]),
+        )
 
         ui.variable_label(
             footer,
