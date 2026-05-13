@@ -197,21 +197,13 @@ class RobotStyleEditorApp(tk.Tk):
         main_card.pack(fill="both", expand=True)
 
         self.notebook = ttk.Notebook(main_card, style="Research.TNotebook")
-        self.notebook.pack(
-            fill="both",
-            expand=True,
-            padx=ui.SPACING["small_gap"],
-            pady=ui.SPACING["small_gap"],
-        )
-
-        self.add_tabs()
-        self.notebook.bind("<<NotebookTabChanged>>", self.on_tab_changed)
 
         footer = ui.frame(main_card, bg="main_card")
         footer.pack(
+            side="bottom",
             fill="x",
-            padx=ui.SPACING["small_gap"],
-            pady=(0, ui.SPACING["small_gap"]),
+            padx=ui.SPACING["compact_x"],
+            pady=(0, ui.SPACING["compact_y"]),
         )
 
         ui.variable_label(
@@ -220,13 +212,13 @@ class RobotStyleEditorApp(tk.Tk):
             font="small",
             bg="main_card",
             fg="sub_text",
-        ).pack(side="left")
+        ).pack(side="left", fill="x", expand=True)
 
         playback_frame = ui.frame(footer, bg="main_card")
-        playback_frame.pack(side="right", padx=(ui.SPACING["gap"], 0))
+        playback_frame.pack(side="right", padx=(ui.SPACING["small_gap"], 0))
         ui.label(
             playback_frame,
-            text="音声再生",
+            text="音声",
             font="small",
             bg="main_card",
             fg="sub_text",
@@ -239,6 +231,12 @@ class RobotStyleEditorApp(tk.Tk):
             command=self.on_tts_playback_changed,
             bg="main_card",
         ).pack(side="left")
+
+        ui.action_button(
+            footer,
+            text="保存",
+            command=self.save_all,
+        ).pack(side="right", padx=(ui.SPACING["small_gap"], 0))
         ui.radio(
             playback_frame,
             text="ニコラ",
@@ -248,11 +246,16 @@ class RobotStyleEditorApp(tk.Tk):
             bg="main_card",
         ).pack(side="left")
 
-        ui.action_button(
-            footer,
-            text="全体を保存",
-            command=self.save_all,
-        ).pack(side="right")
+        self.notebook.pack(
+            side="top",
+            fill="both",
+            expand=True,
+            padx=ui.SPACING["small_gap"],
+            pady=ui.SPACING["small_gap"],
+        )
+
+        self.add_tabs()
+        self.notebook.bind("<<NotebookTabChanged>>", self.on_tab_changed)
 
     def on_tts_playback_changed(self):
         target = self.tts_playback_var.get()
