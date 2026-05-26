@@ -12,9 +12,9 @@ import sys
 import os
 from pathlib import Path
 sys.path.append(os.path.dirname(os.path.dirname(__file__)))
-import tts_nikola_data as tts
-from tts_audioplayer import AudioPlayer
-from xyz_server import XYZClient
+from .. import tts_nikola_data as tts
+from ..tts_audioplayer import AudioPlayer
+from .xyz_server import XYZClient
 import time
 from PIL import Image, ImageTk
 
@@ -385,7 +385,8 @@ class RobotConsole(tk.Tk):
             tk.IntVar(value=v) for v in self.face_default_values
         ]
 
-        self.img = Image.open("nikola_axis.jpg").transpose(Image.ROTATE_90)
+        img_path = Path(__file__).resolve().parent / "nikola_axis.jpg"
+        self.img = Image.open(img_path).transpose(Image.ROTATE_90)
         self.img = self.img.resize((200*3, 150*3))
 
         # ===== 感情別 voice_state_emo.json 用 =====
@@ -1770,12 +1771,14 @@ class RobotConsole(tk.Tk):
         ttk.Label(row, text=".json").pack(side="left", padx=3)
         ttk.Button(row, text="設定保存", command=self.save_settings).pack(side="left", padx=6)
 
+        settings_path = Path(__file__).resolve().parent / "settings"
+
         ttk.Label(row, text="読み込みファイルを選択").pack(side="left", padx=3)
         self.file_combo = ttk.Combobox(
             row,
             textvariable=self.selected_file_name,
             values=sorted(
-                [file.name for file in Path("settings").iterdir() if file.is_file()]
+                [file.name for file in Path(settings_path).iterdir() if file.is_file()]
             ),
             state="readonly",
             width=40
