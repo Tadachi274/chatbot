@@ -266,14 +266,16 @@
     "label": "説明時",
     "text": "チェックアウトは11時となっております。",
     "face": {
-      "id": "neutral",
-      "label": "Neutral",
-      "type": "neutral",
-      "level": 1
+      "id": "affiliative_smile3",
+      "label": "AffiliativeSmile3",
+      "type": "AffiliativeSmile",
+      "level": 3
     },
+    "techniques": [],
+    "technique_defs": {},
     "voice": {
       "id": "neutral",
-      "label": "Neutral",
+      "label": "ニュートラル",
       "params": {
         "volume": 1.3,
         "rate": 1.0,
@@ -298,8 +300,7 @@
       "tts_emo_angry": 0.0,
       "tts_emo_sad": 0.0
     },
-    "techniques": [],
-    "prompt": "説明時の発話。保存された text を読み上げる。"
+    "prompt": "説明時の発話。保存された text を読み上げる。必要に応じて techniques の方針を自然な説明文として反映する。"
   },
   "question": {
     "intent": "question",
@@ -544,5 +545,5 @@
   "user_name": "ただち",
   "venue_id": "hotel",
   "venue_label": "ホテル",
-  "updated_at": "2026-05-14T13:01:17"
+  "updated_at": "2026-05-26T17:06:22"
 }

@@ -343,11 +343,21 @@ VOICE_FRIENDLY_MAP = {
 VOICE_CALM_MAP = {
     "volume": (1.3, 1.3),
     "rate": (1.0, 1.0),
-    "pitch": (1.0, 0.95),
-    "emphasis": (1.0, 0.95),
-    "joy": (0.0, 0.1),
+    "pitch": (1.0, 1.0),
+    "emphasis": (1.0, 0.70),
+    "joy": (0.0, 0.15),
     "anger": (0.0, 0.0),
     "sadness": (0.0, 0.4),
+}
+
+VOICE_RELIABLE_MAP = {
+    "volume": (1.3, 1.3),
+    "rate": (1.0, 0.98),
+    "pitch": (1.0, 0.95),
+    "emphasis": (1.0, 1.1),
+    "joy": (0.0, 0.1),
+    "anger": (0.0, 0.0),
+    "sadness": (0.0, 0.2),
 }
 
 VOICE_TENSION_MAP = {
@@ -359,6 +369,38 @@ VOICE_TENSION_MAP = {
     "anger": (0.0, 0.35),
     "sadness": (0.0, 0.0),
 }
+
+VOICE_IMPATIENCE_MAP = {
+    "volume": (1.3, 1.3),
+    "rate": (1.0, 1.1),
+    "pitch": (1.0, 1.1),
+    "emphasis": (1.0, 1.0),
+    "joy": (0.0, 0.2),
+    "anger": (0.0, 0.0),
+    "sadness": (0.0, 0.3),
+}
+
+VOICE_SORRY_MAP = {
+    "volume": (1.3, 1.25),
+    "rate": (1.0, 0.95),
+    "pitch": (1.0, 0.9),
+    "emphasis": (1.0, 1.1),
+    "joy": (0.0, 0.2),
+    "anger": (0.0, 0.0),
+    "sadness": (0.0, 0.3),
+}
+
+VOICE_ENERGETIC_MAP = {
+    "volume": (1.3, 1.25),
+    "rate": (1.0, 1.1),
+    "pitch": (1.0, 1.0),
+    "emphasis": (1.0, 0.9),
+    "joy": (0.0, 0.3),
+    "anger": (0.0, 0.1),
+    "sadness": (0.0, 0.0),
+}
+
+
 
 VOICE_BASE_PARAMS = {
     "volume": 1.3,
@@ -396,11 +438,23 @@ def add_voice_modifier(params, control_value, mapping):
     return params
 
 
-def compute_voice_params(friendly=1.0, calm=1.0, tension=1.0):
+def compute_voice_params(
+    friendly=1.0,
+    reliable=1.0,
+    calm=1.0,
+    tension=1.0,
+    impatience=1.0,
+    sorry=1.0,
+    energetic=1.0,
+):
     params = dict(VOICE_BASE_PARAMS)
     params = add_voice_modifier(params, friendly, VOICE_FRIENDLY_MAP)
+    params = add_voice_modifier(params, reliable, VOICE_RELIABLE_MAP)
     params = add_voice_modifier(params, calm, VOICE_CALM_MAP)
     params = add_voice_modifier(params, tension, VOICE_TENSION_MAP)
+    params = add_voice_modifier(params, impatience, VOICE_IMPATIENCE_MAP)
+    params = add_voice_modifier(params, sorry, VOICE_SORRY_MAP)
+    params = add_voice_modifier(params, energetic, VOICE_ENERGETIC_MAP)
 
     for key, (vmin, vmax) in VOICE_RANGE.items():
         params[key] = round(clamp(params[key], vmin, vmax), 2)
@@ -424,8 +478,12 @@ def default_voice_data():
     return {
         "controls": {
             "friendly": 1.0,
+            "reliable": 1.0,
             "calm": 1.0,
             "tension": 1.0,
+            "impatience": 1.0,
+            "sorry": 1.0,
+            "energetic": 1.0,
         },
         "params": compute_voice_params(),
     }

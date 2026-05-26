@@ -33,8 +33,12 @@ class VoiceEditorPanel(tk.Frame):
         self.on_changed = on_changed
         self._loading = False
         self.friendly = tk.DoubleVar(value=float(controls.get("friendly", 1.0)))
+        self.reliable = tk.DoubleVar(value=float(controls.get("reliable", 1.0)))
         self.calm = tk.DoubleVar(value=float(controls.get("calm", 1.0)))
         self.tension = tk.DoubleVar(value=float(controls.get("tension", 1.0)))
+        self.impatience = tk.DoubleVar(value=float(controls.get("impatience", 1.0)))
+        self.sorry = tk.DoubleVar(value=float(controls.get("sorry", 1.0)))
+        self.energetic = tk.DoubleVar(value=float(controls.get("energetic", 1.0)))
         self.param_vars = {
             key: tk.DoubleVar(value=float(params.get(key, VOICE_BASE_PARAMS[key])))
             for key in VOICE_BASE_PARAMS
@@ -58,8 +62,12 @@ class VoiceEditorPanel(tk.Frame):
         card.pack(fill="x")
 
         self.build_slider_row(card, "親しみ", self.friendly, *VOICE_CONTROL_RANGE)
-        self.build_slider_row(card, "信頼度", self.calm, *VOICE_CONTROL_RANGE)
+        self.build_slider_row(card, "信頼性", self.reliable, *VOICE_CONTROL_RANGE)
+        self.build_slider_row(card, "淡々さ", self.calm, *VOICE_CONTROL_RANGE)
         self.build_slider_row(card, "テンション", self.tension, *VOICE_CONTROL_RANGE)
+        self.build_slider_row(card, "焦り", self.impatience, *VOICE_CONTROL_RANGE)
+        self.build_slider_row(card, "申し訳ない", self.sorry, *VOICE_CONTROL_RANGE)
+        self.build_slider_row(card, "元気", self.energetic, *VOICE_CONTROL_RANGE)
 
         separator = tk.Frame(card, height=1, bg=ui.COLORS["soft_border"])
         separator.pack(fill="x", padx=ui.SPACING["card_x"], pady=ui.SPACING["small_gap"])
@@ -86,7 +94,16 @@ class VoiceEditorPanel(tk.Frame):
         ).pack(side="left", fill="x", expand=True)
 
     def attach_traces(self):
-        for var in (self.friendly, self.calm, self.tension, *self.param_vars.values()):
+        for var in (
+            self.friendly,
+            self.reliable,
+            self.calm,
+            self.tension,
+            self.impatience,
+            self.sorry,
+            self.energetic,
+            *self.param_vars.values(),
+        ):
             var.trace_add("write", lambda *_: self.update_labels())
 
     def apply_abstract_controls(self):
@@ -94,8 +111,12 @@ class VoiceEditorPanel(tk.Frame):
         try:
             params = compute_voice_params(
                 friendly=self.friendly.get(),
+                reliable=self.reliable.get(),
                 calm=self.calm.get(),
                 tension=self.tension.get(),
+                impatience=self.impatience.get(),
+                sorry=self.sorry.get(),
+                energetic=self.energetic.get(),
             )
             for key, value in params.items():
                 self.param_vars[key].set(float(value))
@@ -107,8 +128,12 @@ class VoiceEditorPanel(tk.Frame):
         self._loading = True
         try:
             self.friendly.set(1.0)
+            self.reliable.set(1.0)
             self.calm.set(1.0)
             self.tension.set(1.0)
+            self.impatience.set(1.0)
+            self.sorry.set(1.0)
+            self.energetic.set(1.0)
             for key, value in VOICE_BASE_PARAMS.items():
                 self.param_vars[key].set(float(value))
         finally:
@@ -125,8 +150,12 @@ class VoiceEditorPanel(tk.Frame):
     def get_controls(self):
         return {
             "friendly": round(float(self.friendly.get()), 2),
+            "reliable": round(float(self.reliable.get()), 2),
             "calm": round(float(self.calm.get()), 2),
             "tension": round(float(self.tension.get()), 2),
+            "impatience": round(float(self.impatience.get()), 2),
+            "sorry": round(float(self.sorry.get()), 2),
+            "energetic": round(float(self.energetic.get()), 2),
         }
 
     def get_params(self):

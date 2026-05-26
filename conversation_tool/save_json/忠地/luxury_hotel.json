@@ -212,13 +212,15 @@
       "segments": [
         {
           "type": "sentence",
-          "text": " こんにちは",
-          "duration": 1.8,
+          "text": " 申し訳ございません。",
+          "duration": 1.4000000000000001,
           "voice": {
             "controls": {
               "friendly": 1.0,
               "calm": 1.0,
-              "tension": 1.0
+              "tension": 1.0,
+              "impatience": 1.0,
+              "sorry": 1.0
             },
             "params": {
               "volume": 1.3,
@@ -239,9 +241,117 @@
               "tts_emo_sad": 0.0
             }
           }
+        },
+        {
+          "type": "pause",
+          "duration": 0.8
+        },
+        {
+          "type": "sentence",
+          "text": "申し訳ございません。",
+          "duration": 1.4000000000000001,
+          "voice": {
+            "controls": {
+              "friendly": 1.0,
+              "calm": 1.0,
+              "tension": 1.0,
+              "impatience": 1.5,
+              "sorry": 1.0
+            },
+            "params": {
+              "volume": 1.3,
+              "rate": 1.1,
+              "pitch": 1.1,
+              "emphasis": 1.0,
+              "joy": 0.2,
+              "anger": 0.0,
+              "sadness": 0.3
+            },
+            "tts_instructions": {
+              "tts_volume": 1.3,
+              "tts_rate": 1.1,
+              "tts_pitch": 1.1,
+              "tts_emphasis": 1.0,
+              "tts_emo_joy": 0.2,
+              "tts_emo_angry": 0.0,
+              "tts_emo_sad": 0.3
+            }
+          }
+        },
+        {
+          "type": "pause",
+          "duration": 0.8
+        },
+        {
+          "type": "sentence",
+          "text": "申し訳ございません。",
+          "duration": 1.8,
+          "voice": {
+            "controls": {
+              "friendly": 1.0,
+              "calm": 1.0,
+              "tension": 1.0,
+              "impatience": 1.0,
+              "sorry": 1.5
+            },
+            "params": {
+              "volume": 1.25,
+              "rate": 0.95,
+              "pitch": 0.9,
+              "emphasis": 1.1,
+              "joy": 0.2,
+              "anger": 0.0,
+              "sadness": 0.3
+            },
+            "tts_instructions": {
+              "tts_volume": 1.25,
+              "tts_rate": 0.95,
+              "tts_pitch": 0.9,
+              "tts_emphasis": 1.1,
+              "tts_emo_joy": 0.2,
+              "tts_emo_angry": 0.0,
+              "tts_emo_sad": 0.3
+            }
+          }
+        },
+        {
+          "type": "pause",
+          "duration": 0.8
+        },
+        {
+          "type": "sentence",
+          "text": "申し訳ございません。",
+          "duration": 1.8,
+          "voice": {
+            "controls": {
+              "friendly": 1.0,
+              "calm": 1.0,
+              "tension": 1.0,
+              "impatience": 1.0,
+              "sorry": 1.0
+            },
+            "params": {
+              "volume": 1.3,
+              "rate": 1.0,
+              "pitch": 1.0,
+              "emphasis": 0.7,
+              "joy": 0.15,
+              "anger": 0.0,
+              "sadness": 0.0
+            },
+            "tts_instructions": {
+              "tts_volume": 1.3,
+              "tts_rate": 1.0,
+              "tts_pitch": 1.0,
+              "tts_emphasis": 0.7,
+              "tts_emo_joy": 0.15,
+              "tts_emo_angry": 0.0,
+              "tts_emo_sad": 0.0
+            }
+          }
         }
       ],
-      "duration": 1.8,
+      "duration": 8.8,
       "events": [
         {
           "lane": "face",
@@ -526,7 +636,7 @@
   "user_name": "忠地",
   "scenario_id": "luxury_hotel",
   "scenario_label": "高級ホテル",
-  "updated_at": "2026-05-26T15:30:56",
+  "updated_at": "2026-05-26T17:02:03",
   "conversation_type_id": "hotel_dirty_bed",
   "conversation_intent": "apology",
   "scenes": {
@@ -746,13 +856,15 @@
           "segments": [
             {
               "type": "sentence",
-              "text": " こんにちは",
-              "duration": 1.8,
+              "text": " 申し訳ございません。",
+              "duration": 1.4000000000000001,
               "voice": {
                 "controls": {
                   "friendly": 1.0,
                   "calm": 1.0,
-                  "tension": 1.0
+                  "tension": 1.0,
+                  "impatience": 1.0,
+                  "sorry": 1.0
                 },
                 "params": {
                   "volume": 1.3,
@@ -773,9 +885,117 @@
                   "tts_emo_sad": 0.0
                 }
               }
+            },
+            {
+              "type": "pause",
+              "duration": 0.8
+            },
+            {
+              "type": "sentence",
+              "text": "申し訳ございません。",
+              "duration": 1.4000000000000001,
+              "voice": {
+                "controls": {
+                  "friendly": 1.0,
+                  "calm": 1.0,
+                  "tension": 1.0,
+                  "impatience": 1.5,
+                  "sorry": 1.0
+                },
+                "params": {
+                  "volume": 1.3,
+                  "rate": 1.1,
+                  "pitch": 1.1,
+                  "emphasis": 1.0,
+                  "joy": 0.2,
+                  "anger": 0.0,
+                  "sadness": 0.3
+                },
+                "tts_instructions": {
+                  "tts_volume": 1.3,
+                  "tts_rate": 1.1,
+                  "tts_pitch": 1.1,
+                  "tts_emphasis": 1.0,
+                  "tts_emo_joy": 0.2,
+                  "tts_emo_angry": 0.0,
+                  "tts_emo_sad": 0.3
+                }
+              }
+            },
+            {
+              "type": "pause",
+              "duration": 0.8
+            },
+            {
+              "type": "sentence",
+              "text": "申し訳ございません。",
+              "duration": 1.8,
+              "voice": {
+                "controls": {
+                  "friendly": 1.0,
+                  "calm": 1.0,
+                  "tension": 1.0,
+                  "impatience": 1.0,
+                  "sorry": 1.5
+                },
+                "params": {
+                  "volume": 1.25,
+                  "rate": 0.95,
+                  "pitch": 0.9,
+                  "emphasis": 1.1,
+                  "joy": 0.2,
+                  "anger": 0.0,
+                  "sadness": 0.3
+                },
+                "tts_instructions": {
+                  "tts_volume": 1.25,
+                  "tts_rate": 0.95,
+                  "tts_pitch": 0.9,
+                  "tts_emphasis": 1.1,
+                  "tts_emo_joy": 0.2,
+                  "tts_emo_angry": 0.0,
+                  "tts_emo_sad": 0.3
+                }
+              }
+            },
+            {
+              "type": "pause",
+              "duration": 0.8
+            },
+            {
+              "type": "sentence",
+              "text": "申し訳ございません。",
+              "duration": 1.8,
+              "voice": {
+                "controls": {
+                  "friendly": 1.0,
+                  "calm": 1.0,
+                  "tension": 1.0,
+                  "impatience": 1.0,
+                  "sorry": 1.0
+                },
+                "params": {
+                  "volume": 1.3,
+                  "rate": 1.0,
+                  "pitch": 1.0,
+                  "emphasis": 0.7,
+                  "joy": 0.15,
+                  "anger": 0.0,
+                  "sadness": 0.0
+                },
+                "tts_instructions": {
+                  "tts_volume": 1.3,
+                  "tts_rate": 1.0,
+                  "tts_pitch": 1.0,
+                  "tts_emphasis": 0.7,
+                  "tts_emo_joy": 0.15,
+                  "tts_emo_angry": 0.0,
+                  "tts_emo_sad": 0.0
+                }
+              }
             }
           ],
-          "duration": 1.8,
+          "duration": 8.8,
           "events": [
             {
               "lane": "face",
