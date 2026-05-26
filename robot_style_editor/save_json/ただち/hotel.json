@@ -1,43 +1,43 @@
 {
-  "speaker": "kenta_emo_22_standard",
+  "speaker": "nozomi_emo_22_standard",
   "speaker_test_text": "話し手が変更されました",
   "politeness": {
-    "id": "light_casual",
-    "label": "軽くカジュアル",
-    "example1": "今日はどうしましたか？",
-    "example2": "確認したいので、身分証明書を見せてもらってもいいですか？",
-    "prompt": "丁寧語とカジュアルな表現を混ぜた、軽くカジュアルな話し方にしてください。尊敬語や謙譲語は使いすぎず、「です・ます」は必要に応じて残してください。例：「今日はどうしましたか？」「確認したいので、身分証明書を見せてもらってもいいですか？」"
+    "id": "very_formal",
+    "label": "尊敬語・謙譲語",
+    "example1": "本日はどのようなご用件でございますか？",
+    "example2": "恐れ入りますが、ご本人様確認のため、身分証明書を拝見してもよろしいでしょうか？",
+    "prompt": "尊敬語・謙譲語を多く使い、かなり丁寧で改まった話し方にしてください。例：「本日はどのようなご用件でございますか？」「恐れ入りますが、ご本人様確認のため、身分証明書を拝見してもよろしいでしょうか？」"
   },
-  "politeness_test_text": "今日はどのような用件でしょうか？",
+  "politeness_test_text": "今日はどのようなご用件でしょうか。",
   "intimacy": {
     "id": "high",
     "label": "高",
+    "person": "kenta",
+    "politeness": "polite",
+    "example1": "今日はどうしたんすか？",
+    "example2": "ちょっと確認したいんで、身分証明書見せてもらってもいいっすか？",
+    "prompt": "親しみは高めにしてください。「〜っすね」「〜っすか」「〜なんすか」など、店員らしく砕けた表現を使ってください。ただし乱暴な表現や失礼な表現にはしないでください。"
+  },
+  "intimacy_test_text": "今日はどのようなご用件でしょうか。",
+  "vocabulary": {
+    "id": "hard",
+    "label": "難しい",
     "person": "nozomi",
     "politeness": "casual",
-    "example1": "今日はどうしたのぉ？",
-    "example2": "ちょっと確認したいから、身分証明書見せてもらってもいいぃ？",
-    "prompt": "親しみは高めにしてください。語尾に伸ばし棒などを使い、かなり親しげで柔らかい話し方にしてください。伸ばし棒の～はttsに反映されないので、ーか小さいぁぃぅぇぉを使ってください"
-  },
-  "intimacy_test_text": "いいですかー？",
-  "vocabulary": {
-    "id": "middle",
-    "label": "中",
-    "person": "nozomi",
-    "politeness": "very_formal",
     "intimacy": "high",
-    "example1": "こちらは、甘味が強く、口に入れるとふわっと溶けるようなお菓子でございますぅっ。",
-    "example2": "入口から見て右側の棚にございますよぉっ。",
-    "prompt": "語彙は中程度にしてください。一般的な接客で自然に使われる、少し具体的な表現にしてください。"
+    "example1": "上品な甘みと、ほどけるような軽い口どけが魅力のお菓子だよぉっ。",
+    "example2": "入口右手の陳列棚、中段の見やすい位置にあるよぉっ。",
+    "prompt": "語彙は難しめにしてください。表現が具体的で、描写が豊かで、少し上品に感じられる言葉を使ってください。"
   },
-  "vocabulary_test_text": "甘くてふわふわなお菓子だよーっ",
+  "vocabulary_test_text": "こちらは、甘味が強く、口に入れるとふわっと溶けるようなお菓子です。",
   "length": {
-    "id": "middle",
-    "label": "中",
-    "example1": "もうすぐ閉店時間です。",
-    "example2": "少しだけお待ちいただけますか。",
-    "prompt": "発話は中くらいの長さにしてください。現在選択されている敬語・親しみ・語彙の方針は維持したまま、短すぎず長すぎない自然な一文で伝えてください。理由、確認、提案、補足は必要以上に増やさないでください。"
+    "id": "short",
+    "label": "短い",
+    "example1": "閉店です。",
+    "example2": "少々お待ちください。",
+    "prompt": "発話は短くしてください。現在選択されている敬語・親しみ・語彙の方針は維持したまま、同じ内容をできるだけ短く、必要最小限の言葉で伝えてください。理由、確認、提案、補足は必要以上に増やさないでください。"
   },
-  "length_test_text": "もうすぐ閉店時間です。",
+  "length_test_text": "今日はどうしたんすか？",
   "style_detail": {
     "label": "詳細設定",
     "selections": {
@@ -45,20 +45,18 @@
         "conclusion_first"
       ],
       "information_amount": "standard",
-      "emotional_expression": "high",
-      "interpersonal_consideration": [
-        "hedge"
-      ],
+      "emotional_expression": "standard",
+      "interpersonal_consideration": [],
       "initiative": []
     },
     "labels": {
       "information_structure": "結論先出し",
       "information_amount": "標準",
-      "emotional_expression": "多め",
-      "interpersonal_consideration": "ヘッジ",
+      "emotional_expression": "標準",
+      "interpersonal_consideration": "なし",
       "initiative": "なし"
     },
-    "prompt": "結論や要点を先に述べ、その後で必要な補足を入れる。 情報量は標準にし、要点と自然な補足のバランスを取る。 感情語や共感語を多めにし、嬉しさ・安心・共感を言葉で示す。 断定を少し和らげ、必要に応じて「かもしれません」「と思います」などを使う。",
+    "prompt": "結論や要点を先に述べ、その後で必要な補足を入れる。 情報量は標準にし、要点と自然な補足のバランスを取る。 感情語や共感語は標準的にし、必要な場面で自然に入れる。",
     "description": "会話全体に反映する話し方の詳細傾向。"
   },
   "special_consideration": {
@@ -69,13 +67,13 @@
     "description": "参加者や場面に合わせて強く反映する自由記述の配慮条件。"
   },
   "speech_speed": {
-    "value": 2.0,
-    "label": "2.00 倍",
-    "prompt": "話すスピードは通常の 2.00 倍程度にしてください。ただし不自然に聞こえない範囲で調整してください。"
+    "value": 1.2,
+    "label": "1.20 倍",
+    "prompt": "話すスピードは通常の 1.20 倍程度にしてください。ただし不自然に聞こえない範囲で調整してください。"
   },
   "sentence_pause": {
-    "value": 0.6,
-    "label": "0.60 秒",
+    "value": 0.3,
+    "label": "0.30 秒",
     "gaze": {
       "id": "front",
       "label": "正面",
@@ -85,18 +83,18 @@
     },
     "description": "ターンを保持している間の一文と一文の間の時間",
     "example": "こんにちは。 / 今日はどのようなご用件でしょうか？",
-    "prompt": "一文と一文の間は約0.60秒空けてください。これは発話中にターンを保持している状態での文間ポーズです。"
+    "prompt": "一文と一文の間は約0.30秒空けてください。これは発話中にターンを保持している状態での文間ポーズです。"
   },
   "response_delay": {
-    "total_value": 0.2,
-    "label": "0.20 秒",
-    "wait_after_detection": 0.0,
-    "thinking_total_value": 0.2,
-    "thinking_label": "0.20 秒",
-    "thinking_wait_after_detection": 0.0,
+    "total_value": 0.6,
+    "label": "0.60 秒",
+    "wait_after_detection": 0.4,
+    "thinking_total_value": 1.0,
+    "thinking_label": "1.00 秒",
+    "thinking_wait_after_detection": 0.8,
     "silence_hold_sec": 0.2,
     "description": "相手の発話終了からロボットが返答を開始するまでの総時間。通常時と考えている時で別々に設定する。",
-    "prompt": "通常時は相手の発話が終わってから約0.20秒後、考えている時は約0.20秒後に返答を開始してください。"
+    "prompt": "通常時は相手の発話が終わってから約0.60秒後、考えている時は約1.00秒後に返答を開始してください。"
   },
   "thinking_pose": {
     "face": {
@@ -116,21 +114,21 @@
   },
   "listening_pose": {
     "face": {
-      "id": "wait_smile",
-      "label": "待機の笑顔",
-      "type": "WaitSmile",
-      "level": 2
+      "id": "neutral",
+      "label": "ニュートラル",
+      "type": "neutral",
+      "level": 1
     },
     "eye_open": {
-      "id": "open",
-      "left_upper": 48,
+      "id": "normal",
+      "left_upper": 64,
       "left_lower": 0,
-      "right_upper": 48,
+      "right_upper": 64,
       "right_lower": 0,
       "axes": {
-        "1": 48,
+        "1": 64,
         "6": 0,
-        "2": 48,
+        "2": 64,
         "7": 0
       }
     },
@@ -143,16 +141,16 @@
       "priority": 3
     },
     "backchannel_voice": {
-      "mode": "always",
+      "mode": "none",
       "probability": 0.3,
-      "effective_probability": 1.0,
-      "word_id": "hailtu",
+      "effective_probability": 0.0,
+      "word_id": "hai",
       "word_type": "wav",
-      "text": "はいっ",
-      "custom_text": "はいっ",
+      "text": "はい",
+      "custom_text": "",
       "reuse_tts_cache": true,
-      "cache_dir": "C:\\tadachi\\chatbot\\robot_style_editor\\sample_audio\\wav\\backchannel_cache",
-      "wav_path": "C:\\tadachi\\chatbot\\robot_style_editor\\sample_audio\\はいっ.wav",
+      "cache_dir": "C:\\Users\\nikola\\tadachi\\chatbot\\robot_style_editor\\sample_audio\\wav\\backchannel_cache",
+      "wav_path": "C:\\Users\\nikola\\tadachi\\chatbot\\robot_style_editor\\sample_audio\\はい.wav",
       "description": "うなづき時に、指定割合で既存WAVの相槌を再生する"
     },
     "amount": {
@@ -171,19 +169,19 @@
       "level": 1
     },
     "nod": {
-      "id": "large_once",
-      "label": "大 1回",
+      "id": "large_twice",
+      "label": "大 2回",
       "amplitude": 15,
       "duration": 500,
-      "count": 1,
+      "count": 2,
       "priority": 3
     },
     "word": {
-      "word_id": "sounandesune",
+      "word_id": "hai",
       "word_type": "wav",
-      "text": "そうなんですね",
+      "text": "はい",
       "custom_text": "",
-      "wav_path": "C:\\tadachi\\chatbot\\robot_style_editor\\sample_audio\\そうなんですね.wav"
+      "wav_path": "C:\\Users\\nikola\\tadachi\\chatbot\\robot_style_editor\\sample_audio\\はい.wav"
     },
     "response_delay_source": "response_delay.wait_after_detection",
     "description": "相手の発話を理解した直後に出す表情・うなづき・短い言葉"
@@ -194,8 +192,8 @@
     "phrases": [],
     "custom_text": "",
     "voice": {
-      "id": "other",
-      "label": "その他",
+      "id": "neutral",
+      "label": "Neutral",
       "params": {
         "volume": 1.3,
         "rate": 1.0,
@@ -205,29 +203,11 @@
         "anger": 0.0,
         "sadness": 0.0
       },
-      "editor": {
-        "base_preset": "neutral",
-        "controls": {
-          "friendly": 1.0,
-          "calm": 1.0,
-          "tension": 1.0
-        },
-        "params": {
-          "volume": 1.3,
-          "rate": 1.0,
-          "pitch": 1.0,
-          "emphasis": 1.0,
-          "joy": 0.0,
-          "anger": 0.0,
-          "sadness": 0.0
-        }
-      },
       "controls": {
         "friendly": 1.0,
         "calm": 1.0,
         "tension": 1.0
-      },
-      "base_preset": "neutral"
+      }
     },
     "tts_instructions": {
       "tts_volume": 1.3,
@@ -238,27 +218,23 @@
       "tts_emo_angry": 0.0,
       "tts_emo_sad": 0.0
     },
-    "prompt": "会話の間や文頭に挿入するフィラー。enabled が true のとき phrases から自然に選ぶ。"
+    "prompt": "フィラーは使用しない。"
   },
   "greeting": {
     "intent": "greeting",
     "label": "挨拶",
-    "text": "こんにちは、いらっしゃいませぇ。お仕事帰りでしょうか？今日はどのようなご用件でしょうかぁっ？",
+    "text": "こんにちは、いらっしゃいませ。",
     "face": {
-      "id": "wait_smile",
-      "label": "穏やかな笑顔",
-      "type": "WaitSmile",
+      "id": "affiliative_smile",
+      "label": "親しみの笑顔",
+      "type": "AffiliativeSmile",
       "level": 2
     },
-    "techniques": [
-      "time_topic"
-    ],
-    "technique_defs": {
-      "time_topic": "時間帯に関する話題を入れる。朝・昼・夜や「お仕事帰り」など、現在の時間状況に言及する。"
-    },
+    "techniques": [],
+    "technique_defs": {},
     "voice": {
-      "id": "other",
-      "label": "その他",
+      "id": "neutral",
+      "label": "Neutral",
       "params": {
         "volume": 1.3,
         "rate": 1.0,
@@ -268,29 +244,11 @@
         "anger": 0.0,
         "sadness": 0.0
       },
-      "editor": {
-        "base_preset": "neutral",
-        "controls": {
-          "friendly": 1.0,
-          "calm": 1.0,
-          "tension": 1.0
-        },
-        "params": {
-          "volume": 1.3,
-          "rate": 1.0,
-          "pitch": 1.0,
-          "emphasis": 1.0,
-          "joy": 0.0,
-          "anger": 0.0,
-          "sadness": 0.0
-        }
-      },
       "controls": {
         "friendly": 1.0,
         "calm": 1.0,
         "tension": 1.0
-      },
-      "base_preset": "neutral"
+      }
     },
     "tts_instructions": {
       "tts_volume": 1.3,
@@ -306,66 +264,47 @@
   "explanation": {
     "intent": "explanation",
     "label": "説明時",
-    "text": "チェックアウトは11時ーっ。",
+    "text": "チェックアウトは11時となっております。",
     "face": {
       "id": "neutral",
       "label": "Neutral",
       "type": "neutral",
       "level": 1
     },
-    "techniques": [],
-    "technique_defs": {},
     "voice": {
-      "id": "other",
-      "label": "その他",
+      "id": "neutral",
+      "label": "Neutral",
       "params": {
-        "volume": 1.34,
-        "rate": 1.05,
-        "pitch": 1.09,
-        "emphasis": 1.11,
-        "joy": 0.38,
+        "volume": 1.3,
+        "rate": 1.0,
+        "pitch": 1.0,
+        "emphasis": 1.0,
+        "joy": 0.0,
         "anger": 0.0,
-        "sadness": 0.32
-      },
-      "editor": {
-        "base_preset": "neutral",
-        "controls": {
-          "friendly": 1.5,
-          "calm": 1.0,
-          "tension": 1.1
-        },
-        "params": {
-          "volume": 1.34,
-          "rate": 1.05,
-          "pitch": 1.09,
-          "emphasis": 1.11,
-          "joy": 0.38,
-          "anger": 0.0,
-          "sadness": 0.32
-        }
+        "sadness": 0.0
       },
       "controls": {
-        "friendly": 1.5,
+        "friendly": 1.0,
         "calm": 1.0,
-        "tension": 1.1
-      },
-      "base_preset": "neutral"
+        "tension": 1.0
+      }
     },
     "tts_instructions": {
-      "tts_volume": 1.34,
-      "tts_rate": 1.05,
-      "tts_pitch": 1.09,
-      "tts_emphasis": 1.11,
-      "tts_emo_joy": 0.38,
+      "tts_volume": 1.3,
+      "tts_rate": 1.0,
+      "tts_pitch": 1.0,
+      "tts_emphasis": 1.0,
+      "tts_emo_joy": 0.0,
       "tts_emo_angry": 0.0,
-      "tts_emo_sad": 0.32
+      "tts_emo_sad": 0.0
     },
-    "prompt": "説明時の発話。保存された text を読み上げる。必要に応じて techniques の方針を自然な説明文として反映する。"
+    "techniques": [],
+    "prompt": "説明時の発話。保存された text を読み上げる。"
   },
   "question": {
     "intent": "question",
     "label": "質問時",
-    "text": "今日は一泊でよろしいですか？",
+    "text": "本日は一泊でよろしいでしょうか。",
     "face": {
       "id": "neutral",
       "label": "Neutral",
@@ -373,32 +312,33 @@
       "level": 1
     },
     "voice": {
-      "id": "expressive",
-      "label": "抑揚多め",
+      "id": "neutral",
+      "label": "Neutral",
       "params": {
-        "volume": 1.48,
-        "rate": 1.2,
-        "pitch": 1.21,
-        "emphasis": 1.29,
-        "joy": 0.42,
+        "volume": 1.3,
+        "rate": 1.0,
+        "pitch": 1.0,
+        "emphasis": 1.0,
+        "joy": 0.0,
         "anger": 0.0,
-        "sadness": 0.07
+        "sadness": 0.0
       },
       "controls": {
-        "friendly": 1.1,
-        "calm": 0.9,
-        "tension": 1.45
+        "friendly": 1.0,
+        "calm": 1.0,
+        "tension": 1.0
       }
     },
     "tts_instructions": {
-      "tts_volume": 1.48,
-      "tts_rate": 1.2,
-      "tts_pitch": 1.21,
-      "tts_emphasis": 1.29,
-      "tts_emo_joy": 0.42,
+      "tts_volume": 1.3,
+      "tts_rate": 1.0,
+      "tts_pitch": 1.0,
+      "tts_emphasis": 1.0,
+      "tts_emo_joy": 0.0,
       "tts_emo_angry": 0.0,
-      "tts_emo_sad": 0.07
+      "tts_emo_sad": 0.0
     },
+    "techniques": [],
     "prompt": "質問時の発話。保存された text を読み上げる。"
   },
   "acceptance": {
@@ -564,13 +504,7 @@
   "smalltalk": {
     "intent": "smalltalk",
     "label": "雑談時",
-    "text": "今日はいい天気ですね。外に出るのも気持ちよさそうですね。",
-    "style": {
-      "politeness": "polite",
-      "intimacy": "middle",
-      "vocabulary": "easy",
-      "length": "middle"
-    },
+    "text": "今日は過ごしやすいですね。",
     "face": {
       "id": "neutral",
       "label": "Neutral",
@@ -604,7 +538,11 @@
       "tts_emo_angry": 0.0,
       "tts_emo_sad": 0.0
     },
-    "prompt": "雑談時の発話。保存された text を読み上げる。雑談用 style は基本設定とは別に保存する。"
+    "techniques": [],
+    "prompt": "雑談時の発話。保存された text を読み上げる。"
   },
-  "updated_at": "2026-05-13T20:20:21"
+  "user_name": "ただち",
+  "venue_id": "hotel",
+  "venue_label": "ホテル",
+  "updated_at": "2026-05-14T13:01:17"
 }

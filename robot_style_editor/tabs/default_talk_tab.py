@@ -42,8 +42,12 @@ class DefaultTalkTab(tk.Frame):
         self.dialogue_frame = None
         self.lyric_frame = None
         self.mic_panel = None
+        self._event_read_fd = None
+        self._event_write_fd = None
+        self._filehandler_registered = False
 
         self.bind("<<DefaultTalkTabQueue>>", self.on_queue_event, add="+")
+        self.setup_ui_event_pipe()
         self.build_ui()
         self.refresh_scene_choices()
 
@@ -268,6 +272,11 @@ class DefaultTalkTab(tk.Frame):
 
         turns = self.current_turns()
         total = self.count_tts_units(turns)
+        self.prep_queue = queue.SimpleQueue()
+        print(
+            f"[DEFAULT_RUN] prepare start total={total} playback={self.tts_client.playback_target}",
+            flush=True,
+        )
         self.cleanup_generated_wavs()
         self.generated_wav_paths = []
         self.clear_page()
@@ -371,9 +380,11 @@ class DefaultTalkTab(tk.Frame):
                 prepared_turns.append(prepared)
 
             self.prepared_dialogue = prepared_turns
+            print("[DEFAULT_RUN] prepare done queued", flush=True)
             self.prep_queue.put({"type": "done"})
             self.wake_ui()
         except Exception as e:
+            print(f"[DEFAULT_RUN] prepare error queued: {e}", flush=True)
             self.prep_queue.put({"type": "error", "message": str(e)})
             self.wake_ui()
 
@@ -452,10 +463,72 @@ class DefaultTalkTab(tk.Frame):
         self.wake_ui()
 
     def wake_ui(self):
+        if self._event_write_fd is not None:
+            try:
+                os.write(self._event_write_fd, b"1")
+            except (BlockingIOError, OSError):
+                pass
         try:
             self.event_generate("<<DefaultTalkTabQueue>>", when="tail")
         except Exception:
             pass
+
+    def setup_ui_event_pipe(self):
+        create_filehandler = getattr(self.tk, "createfilehandler", None)
+        if create_filehandler is None:
+            return
+        if self._event_read_fd is not None:
+            return
+
+        try:
+            self._event_read_fd, self._event_write_fd = os.pipe()
+            os.set_blocking(self._event_read_fd, False)
+            os.set_blocking(self._event_write_fd, False)
+            create_filehandler(
+                self._event_read_fd,
+                tk.READABLE,
+                self._handle_pipe_event,
+            )
+            self._filehandler_registered = True
+        except Exception:
+            self.close_ui_event_pipe()
+
+    def _handle_pipe_event(self, _fd=None, _mask=None):
+        self.drain_event_pipe()
+        self.on_queue_event()
+
+    def drain_event_pipe(self):
+        if self._event_read_fd is None:
+            return
+
+        while True:
+            try:
+                data = os.read(self._event_read_fd, 1024)
+            except BlockingIOError:
+                break
+            except OSError:
+                break
+
+            if not data:
+                break
+
+    def close_ui_event_pipe(self):
+        if self._filehandler_registered and self._event_read_fd is not None:
+            try:
+                self.tk.deletefilehandler(self._event_read_fd)
+            except Exception:
+                pass
+        self._filehandler_registered = False
+
+        for fd in (self._event_read_fd, self._event_write_fd):
+            if fd is None:
+                continue
+            try:
+                os.close(fd)
+            except OSError:
+                pass
+        self._event_read_fd = None
+        self._event_write_fd = None
 
     def on_queue_event(self, _event=None):
         while True:
@@ -464,11 +537,13 @@ class DefaultTalkTab(tk.Frame):
             except queue.Empty:
                 break
 
+            print(f"[DEFAULT_RUN] ui queue item={item.get('type')}", flush=True)
             if item["type"] == "progress":
                 self.prep_progress_var.set(item["completed"])
                 self.prep_count_var.set(f"{item['completed']} / {item['total']}")
                 self.prep_message_var.set(item["message"])
             elif item["type"] == "done":
+                print("[DEFAULT_RUN] build robot run view", flush=True)
                 self.build_robot_run_view()
             elif item["type"] == "run_advance":
                 self.advance_robot_run()

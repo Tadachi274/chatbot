@@ -7,3 +7,4 @@ __pycache__/
 Usenot/
 *__pycache__/
 sample_audio/
+venv/
