@@ -4,7 +4,7 @@ import threading
 import time
 from pathlib import Path
 
-from chatbot.tts.tts_audioplayer import AudioPlayer
+from ...tts.tts_audioplayer import AudioPlayer
 from .wav_silence import trim_silence_to_temp_wav
 
 

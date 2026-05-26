@@ -20,8 +20,8 @@ from ..config import (
     get_tts_url,
     set_tts_playback_target,
 )
-from chatbot.tts import tts_nikola_data as tts
-from chatbot.tts.tts_audioplayer import AudioPlayer
+from ...tts import tts_nikola_data as tts
+from ...tts.tts_audioplayer import AudioPlayer
 from ..audio.wav_silence import trim_silence_to_temp_wav
 
 class TTSClient:
@@ -110,7 +110,7 @@ class TTSClient:
             with urllib.request.urlopen(req, timeout=5) as res:
                 res.read()
         except Exception as e:
-            print(f"[TTSClient] robot speak failed: {e}")
+            print(f"[TTSClient] robot speak failed url={self.robot_play_url}: {e}")
 
     def prepare_remote_audio(self, text: str, instructions: dict | None = None, person: str | None = None):
         text = text.strip()

@@ -13,10 +13,12 @@ import wave
 CHATBOT_DIR = Path(__file__).resolve().parents[2]
 if str(CHATBOT_DIR.parent) not in sys.path:
     sys.path.insert(0, str(CHATBOT_DIR.parent))
+if __package__ in (None, ""):
+    __package__ = "chatbot.robot_style_editor.clients"
 
-from chatbot.tts import tts_nikola_data as tts
-from chatbot.tts.tts_audioplayer import AudioPlayer
-from chatbot.robot_style_editor.audio.wav_silence import trim_silence_to_wav
+from ...tts import tts_nikola_data as tts
+from ...tts.tts_audioplayer import AudioPlayer
+from ..audio.wav_silence import trim_silence_to_wav
 
 
 DEFAULT_TTS_URL = "http://127.0.0.1:15001/synthesize"
