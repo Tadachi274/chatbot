@@ -5,15 +5,15 @@ RUNTIME_ENV_PRESETS = {
     "real": {
         "label": "実環境",
         "TTS_URL": "http://192.168.0.169:15001/synthesize",
-        "TTS_PLAYBACK_TARGET": "local",
+        "TTS_PLAYBACK_TARGET": "robot",
         "ROBOT_TTS_PLAY_URL": "http://192.168.0.168:15003/speak",
         "ROBOT_TTS_PREPARE_URL": "http://192.168.0.168:15003/prepare",
         "ROBOT_TTS_PLAY_AUDIO_URL": "http://192.168.0.168:15003/play",
-        "ROBOT_TCP_HOST": "nikola-humantracker",
+        "ROBOT_TCP_HOST": "192.168.0.168",
         "ROBOT_TCP_PORT": "8078",
         "ROBOT_TCP_EOL": "lf",
         "ROBOT_TCP_TIMEOUT": "1.0",
-        "MIC_ACTIVITY_MODE": "robot_act",
+        "MIC_ACTIVITY_MODE": "mic",
     },
     "mac": {
         "label": "Mac上",
@@ -68,6 +68,20 @@ def set_tts_playback_target(target):
     return target
 
 
+def apply_robot_tts_environment(env_name="real"):
+    env_name = normalize_runtime_env(env_name)
+    preset = RUNTIME_ENV_PRESETS[env_name]
+    for key in ("ROBOT_TTS_PLAY_URL", "ROBOT_TTS_PREPARE_URL", "ROBOT_TTS_PLAY_AUDIO_URL"):
+        os.environ[key] = str(preset[key])
+
+
+def apply_robot_command_environment(env_name="real"):
+    env_name = normalize_runtime_env(env_name)
+    preset = RUNTIME_ENV_PRESETS[env_name]
+    for key in ("ROBOT_TCP_HOST", "ROBOT_TCP_PORT", "ROBOT_TCP_EOL", "ROBOT_TCP_TIMEOUT"):
+        os.environ[key] = str(preset[key])
+
+
 def get_robot_tts_play_url():
     return os.environ.get(
         "ROBOT_TTS_PLAY_URL",
@@ -106,6 +120,12 @@ def get_default_mic_activity_mode():
     )
 
 
+def set_mic_activity_mode(mode):
+    mode = mode if mode in {"robot_act", "mic"} else "robot_act"
+    os.environ["MIC_ACTIVITY_MODE"] = mode
+    return mode
+
+
 apply_runtime_environment(os.environ.get("ROBOT_STYLE_ENV", "real"), override=False)
 
 TTS_URL = get_tts_url()
@@ -137,8 +157,8 @@ SENTENCE_PAUSE_TRIMMED_SAMPLE_WAV_2 = TTS_GENERATED_WAV_DIR / "sentence_pause_sa
 # 返答の間
 RESPONSE_DELAY_SAMPLE_WAV = BASE_DIR / "sample_audio" / "承知いたしました.wav"
 
-MIC_VOLUME_START_THRESHOLD_DEFAULT = 0.006
-MIC_VOLUME_END_THRESHOLD_DEFAULT = 0.003
+MIC_VOLUME_START_THRESHOLD_DEFAULT = 0.03
+MIC_VOLUME_END_THRESHOLD_DEFAULT = 0.03
 MIC_SILENCE_HOLD_SEC_DEFAULT = 0.20
 MIC_START_HOLD_SEC_DEFAULT = 0.08
 MIC_METER_UPDATE_INTERVAL_SEC = 0.05

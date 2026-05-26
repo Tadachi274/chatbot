@@ -34,6 +34,7 @@ class MicActivityPanel(tk.Frame):
         silence_hold_sec=MIC_SILENCE_HOLD_SEC_DEFAULT,
         activity_mode=None,
         act_threshold=1,
+        show_controls=True,
     ):
         super().__init__(parent, bg=ui.COLORS["main_card"])
 
@@ -52,6 +53,7 @@ class MicActivityPanel(tk.Frame):
         self.silence_hold_sec = silence_hold_sec
         self.activity_mode = activity_mode or get_default_mic_activity_mode()
         self.act_threshold = act_threshold
+        self.show_controls = show_controls
 
         self.state_label = tk.StringVar(value="停止中")
         self.result_label = tk.StringVar(value="")
@@ -170,24 +172,25 @@ class MicActivityPanel(tk.Frame):
         )
         self.volume_bar.pack(fill="x")
 
-        button_row = ui.frame(card, bg="card")
-        button_row.pack(
-            fill="x",
-            padx=ui.SPACING["card_x"],
-            pady=(0, ui.SPACING["card_y"]),
-        )
+        if self.show_controls:
+            button_row = ui.frame(card, bg="card")
+            button_row.pack(
+                fill="x",
+                padx=ui.SPACING["card_x"],
+                pady=(0, ui.SPACING["card_y"]),
+            )
 
-        ui.sub_button(
-            button_row,
-            text="認識開始",
-            command=self.start,
-        ).pack(side="left")
+            ui.sub_button(
+                button_row,
+                text="認識開始",
+                command=self.start,
+            ).pack(side="left")
 
-        ui.sub_button(
-            button_row,
-            text="認識終了",
-            command=self.stop,
-        ).pack(side="left", padx=(ui.SPACING["small_gap"], 0))
+            ui.sub_button(
+                button_row,
+                text="認識終了",
+                command=self.stop,
+            ).pack(side="left", padx=(ui.SPACING["small_gap"], 0))
 
     def start(self):
         try:
@@ -216,7 +219,7 @@ class MicActivityPanel(tk.Frame):
     def create_activity_source(self):
         if self.activity_mode == "robot_act":
             try:
-                from chatbot.tts.command.xyz_server import XYZClient
+                from ...tts.command.xyz_server import XYZClient
             except Exception as e:
                 raise RuntimeError(f"XYZClient を読み込めませんでした: {e}") from e
 
@@ -281,6 +284,11 @@ class MicActivityPanel(tk.Frame):
         self.paused_label_text = label
         self.set_state_threadsafe(label)
         self.set_result_threadsafe("")
+
+
+    def clear_pause(self):
+        self.ignore_until_t = 0.0
+        self.paused_label_text = "再生中"
 
 
     def is_paused(self):
