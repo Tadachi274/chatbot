@@ -28,6 +28,8 @@ class RobotRunTab(tk.Frame):
         self.run_state = "idle"
         self.run_index = 0
         self.prepared_dialogue = None
+        self.turns_override = None
+        self.turns_label = None
         self.generated_wav_paths = []
         self.run_queue = queue.SimpleQueue()
         self.lyric_frame = None
@@ -38,6 +40,7 @@ class RobotRunTab(tk.Frame):
         self.prep_total = 1
         self._event_read_fd = None
         self._event_write_fd = None
+        self.face_event_generation = 0
 
         self.bind("<<ConversationRunQueue>>", self.handle_run_queue_event, add="+")
         self.setup_run_queue_pipe()
@@ -153,7 +156,7 @@ class RobotRunTab(tk.Frame):
         for child in self.lyric_frame.winfo_children():
             child.destroy()
 
-        turns = self.prepared_dialogue or self.get_turns()
+        turns = self.prepared_dialogue or self.current_turns()
         if not turns:
             ui.label(
                 self.lyric_frame,
@@ -192,18 +195,31 @@ class RobotRunTab(tk.Frame):
             ).pack(anchor="w", padx=ui.SPACING["card_x"], pady=(0, ui.SPACING["small_gap"]))
 
 
-    def show_overview(self):
+    def current_turns(self):
+        return copy.deepcopy(self.turns_override) if self.turns_override is not None else self.get_turns()
+
+
+    def set_turns_override(self, turns, label=None):
+        self.turns_override = copy.deepcopy(turns) if turns is not None else None
+        self.turns_label = label
+
+
+    def show_overview(self, turns=None, label=None):
         if self.run_state == "running":
             self.stop_robot_run()
+        self.set_turns_override(turns, label)
         self.prepared_dialogue = None
         self.run_state = "idle"
         self.run_index = 0
         self.build_main_view()
-        self.status_var.set("実演する会話を確認できます")
+        if self.turns_label:
+            self.status_var.set(f"実演する範囲を確認できます: {self.turns_label}")
+        else:
+            self.status_var.set("実演する会話を確認できます")
 
 
     def prepare_robot_run(self, start_after=False):
-        turns = self.get_turns()
+        turns = self.current_turns()
         if not turns:
             messagebox.showwarning("確認", "実演する発話を入力してください")
             return
@@ -364,12 +380,14 @@ class RobotRunTab(tk.Frame):
             return
         self.run_state = "running"
         self.run_index = 0
+        self.face_event_generation = 0
         self.render_lyrics_view()
         self.advance_robot_run()
 
 
     def stop_robot_run(self):
         self.run_state = "stopped"
+        self.face_event_generation += 1
         if self.mic_panel is not None:
             self.mic_panel.stop()
         if self.tts_client is not None:
@@ -495,6 +513,17 @@ class RobotRunTab(tk.Frame):
     def play_timed_events_worker(self, turn):
         started = time.monotonic()
         events = sorted(turn.get("events", []), key=lambda event: float(event.get("time", 0.0)))
+        face_events = [event for event in events if event.get("lane") == "face"]
+        turn_duration = float(turn.get("duration", self.turn_duration_from_segments(turn)))
+        for face_index, face_event in enumerate(face_events):
+            start = float(face_event.get("time", 0.0))
+            duration = float(face_event.get("duration", 0.0))
+            next_start = None
+            if face_index + 1 < len(face_events):
+                next_start = float(face_events[face_index + 1].get("time", 0.0))
+            return_until = next_start if next_start is not None else turn_duration
+            face_event["_return_duration"] = max(0.0, return_until - (start + duration))
+            face_event["_default_face"] = copy.deepcopy(turn.get("default_face") or default_face_data("ニュートラル"))
         for event in events:
             if self.run_state != "running":
                 return
@@ -505,6 +534,13 @@ class RobotRunTab(tk.Frame):
             if self.run_state != "running":
                 return
             self.apply_timeline_event(event)
+
+
+    def turn_duration_from_segments(self, turn):
+        duration = 0.0
+        for segment in turn.get("segments", []):
+            duration += float(segment.get("duration", DEFAULT_PAUSE_DURATION))
+        return duration
 
 
     def apply_timeline_event(self, event):
@@ -519,16 +555,38 @@ class RobotRunTab(tk.Frame):
 
     def apply_face_event(self, event):
         face = event.get("face") or default_face_data(event.get("value", "笑顔"))
+        duration_sec = max(0.0, float(event.get("duration", 0.0)))
+        keeptime = max(1, int(round(duration_sec * 1000)))
+        self.face_event_generation += 1
+        generation = self.face_event_generation
+        self.send_face_data(face, keeptime, label=event.get("value", "表情"))
+        self.schedule_face_default(
+            duration_sec,
+            generation,
+            event.get("_default_face") or default_face_data("ニュートラル"),
+            float(event.get("_return_duration", 0.0)),
+        )
+
+
+    def send_face_data(self, face, keeptime, label=None):
         robot = self.ensure_robot_client()
         command = face.get("command", {})
-        face_label = face.get("label") or event.get("value", "表情")
+        face_label = face.get("label") or label or "表情"
         if command.get("type") == "emotion":
-            command_text = command.get("text", "/emotion neutral")
+            if command.get("emotion") == "neutral":
+                command_text = command.get("text", "/emotion neutral")
+            else:
+                emotion = command.get("emotion", "neutral")
+                level = int(command.get("level", 1))
+                priority = int(command.get("priority", 3))
+                command_text = f"/emotion {emotion} {level} {priority} {keeptime}"
             print(f"[FACE] {face_label}: {command_text}", flush=True)
             robot.send(command_text)
             return
 
-        axis_commands = face_axis_commands(face)
+        axis_commands = face_axis_commands(face, keeptime=keeptime)
+        if not axis_commands:
+            return
         axis_summary = ", ".join(f"{cmd['axis']}={int(cmd['value'])}" for cmd in axis_commands)
         print(f"[FACE] {face_label}: /movemulti5 axes({axis_summary})", flush=True)
         for axis_command in axis_commands:
@@ -539,6 +597,24 @@ class RobotRunTab(tk.Frame):
                 priority=int(axis_command.get("priority", 3)),
                 keeptime=int(axis_command.get("keeptime", 3000)),
             )
+
+
+    def schedule_face_default(self, duration_sec, generation, default_face, return_duration_sec):
+        if duration_sec <= 0:
+            return
+
+        def send_default_after_duration():
+            time.sleep(duration_sec)
+            if self.run_state != "running" or self.face_event_generation != generation:
+                return
+            try:
+                keeptime = max(1, int(round(max(0.1, return_duration_sec) * 1000)))
+                self.send_face_data(default_face, keeptime, label="基本表情")
+            except Exception as exc:
+                self.run_queue.put({"type": "error", "message": f"基本表情送信エラー: {exc}"})
+                self.wake_run_queue()
+
+        threading.Thread(target=send_default_after_duration, daemon=True).start()
 
 
     def apply_gaze_event(self, event):

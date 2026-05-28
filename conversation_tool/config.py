@@ -111,6 +111,7 @@ FACE_AXIS_RANGE = (0, 255)
 FACE_AXIS_VELOCITY = 2000
 FACE_AXIS_PRIORITY = 3
 FACE_AXIS_KEEPTIME = 3000
+FACE_AXIS_SEND_DISABLED = {"32"}
 
 FACE_AXIS_DEFAULT_VALUES = {
     "1": 64,
@@ -188,6 +189,36 @@ FACE_AXIS_LABELS = {
     "35": "首 回転",
 }
 
+EMOTION_FACE_PRESETS = {
+    "WaitSmile": [1, 2, 3],
+    "sorry": [1, 2],
+    "WarmSmile": [1, 2],
+    "AffiliativeSmile": [1, 2, 3],
+    "Suspcion": [1, 2],
+}
+
+
+def emotion_face_definition(emotion, level):
+    return {
+        "label": f"{emotion} {level}",
+        "groups": [],
+        "command": {
+            "type": "emotion",
+            "emotion": emotion,
+            "level": int(level),
+            "priority": FACE_AXIS_PRIORITY,
+            "keeptime": FACE_AXIS_KEEPTIME,
+            "text": f"/emotion {emotion} {int(level)} {FACE_AXIS_PRIORITY} {FACE_AXIS_KEEPTIME}",
+        },
+    }
+
+
+EMOTION_FACE_DEFINITIONS = {
+    f"emotion_{emotion.lower()}_{level}": emotion_face_definition(emotion, level)
+    for emotion, levels in EMOTION_FACE_PRESETS.items()
+    for level in levels
+}
+
 FACE_EXPRESSION_DEFINITIONS = {
     "emotion_neutral": {
         "label": "ニュートラル",
@@ -198,29 +229,81 @@ FACE_EXPRESSION_DEFINITIONS = {
             "text": "/emotion neutral",
         },
     },
+    **EMOTION_FACE_DEFINITIONS,
     "smile": {
         "label": "笑顔",
         "groups": [
             {
                 "id": "upper_eyelids",
-                "label": "左右の上瞼",
-                "mode": "symmetric",
+                "label": "上まぶた",
                 "axes": ["1", "2"],
                 "default": 78,
             },
             {
-                "id": "mouth_corners",
-                "label": "左右の口角",
-                "mode": "symmetric",
+                "id": "lower_eyelids",
+                "label": "下瞼",
+                "axes": ["6", "7"],
+                "default": 35,
+            },
+            {
+                "id": "outer_brows_up",
+                "label": "眉外側上",
+                "axes": ["8", "12"],
+                "default": 45,
+            },
+            {
+                "id": "outer_brows_down",
+                "label": "眉外側下げ",
+                "axes": ["9", "13"],
+                "default": 0,
+            },
+            {
+                "id": "cheeks_diagonal",
+                "label": "頬斜め上",
                 "axes": ["16", "17"],
+                "default": 60,
+            },
+            {
+                "id": "mouth_corners",
+                "label": "口角",
+                "axes": ["18", "22"],
                 "default": 85,
             },
             {
-                "id": "mouth_open",
-                "label": "口の開き",
-                "mode": "single",
-                "axes": ["32"],
-                "default": 36,
+                "id": "mouth_side",
+                "label": "口横",
+                "axes": ["20", "24"],
+                "default": 45,
+            },
+            {
+                "id": "upper_lip",
+                "label": "上唇",
+                "axes": ["28"],
+                "default": 0,
+            },
+            {
+                "id": "lower_lip",
+                "label": "下唇",
+                "axes": ["29"],
+                "default": 0,
+            },
+            # {
+            #     "id": "mouth_open",
+            #     "label": "口の開き",
+            #     "axes": ["32"],
+            #     "default": 36,
+            # },
+            {
+                "id": "neck_horizontal",
+                "label": "首の角度横",
+                "axes": ["33"],
+                "default": 128,
+            },
+            {
+                "id": "neck_vertical",
+                "label": "首の角度縦",
+                "axes": ["34"],
+                "default": 128,
             },
         ],
     },
@@ -230,14 +313,12 @@ FACE_EXPRESSION_DEFINITIONS = {
             {
                 "id": "upper_eyelids",
                 "label": "左右の上瞼",
-                "mode": "symmetric",
                 "axes": ["1", "2"],
                 "default": 64,
             },
             {
                 "id": "mouth_corners",
                 "label": "左右の口角",
-                "mode": "symmetric",
                 "axes": ["16", "17"],
                 "default": 0,
             },
@@ -247,18 +328,22 @@ FACE_EXPRESSION_DEFINITIONS = {
         "label": "困り",
         "groups": [
             {
-                "id": "brows_inner",
-                "label": "左右の眉間",
-                "mode": "symmetric",
+                "id": "inner_brows_up",
+                "label": "眉の内側あげ",
+                "axes": ["10", "14"],
+                "default": 55,
+            },
+            {
+                "id": "brow_wrinkle",
+                "label": "眉間の皺",
                 "axes": ["11", "15"],
                 "default": 55,
             },
             {
-                "id": "mouth_corners",
-                "label": "左右の口角",
-                "mode": "symmetric",
-                "axes": ["16", "17"],
-                "default": 0,
+                "id": "mouth_corners_down",
+                "label": "口角下",
+                "axes": ["19", "23"],
+                "default": 40,
             },
         ],
     },
@@ -267,17 +352,57 @@ FACE_EXPRESSION_DEFINITIONS = {
         "groups": [
             {
                 "id": "upper_eyelids",
-                "label": "左右の上瞼",
-                "mode": "symmetric",
+                "label": "上瞼",
                 "axes": ["1", "2"],
                 "default": 110,
             },
             {
-                "id": "mouth_open",
-                "label": "口の開き",
-                "mode": "single",
-                "axes": ["32"],
-                "default": 95,
+                "id": "eye_vertical",
+                "label": "目の上下",
+                "axes": ["5"],
+                "default": 150,
+            },
+            {
+                "id": "lower_eyelids",
+                "label": "下瞼",
+                "axes": ["6", "7"],
+                "default": 30,
+            },
+            {
+                "id": "outer_brows_up",
+                "label": "眉外側上",
+                "axes": ["8", "12"],
+                "default": 70,
+            },
+            {
+                "id": "inner_brows_up",
+                "label": "眉の内側あげ",
+                "axes": ["10", "14"],
+                "default": 70,
+            },
+            {
+                "id": "brow_wrinkle",
+                "label": "眉間の皺",
+                "axes": ["11", "15"],
+                "default": 35,
+            },
+            {
+                "id": "cheeks_diagonal",
+                "label": "頬斜め上",
+                "axes": ["16", "17"],
+                "default": 20,
+            },
+            # {
+            #     "id": "mouth_open",
+            #     "label": "口の開き",
+            #     "axes": ["32"],
+            #     "default": 95,
+            # },
+            {
+                "id": "neck_vertical",
+                "label": "首の角度縦",
+                "axes": ["34"],
+                "default": 145,
             },
         ],
     },
@@ -490,6 +615,13 @@ def default_voice_data():
 
 
 def face_definition_by_label(label):
+    label_aliases = {
+        "Sorry 1": "sorry 1",
+        "Sorry 2": "sorry 2",
+        "Suspicoin 1": "Suspcion 1",
+        "Suspicoin 2": "Suspcion 2",
+    }
+    label = label_aliases.get(label, label)
     for expression_id, definition in FACE_EXPRESSION_DEFINITIONS.items():
         if definition["label"] == label:
             return expression_id, definition
@@ -523,9 +655,10 @@ def default_face_data(label="笑顔"):
             {
                 "id": group["id"],
                 "label": group["label"],
-                "mode": group.get("mode", "single"),
+                "mode": group.get("mode", "set"),
                 "axes": list(group["axes"]),
                 "values": group_values,
+                "enabled_axes": list(group["axes"]),
             }
         )
 
@@ -543,7 +676,7 @@ def default_face_data(label="笑顔"):
     }
 
 
-def face_axis_commands(face_data):
+def face_axis_commands(face_data, keeptime=None):
     command = face_data.get("command", {})
     if command.get("type") == "emotion":
         return [
@@ -556,7 +689,15 @@ def face_axis_commands(face_data):
 
     velocity = int(command.get("velocity", FACE_AXIS_VELOCITY))
     priority = int(command.get("priority", FACE_AXIS_PRIORITY))
-    keeptime = int(command.get("keeptime", FACE_AXIS_KEEPTIME))
+    keeptime = int(keeptime if keeptime is not None else command.get("keeptime", FACE_AXIS_KEEPTIME))
+    enabled_axes = None
+    if face_data.get("groups"):
+        enabled_axes = set()
+        for group in face_data.get("groups", []):
+            if "enabled_axes" in group:
+                enabled_axes.update(str(axis) for axis in group.get("enabled_axes", []))
+            else:
+                enabled_axes.update(str(axis) for axis in group.get("axes", []))
     return [
         {
             "command": "/movemulti5",
@@ -568,4 +709,6 @@ def face_axis_commands(face_data):
             "text": f"/movemulti5 {axis} {int(value)} {velocity} {priority} {keeptime}",
         }
         for axis, value in face_data.get("axes", {}).items()
+        if str(axis) not in FACE_AXIS_SEND_DISABLED
+        and (enabled_axes is None or str(axis) in enabled_axes)
     ]

@@ -21,6 +21,7 @@ class FaceAxisEditorPanel(tk.Frame):
         self.face_data = self.normalize_face_data(initial_data)
         self.expression_label = tk.StringVar(value=self.face_data["label"])
         self.axis_vars = {}
+        self.axis_enabled_vars = {}
         self.value_labels = {}
         self.preview_changed_axes = None
 
@@ -33,7 +34,68 @@ class FaceAxisEditorPanel(tk.Frame):
         if data.get("axes"):
             normalized["axes"].update({str(axis): int(value) for axis, value in data["axes"].items()})
         if data.get("groups"):
-            normalized["groups"] = data["groups"]
+            saved_groups = {
+                group.get("id"): dict(group)
+                for group in data["groups"]
+                if group.get("id")
+            }
+            normalized_groups = []
+            for default_group in normalized.get("groups", []):
+                group = dict(default_group)
+                saved_group = saved_groups.pop(group["id"], None)
+                axes = [str(axis) for axis in group.get("axes", [])]
+                group["axes"] = axes
+                group.setdefault("mode", "set")
+                if saved_group and saved_group.get("values"):
+                    group["values"] = {
+                        str(axis): int(value)
+                        for axis, value in saved_group.get("values", {}).items()
+                        if str(axis) in axes
+                    }
+                group.setdefault("values", {})
+                if not group["values"]:
+                    group["values"] = {
+                        str(axis): int(normalized["axes"].get(str(axis), group.get("default", 0)))
+                        for axis in axes
+                    }
+                group["values"] = {
+                    str(axis): int(value)
+                    for axis, value in group.get("values", {}).items()
+                }
+                for axis in axes:
+                    group["values"].setdefault(
+                        str(axis),
+                        int(normalized["axes"].get(str(axis), group.get("default", 0))),
+                    )
+                if saved_group and "enabled_axes" in saved_group:
+                    enabled_axes = [
+                        str(axis)
+                        for axis in saved_group.get("enabled_axes", [])
+                        if str(axis) in axes
+                    ]
+                    group["enabled_axes"] = enabled_axes or list(axes)
+                else:
+                    group["enabled_axes"] = list(axes)
+                normalized["axes"].update(group["values"])
+                normalized_groups.append(group)
+            for group in saved_groups.values():
+                axes = [str(axis) for axis in group.get("axes", [])]
+                if not axes:
+                    continue
+                group["axes"] = axes
+                group.setdefault("mode", "set")
+                group.setdefault("values", {})
+                group["values"] = {
+                    str(axis): int(value)
+                    for axis, value in group.get("values", {}).items()
+                }
+                group["enabled_axes"] = [
+                    str(axis)
+                    for axis in group.get("enabled_axes", axes)
+                ]
+                normalized["axes"].update(group["values"])
+                normalized_groups.append(group)
+            normalized["groups"] = normalized_groups
         if data.get("command"):
             normalized["command"].update(data["command"])
         return normalized
@@ -61,6 +123,7 @@ class FaceAxisEditorPanel(tk.Frame):
             child.destroy()
 
         self.axis_vars = {}
+        self.axis_enabled_vars = {}
         self.value_labels = {}
         if not self.face_data.get("groups"):
             command = self.face_data.get("command", {}).get("text", "/emotion neutral")
@@ -91,65 +154,61 @@ class FaceAxisEditorPanel(tk.Frame):
         ui.label(title, text=group["label"], font="body_bold", bg="card").pack(side="left")
         ui.label(title, text=axes_label, font="small", bg="card", fg="muted").pack(side="left", padx=(ui.SPACING["gap"], 0))
 
-        if group.get("mode") == "symmetric":
-            first_axis = group["axes"][0]
-            value = int(group.get("values", {}).get(first_axis, self.face_data["axes"].get(first_axis, 0)))
-            var = tk.IntVar(value=value)
-            label_var = tk.StringVar(value=str(value))
-            self.value_labels[group["id"]] = label_var
-            self.axis_vars[group["id"]] = var
+        axes = [str(axis) for axis in group.get("axes", [])]
+        first_axis = axes[0]
+        value = int(group.get("values", {}).get(first_axis, self.face_data["axes"].get(first_axis, 0)))
+        var = tk.IntVar(value=value)
+        label_var = tk.StringVar(value=str(value))
+        self.value_labels[group["id"]] = label_var
+        self.axis_vars[group["id"]] = var
 
-            row = ui.frame(block, bg="card")
-            row.pack(fill="x")
-            ui.variable_label(row, label_var, font="small", bg="card", fg="muted", width=4, anchor="e").pack(
-                side="left", padx=(0, ui.SPACING["small_gap"])
-            )
-            scale = ui.scale(
-                row,
-                variable=var,
-                from_=FACE_AXIS_RANGE[0],
-                to=FACE_AXIS_RANGE[1],
-                resolution=1,
-                command=lambda _value=None, g=group: self.on_symmetric_changed(g),
-            )
-            scale.pack(side="left", fill="x", expand=True)
-            scale.bind(
-                "<ButtonRelease-1>",
-                lambda _event=None, g=group: self.notify_changed(
-                    force=True,
-                    changed_axes=list(g.get("axes", [])),
-                ),
-                add="+",
-            )
-            return
+        row = ui.frame(block, bg="card")
+        row.pack(fill="x")
+        ui.variable_label(row, label_var, font="small", bg="card", fg="muted", width=4, anchor="e").pack(
+            side="left", padx=(0, ui.SPACING["small_gap"])
+        )
+        scale = ui.scale(
+            row,
+            variable=var,
+            from_=FACE_AXIS_RANGE[0],
+            to=FACE_AXIS_RANGE[1],
+            resolution=1,
+            command=lambda _value=None, g=group: self.on_group_value_changed(g),
+        )
+        scale.pack(side="left", fill="x", expand=True)
+        scale.bind(
+            "<ButtonRelease-1>",
+            lambda _event=None, g=group: self.notify_changed(
+                force=True,
+                changed_axes=self.enabled_axes_for_group(g),
+            ),
+            add="+",
+        )
 
-        for axis in group.get("axes", []):
-            value = int(group.get("values", {}).get(axis, self.face_data["axes"].get(axis, 0)))
-            var = tk.IntVar(value=value)
-            label_var = tk.StringVar(value=str(value))
-            self.value_labels[axis] = label_var
-            self.axis_vars[axis] = var
-
-            row = ui.frame(block, bg="card")
-            row.pack(fill="x")
-            ui.label(row, text=f"軸{axis}", font="small", bg="card", fg="sub_text", width=5, anchor="w").pack(side="left")
-            ui.variable_label(row, label_var, font="small", bg="card", fg="muted", width=4, anchor="e").pack(
-                side="left", padx=(0, ui.SPACING["small_gap"])
+        check_row = ui.frame(block, bg="card")
+        check_row.pack(fill="x", pady=(ui.SPACING["small_gap"], 0))
+        ui.label(check_row, text="送信", font="small", bg="card", fg="muted").pack(side="left")
+        enabled_axes = {str(axis) for axis in group.get("enabled_axes", axes)}
+        for axis in axes:
+            enabled_var = tk.BooleanVar(value=axis in enabled_axes)
+            self.axis_enabled_vars[(group["id"], axis)] = enabled_var
+            axis_label = f"軸{axis}"
+            if FACE_AXIS_LABELS.get(axis):
+                axis_label = f"{axis_label} {FACE_AXIS_LABELS[axis]}"
+            check = tk.Checkbutton(
+                check_row,
+                text=axis_label,
+                variable=enabled_var,
+                command=lambda g=group: self.on_group_enabled_changed(g),
+                font=ui.FONTS["small"],
+                bg=ui.COLORS["card"],
+                fg=ui.COLORS["text"],
+                activebackground=ui.COLORS["card"],
+                activeforeground=ui.COLORS["text"],
+                selectcolor=ui.COLORS["card"],
+                padx=4,
             )
-            scale = ui.scale(
-                row,
-                variable=var,
-                from_=FACE_AXIS_RANGE[0],
-                to=FACE_AXIS_RANGE[1],
-                resolution=1,
-                command=lambda _value=None, a=axis: self.on_axis_changed(a),
-            )
-            scale.pack(side="left", fill="x", expand=True)
-            scale.bind(
-                "<ButtonRelease-1>",
-                lambda _event=None, a=axis: self.notify_changed(force=True, changed_axes=[a]),
-                add="+",
-            )
+            check.pack(side="left", padx=(ui.SPACING["small_gap"], 0))
 
     def load_expression(self, label):
         self.load_face_data(default_face_data(label), force_notify=True)
@@ -165,25 +224,27 @@ class FaceAxisEditorPanel(tk.Frame):
         if notify:
             self.notify_changed(force=force_notify)
 
-    def on_symmetric_changed(self, group):
+    def on_group_value_changed(self, group):
         value = int(self.axis_vars[group["id"]].get())
         self.value_labels[group["id"]].set(str(value))
         values = {axis: value for axis in group.get("axes", [])}
         group["values"] = values
         self.face_data["axes"].update(values)
-        self.preview_changed_axes = list(group.get("axes", []))
+        self.preview_changed_axes = self.enabled_axes_for_group(group)
         self.notify_changed()
 
-    def on_axis_changed(self, axis):
-        value = int(self.axis_vars[axis].get())
-        self.value_labels[axis].set(str(value))
-        self.face_data["axes"][axis] = value
-        self.preview_changed_axes = [axis]
-        for group in self.face_data.get("groups", []):
-            if axis in group.get("axes", []):
-                group.setdefault("values", {})[axis] = value
-                break
-        self.notify_changed()
+    def on_group_enabled_changed(self, group):
+        group["enabled_axes"] = self.enabled_axes_for_group(group)
+        self.preview_changed_axes = list(group["enabled_axes"])
+        self.notify_changed(force=True, changed_axes=self.preview_changed_axes)
+
+    def enabled_axes_for_group(self, group):
+        enabled = []
+        for axis in group.get("axes", []):
+            var = self.axis_enabled_vars.get((group["id"], str(axis)))
+            if var is None or var.get():
+                enabled.append(str(axis))
+        return enabled
 
     def notify_changed(self, force=False, changed_axes=None):
         if self._loading or self.on_changed is None:

@@ -4,7 +4,8 @@ import tkinter as tk
 from tkinter import ttk, filedialog, messagebox
 
 from . import ui_style as ui
-from .config import SAVE_DIR, SCENARIO_OPTIONS
+from .config import FACE_EXPRESSION_OPTIONS, SAVE_DIR, SCENARIO_OPTIONS, default_face_data, face_axis_commands
+from .panels.face_axis_editor_panel import FaceAxisEditorPanel
 from .scenario_store import ScenarioStore
 from .tabs.editor_tab import ConversationEditorTab
 from .tabs.robot_run_tab import RobotRunTab
@@ -41,6 +42,9 @@ class ConversationToolApp(tk.Tk):
         self.store = None
         self.editor_tab = None
         self.run_tab = None
+        self.demo_tts_client = None
+        self.demo_robot_client = None
+        self.demo_axis_base_var = tk.StringVar(value="ニュートラル")
         self.notebook = None
         self.main_area = None
         self.selector_area = None
@@ -157,6 +161,12 @@ class ConversationToolApp(tk.Tk):
             self.run_tab.reset_robot_client()
         if self.editor_tab is not None:
             self.editor_tab.reset_robot_client()
+        if self.demo_robot_client is not None:
+            try:
+                self.demo_robot_client.close()
+            except Exception:
+                pass
+        self.demo_robot_client = None
 
     def clear_frame(self, frame):
         for child in frame.winfo_children():
@@ -246,6 +256,8 @@ class ConversationToolApp(tk.Tk):
         for child in self.main_area.winfo_children():
             child.destroy()
 
+        self.build_nikola_demo_panel(self.main_area)
+
         card = ui.bordered_frame(self.main_area, bg="card", border="soft_border")
         card.pack(fill="x", padx=ui.SPACING["page_x"], pady=ui.SPACING["section_y"])
         ui.label(
@@ -254,6 +266,203 @@ class ConversationToolApp(tk.Tk):
             font="section_title",
             bg="card",
         ).pack(anchor="w", padx=ui.SPACING["card_x"], pady=ui.SPACING["card_y"])
+
+    def build_nikola_demo_panel(self, parent):
+        card = ui.bordered_frame(parent, bg="card", border="accent")
+        card.pack(fill="x", padx=ui.SPACING["page_x"], pady=(0, ui.SPACING["gap"]))
+
+        ui.label(card, text="ニコラでできること", font="section_title", bg="card").pack(
+            anchor="w", padx=ui.SPACING["card_x"], pady=(ui.SPACING["card_y"], ui.SPACING["small_gap"])
+        )
+
+        rows = ui.frame(card, bg="card")
+        rows.pack(fill="x", padx=ui.SPACING["card_x"], pady=(0, ui.SPACING["card_y"]))
+
+        speech_row = ui.frame(rows, bg="card")
+        speech_row.pack(fill="x", pady=(0, ui.SPACING["small_gap"]))
+        ui.label(speech_row, text="言葉", font="small", bg="card", fg="sub_text", width=8, anchor="w").pack(side="left")
+        ui.sub_button(speech_row, text="いらっしゃいませ", command=lambda: self.demo_speak("いらっしゃいませ")).pack(
+            side="left", padx=(0, ui.SPACING["small_gap"])
+        )
+        ui.sub_button(speech_row, text="やあ", command=lambda: self.demo_speak("やあ")).pack(side="left")
+
+        face_row = ui.frame(rows, bg="card")
+        face_row.pack(fill="x", pady=(0, ui.SPACING["small_gap"]))
+        ui.label(face_row, text="表情", font="small", bg="card", fg="sub_text", width=8, anchor="w").pack(side="left")
+        ui.sub_button(face_row, text="ニュートラル", command=lambda: self.demo_emotion("neutral", None)).pack(
+            side="left", padx=(0, ui.SPACING["small_gap"])
+        )
+        ui.sub_button(face_row, text="WarmSmile 2", command=lambda: self.demo_emotion("WarmSmile", 2)).pack(
+            side="left", padx=(0, ui.SPACING["small_gap"])
+        )
+        ui.sub_button(face_row, text="sorry 2", command=lambda: self.demo_emotion("sorry", 2)).pack(
+            side="left", padx=(0, ui.SPACING["small_gap"])
+        )
+        ui.sub_button(face_row, text="軸ごとの調整", command=self.demo_face_axes).pack(side="left")
+
+        voice_row = ui.frame(rows, bg="card")
+        voice_row.pack(fill="x", pady=(0, ui.SPACING["small_gap"]))
+        ui.label(voice_row, text="声色", font="small", bg="card", fg="sub_text", width=8, anchor="w").pack(side="left")
+        ui.sub_button(
+            voice_row,
+            text="速さ1.25倍",
+            command=lambda: self.demo_voice("速さ1.25倍", {"tts_rate": 1.25}),
+        ).pack(side="left", padx=(0, ui.SPACING["small_gap"]))
+        ui.sub_button(
+            voice_row,
+            text="高さ1.1倍",
+            command=lambda: self.demo_voice("高さ1.1倍", {"tts_pitch": 1.1}),
+        ).pack(side="left", padx=(0, ui.SPACING["small_gap"]))
+        ui.sub_button(
+            voice_row,
+            text="悲しみ1.0",
+            command=lambda: self.demo_voice("悲しみ1.0", {"tts_emo_sad": 1.0}),
+        ).pack(side="left")
+
+        motion_row = ui.frame(rows, bg="card")
+        motion_row.pack(fill="x")
+        ui.label(motion_row, text="動作", font="small", bg="card", fg="sub_text", width=8, anchor="w").pack(side="left")
+        ui.sub_button(motion_row, text="お辞儀", command=self.demo_bow).pack(side="left")
+
+    def ensure_demo_runtime(self):
+        apply_robot_tts_environment("real")
+        apply_robot_command_environment("real")
+        self.tts_playback_var.set(set_tts_playback_target("robot"))
+        if self.demo_tts_client is None:
+            from ..robot_style_editor.clients.tts_client import TTSClient
+
+            self.demo_tts_client = TTSClient()
+        self.demo_tts_client.set_playback_target("robot")
+        if self.demo_robot_client is None:
+            from ..robot_style_editor.clients.robot_command_client import RobotCommandClient
+
+            self.demo_robot_client = RobotCommandClient()
+        return self.demo_tts_client, self.demo_robot_client
+
+    def demo_speak(self, text):
+        try:
+            tts_client, _robot = self.ensure_demo_runtime()
+            tts_client.speak(text=text)
+            self.status_var.set(f"ニコラで発話します: {text}")
+        except Exception as exc:
+            self.status_var.set(f"デモ発話エラー: {exc}")
+
+    def demo_emotion(self, emotion, level):
+        try:
+            _tts_client, robot = self.ensure_demo_runtime()
+            command = "/emotion neutral" if level is None else f"/emotion {emotion} {int(level)} 3 3000"
+            print(f"[DEMO FACE] {command}", flush=True)
+            robot.send(command)
+            label = emotion if level is None else f"{emotion} {level}"
+            self.status_var.set(f"表情デモを送信しました: {label}")
+        except Exception as exc:
+            self.status_var.set(f"表情デモエラー: {exc}")
+
+    def demo_face_axes(self):
+        dialog = tk.Toplevel(self)
+        dialog.title("軸ごとの表情調整")
+        dialog.transient(self)
+        dialog.geometry("760x680")
+
+        body = ui.frame(dialog, bg="main_card")
+        body.pack(fill="both", expand=True, padx=22, pady=18)
+
+        ui.label(body, text="笑顔を軸ごとに調整", font="page_title", bg="main_card").pack(anchor="w")
+
+        base_row = ui.frame(body, bg="main_card")
+        base_row.pack(fill="x", pady=(ui.SPACING["section_y"], ui.SPACING["gap"]))
+        ui.label(base_row, text="基準表情", font="body_bold", bg="main_card", width=8, anchor="w").pack(side="left")
+        base_values = [label for label in ("ニュートラル", "通常") if label in FACE_EXPRESSION_OPTIONS]
+        if not base_values:
+            base_values = ["ニュートラル"]
+        if self.demo_axis_base_var.get() not in base_values:
+            self.demo_axis_base_var.set(base_values[0])
+        ttk.Combobox(
+            base_row,
+            textvariable=self.demo_axis_base_var,
+            values=base_values,
+            state="readonly",
+            width=14,
+        ).pack(side="left", padx=(0, ui.SPACING["small_gap"]))
+        ui.sub_button(base_row, text="基準表情に戻す", command=self.demo_send_axis_base_face).pack(side="left")
+
+        actions = ui.frame(body, bg="main_card")
+        actions.pack(side="bottom", fill="x", pady=(ui.SPACING["section_y"], 0))
+        ui.sub_button(actions, text="閉じる", command=dialog.destroy).pack(side="left")
+
+        panel_area = ui.scrollable_frame(body, bg="main_card")
+        panel = FaceAxisEditorPanel(
+            panel_area,
+            initial_data=default_face_data("笑顔"),
+            on_changed=self.demo_preview_face_axes,
+        )
+        panel.pack(fill="x")
+
+        self.demo_send_axis_base_face()
+        self.status_var.set("笑顔の軸調整デモを開きました")
+
+    def demo_send_axis_base_face(self):
+        face = default_face_data(self.demo_axis_base_var.get())
+        self.demo_send_face_data(face, keeptime=3000, label="基準表情")
+
+    def demo_preview_face_axes(self, face_data, force=False, changed_axes=None):
+        self.demo_send_face_data(face_data, keeptime=3000, label="笑顔の軸調整", changed_axes=changed_axes)
+
+    def demo_send_face_data(self, face_data, keeptime=3000, label="表情", changed_axes=None):
+        try:
+            _tts_client, robot = self.ensure_demo_runtime()
+            command = face_data.get("command", {})
+            if command.get("type") == "emotion":
+                if command.get("emotion") == "neutral":
+                    command_text = command.get("text", "/emotion neutral")
+                else:
+                    emotion = command.get("emotion", "neutral")
+                    level = int(command.get("level", 1))
+                    priority = int(command.get("priority", 3))
+                    command_text = f"/emotion {emotion} {level} {priority} {int(keeptime)}"
+                print(f"[DEMO FACE] {label}: {command_text}", flush=True)
+                robot.send(command_text)
+                return
+
+            commands = face_axis_commands(face_data, keeptime=keeptime)
+            if changed_axes is not None:
+                target_axes = {str(axis) for axis in changed_axes}
+                commands = [
+                    command
+                    for command in commands
+                    if str(command["axis"]) in target_axes
+                ]
+            if not commands:
+                return
+            axis_summary = ", ".join(f"{cmd['axis']}={cmd['value']}" for cmd in commands)
+            print(f"[DEMO FACE] {label}: axes({axis_summary})", flush=True)
+            for command in commands:
+                robot.send_face_axis(
+                    axis=str(command["axis"]),
+                    value=int(command["value"]),
+                    velocity=int(command.get("velocity", 2000)),
+                    priority=int(command.get("priority", 3)),
+                    keeptime=int(command.get("keeptime", 3000)),
+                )
+            self.status_var.set(f"{label}を送信しました")
+        except Exception as exc:
+            self.status_var.set(f"軸調整デモエラー: {exc}")
+
+    def demo_voice(self, label, instructions):
+        try:
+            tts_client, _robot = self.ensure_demo_runtime()
+            tts_client.speak(text="いらっしゃいませ", instructions=instructions)
+            self.status_var.set(f"声色デモを再生します: {label}")
+        except Exception as exc:
+            self.status_var.set(f"声色デモエラー: {exc}")
+
+    def demo_bow(self):
+        try:
+            _tts_client, robot = self.ensure_demo_runtime()
+            robot.send_nod(amplitude=22, duration=700, times=1, priority=3)
+            self.status_var.set("お辞儀デモを送信しました")
+        except Exception as exc:
+            self.status_var.set(f"お辞儀デモエラー: {exc}")
 
     def start_new_user_session(self):
         username = self.new_user_var.get().strip()
@@ -361,13 +570,16 @@ class ConversationToolApp(tk.Tk):
         self.notebook.add(self.editor_tab, text="会話設定")
         self.notebook.add(self.run_tab, text="実演")
 
-    def open_robot_run_tab(self):
+    def open_robot_run_tab(self, turns=None, label=None):
         self.save_current_session()
         if self.run_tab is not None:
-            self.run_tab.show_overview()
+            self.run_tab.show_overview(turns=turns, label=label)
         if self.notebook is not None and self.run_tab is not None:
             self.notebook.select(self.run_tab)
-        self.status_var.set("保存しました。実演タブで確認できます")
+        if label:
+            self.status_var.set(f"保存しました。実演タブで確認できます: {label}")
+        else:
+            self.status_var.set("保存しました。実演タブで確認できます")
 
     def selected_scenario(self, label):
         for option in SCENARIO_OPTIONS:
