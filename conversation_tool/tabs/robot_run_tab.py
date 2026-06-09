@@ -11,6 +11,7 @@ from .. import ui_style as ui
 from ..config import (
     DEFAULT_PAUSE_DURATION,
     DEFAULT_SENTENCE_DURATION,
+    SMILE_COMPATIBLE_EMOTIONS,
     face_axis_commands,
     default_face_data,
     default_voice_data,
@@ -18,10 +19,12 @@ from ..config import (
 )
 
 class RobotRunTab(tk.Frame):
-    def __init__(self, parent, get_turns, status_var):
+    def __init__(self, parent, get_turns, status_var, get_mic_silence_hold_sec=None, get_tts_engine=None):
         super().__init__(parent, bg=ui.COLORS["main_card"])
         self.get_turns = get_turns
         self.status_var = status_var
+        self.get_mic_silence_hold_sec = get_mic_silence_hold_sec
+        self.get_tts_engine = get_tts_engine
         self.tts_client = None
         self.robot_client = None
         self.mic_panel = None
@@ -41,6 +44,7 @@ class RobotRunTab(tk.Frame):
         self._event_read_fd = None
         self._event_write_fd = None
         self.face_event_generation = 0
+        self.default_face_keepalive_generation = 0
 
         self.bind("<<ConversationRunQueue>>", self.handle_run_queue_event, add="+")
         self.setup_run_queue_pipe()
@@ -96,21 +100,45 @@ class RobotRunTab(tk.Frame):
                 on_speech_end=self.on_run_customer_speech_end,
                 status_var=self.status_var,
                 act_threshold=1,
+                silence_hold_sec=self.current_mic_silence_hold_sec(),
                 show_controls=False,
             )
             self.mic_panel.pack(fill="x")
+
+    def current_mic_silence_hold_sec(self):
+        if self.get_mic_silence_hold_sec is None:
+            return 0.4
+        try:
+            return float(self.get_mic_silence_hold_sec())
+        except Exception:
+            return 0.4
 
     def ensure_tts_client(self):
         if self.tts_client is None:
             from ...robot_style_editor.clients.tts_client import TTSClient
 
             self.tts_client = TTSClient()
+        self.tts_client.set_tts_engine(self.current_tts_engine())
         return self.tts_client
+
+
+    def current_tts_engine(self):
+        if self.get_tts_engine is None:
+            return "aitalk"
+        try:
+            return self.get_tts_engine()
+        except Exception:
+            return "aitalk"
 
 
     def set_tts_playback_target(self, target):
         if self.tts_client is not None:
             self.tts_client.set_playback_target(target)
+
+
+    def set_tts_engine(self, engine):
+        if self.tts_client is not None:
+            self.tts_client.set_tts_engine(engine)
 
 
     def refresh_mic_activity_mode(self):
@@ -381,6 +409,7 @@ class RobotRunTab(tk.Frame):
         self.run_state = "running"
         self.run_index = 0
         self.face_event_generation = 0
+        self.start_default_face_keepalive()
         self.render_lyrics_view()
         self.advance_robot_run()
 
@@ -388,6 +417,7 @@ class RobotRunTab(tk.Frame):
     def stop_robot_run(self):
         self.run_state = "stopped"
         self.face_event_generation += 1
+        self.stop_default_face_keepalive()
         if self.mic_panel is not None:
             self.mic_panel.stop()
         if self.tts_client is not None:
@@ -412,6 +442,7 @@ class RobotRunTab(tk.Frame):
         self.render_lyrics_view()
         turn = turns[self.run_index]
         if turn.get("role") == "customer":
+            self.send_customer_default_face_once(turn)
             if self.use_mic_detection_for_run():
                 self.status_var.set("客の発話待ちです")
                 if self.mic_panel is not None:
@@ -424,6 +455,50 @@ class RobotRunTab(tk.Frame):
         if self.mic_panel is not None:
             self.mic_panel.stop()
         threading.Thread(target=self.play_staff_turn_worker, args=(turn,), daemon=True).start()
+
+
+    def start_default_face_keepalive(self):
+        self.default_face_keepalive_generation += 1
+        generation = self.default_face_keepalive_generation
+        threading.Thread(
+            target=self.default_face_keepalive_worker,
+            args=(generation,),
+            daemon=True,
+        ).start()
+
+
+    def stop_default_face_keepalive(self):
+        self.default_face_keepalive_generation += 1
+
+
+    def default_face_keepalive_worker(self, generation):
+        while self.run_state == "running" and self.default_face_keepalive_generation == generation:
+            try:
+                turns = self.prepared_dialogue or []
+                if self.run_index < len(turns):
+                    turn = turns[self.run_index]
+                    if turn.get("role") == "customer":
+                        self.send_face_data(
+                            turn.get("default_face") or default_face_data("ニュートラル"),
+                            1100,
+                            label="基本表情維持",
+                        )
+            except Exception as exc:
+                self.run_queue.put({"type": "error", "message": f"基本表情維持エラー: {exc}"})
+                self.wake_run_queue()
+                return
+            time.sleep(1.0)
+
+
+    def send_customer_default_face_once(self, turn):
+        try:
+            self.send_face_data(
+                turn.get("default_face") or default_face_data("ニュートラル"),
+                1100,
+                label="基本表情",
+            )
+        except Exception as exc:
+            self.status_var.set(f"基本表情送信エラー: {exc}")
 
 
     def use_mic_detection_for_run(self):
@@ -515,6 +590,15 @@ class RobotRunTab(tk.Frame):
         events = sorted(turn.get("events", []), key=lambda event: float(event.get("time", 0.0)))
         face_events = [event for event in events if event.get("lane") == "face"]
         turn_duration = float(turn.get("duration", self.turn_duration_from_segments(turn)))
+        default_face = copy.deepcopy(turn.get("default_face") or default_face_data("ニュートラル"))
+        first_face_start = float(face_events[0].get("time", 0.0)) if face_events else turn_duration
+        initial_default_duration = max(0.0, min(turn_duration, first_face_start))
+        if initial_default_duration > 0:
+            self.send_face_data(
+                default_face,
+                max(1, int(round(initial_default_duration * 1000))),
+                label="基本表情",
+            )
         for face_index, face_event in enumerate(face_events):
             start = float(face_event.get("time", 0.0))
             duration = float(face_event.get("duration", 0.0))
@@ -523,7 +607,7 @@ class RobotRunTab(tk.Frame):
                 next_start = float(face_events[face_index + 1].get("time", 0.0))
             return_until = next_start if next_start is not None else turn_duration
             face_event["_return_duration"] = max(0.0, return_until - (start + duration))
-            face_event["_default_face"] = copy.deepcopy(turn.get("default_face") or default_face_data("ニュートラル"))
+            face_event["_default_face"] = copy.deepcopy(default_face)
         for event in events:
             if self.run_state != "running":
                 return
@@ -572,11 +656,21 @@ class RobotRunTab(tk.Frame):
         robot = self.ensure_robot_client()
         command = face.get("command", {})
         face_label = face.get("label") or label or "表情"
+        if command.get("type") == "smile":
+            level = int(command.get("level", 2))
+            priority = int(command.get("priority", 3))
+            command_text = f"/smile start {level} {priority} {keeptime}"
+            print(f"[FACE] {face_label}: {command_text}", flush=True)
+            robot.send(command_text)
+            return
         if command.get("type") == "emotion":
+            emotion = command.get("emotion", "neutral")
+            if emotion not in SMILE_COMPATIBLE_EMOTIONS:
+                print("[FACE] smile end: /smile end", flush=True)
+                robot.send("/smile end")
             if command.get("emotion") == "neutral":
-                command_text = command.get("text", "/emotion neutral")
+                command_text = command.get("text", "/emotion neutral 1 5 3000")
             else:
-                emotion = command.get("emotion", "neutral")
                 level = int(command.get("level", 1))
                 priority = int(command.get("priority", 3))
                 command_text = f"/emotion {emotion} {level} {priority} {keeptime}"
@@ -589,6 +683,7 @@ class RobotRunTab(tk.Frame):
             return
         axis_summary = ", ".join(f"{cmd['axis']}={int(cmd['value'])}" for cmd in axis_commands)
         print(f"[FACE] {face_label}: /movemulti5 axes({axis_summary})", flush=True)
+        robot.send("/smile end")
         for axis_command in axis_commands:
             robot.send_face_axis(
                 axis=str(axis_command["axis"]),
@@ -608,7 +703,9 @@ class RobotRunTab(tk.Frame):
             if self.run_state != "running" or self.face_event_generation != generation:
                 return
             try:
-                keeptime = max(1, int(round(max(0.1, return_duration_sec) * 1000)))
+                if return_duration_sec <= 0:
+                    return
+                keeptime = max(1, int(round(return_duration_sec * 1000)))
                 self.send_face_data(default_face, keeptime, label="基本表情")
             except Exception as exc:
                 self.run_queue.put({"type": "error", "message": f"基本表情送信エラー: {exc}"})
@@ -656,6 +753,7 @@ class RobotRunTab(tk.Frame):
 
     def finish_robot_run(self):
         self.run_state = "finished"
+        self.stop_default_face_keepalive()
         if self.mic_panel is not None:
             self.mic_panel.stop()
         self.cleanup_generated_wavs()

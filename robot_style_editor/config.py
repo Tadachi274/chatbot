@@ -62,6 +62,16 @@ def get_tts_playback_target():
     )
 
 
+def get_tts_engine():
+    return os.environ.get("TTS_ENGINE", "aitalk")
+
+
+def set_tts_engine(engine):
+    engine = engine if engine in {"aitalk", "openai"} else "aitalk"
+    os.environ["TTS_ENGINE"] = engine
+    return engine
+
+
 def set_tts_playback_target(target):
     target = target if target in {"local", "robot"} else "local"
     os.environ["TTS_PLAYBACK_TARGET"] = target
@@ -100,6 +110,13 @@ def get_robot_tts_play_audio_url():
     return os.environ.get(
         "ROBOT_TTS_PLAY_AUDIO_URL",
         RUNTIME_ENV_PRESETS[get_runtime_environment()]["ROBOT_TTS_PLAY_AUDIO_URL"],
+    )
+
+
+def get_robot_tts_upload_url():
+    return os.environ.get(
+        "ROBOT_TTS_UPLOAD_URL",
+        get_robot_tts_play_audio_url().rsplit("/", 1)[0] + "/upload",
     )
 
 
@@ -159,7 +176,7 @@ RESPONSE_DELAY_SAMPLE_WAV = BASE_DIR / "sample_audio" / "承知いたしまし�
 
 MIC_VOLUME_START_THRESHOLD_DEFAULT = 0.03
 MIC_VOLUME_END_THRESHOLD_DEFAULT = 0.03
-MIC_SILENCE_HOLD_SEC_DEFAULT = 0.20
+MIC_SILENCE_HOLD_SEC_DEFAULT = 0.40
 MIC_START_HOLD_SEC_DEFAULT = 0.08
 MIC_METER_UPDATE_INTERVAL_SEC = 0.05
 

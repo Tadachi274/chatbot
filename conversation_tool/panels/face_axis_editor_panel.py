@@ -31,8 +31,9 @@ class FaceAxisEditorPanel(tk.Frame):
     def normalize_face_data(self, data):
         label = data.get("label", "笑顔")
         normalized = default_face_data(label)
+        saved_axes = {str(axis): int(value) for axis, value in data.get("axes", {}).items()}
         if data.get("axes"):
-            normalized["axes"].update({str(axis): int(value) for axis, value in data["axes"].items()})
+            normalized["axes"].update(saved_axes)
         if data.get("groups"):
             saved_groups = {
                 group.get("id"): dict(group)
@@ -63,10 +64,14 @@ class FaceAxisEditorPanel(tk.Frame):
                     for axis, value in group.get("values", {}).items()
                 }
                 for axis in axes:
-                    group["values"].setdefault(
-                        str(axis),
-                        int(normalized["axes"].get(str(axis), group.get("default", 0))),
-                    )
+                    axis = str(axis)
+                    if axis in saved_axes:
+                        group["values"][axis] = int(saved_axes[axis])
+                    else:
+                        group["values"].setdefault(
+                            axis,
+                            int(normalized["axes"].get(axis, group.get("default", 0))),
+                        )
                 if saved_group and "enabled_axes" in saved_group:
                     enabled_axes = [
                         str(axis)
@@ -89,6 +94,9 @@ class FaceAxisEditorPanel(tk.Frame):
                     str(axis): int(value)
                     for axis, value in group.get("values", {}).items()
                 }
+                for axis in axes:
+                    if axis in saved_axes:
+                        group["values"][axis] = int(saved_axes[axis])
                 group["enabled_axes"] = [
                     str(axis)
                     for axis in group.get("enabled_axes", axes)

@@ -194,8 +194,10 @@ EMOTION_FACE_PRESETS = {
     "sorry": [1, 2],
     "WarmSmile": [1, 2],
     "AffiliativeSmile": [1, 2, 3],
-    "Suspcion": [1, 2],
+    "Suspicion": [1, 2],
 }
+
+SMILE_COMPATIBLE_EMOTIONS = {"WaitSmile", "WarmSmile", "AffiliativeSmile"}
 
 
 def emotion_face_definition(emotion, level):
@@ -226,8 +228,25 @@ FACE_EXPRESSION_DEFINITIONS = {
         "command": {
             "type": "emotion",
             "emotion": "neutral",
-            "text": "/emotion neutral",
+            "level": 1,
+            "priority": 5,
+            "keeptime": 3000,
+            "text": "/emotion neutral 1 5 3000",
         },
+    },
+    **{
+        f"smile_default_{level}": {
+            "label": f"笑顔_デフォルト {level}",
+            "groups": [],
+            "command": {
+                "type": "smile",
+                "level": level,
+                "priority": FACE_AXIS_PRIORITY,
+                "keeptime": FACE_AXIS_KEEPTIME,
+                "text": f"/smile start {level} {FACE_AXIS_PRIORITY} {FACE_AXIS_KEEPTIME}",
+            },
+        }
+        for level in (1, 2, 3)
     },
     **EMOTION_FACE_DEFINITIONS,
     "smile": {
@@ -618,8 +637,11 @@ def face_definition_by_label(label):
     label_aliases = {
         "Sorry 1": "sorry 1",
         "Sorry 2": "sorry 2",
-        "Suspicoin 1": "Suspcion 1",
-        "Suspicoin 2": "Suspcion 2",
+        "Suspicoin 1": "Suspicion 1",
+        "Suspicoin 2": "Suspicion 2",
+        "Suspcion 1": "Suspicion 1",
+        "Suspcion 2": "Suspicion 2",
+        "笑顔_デフォルト": "笑顔_デフォルト 2",
     }
     label = label_aliases.get(label, label)
     for expression_id, definition in FACE_EXPRESSION_DEFINITIONS.items():
@@ -630,18 +652,35 @@ def face_definition_by_label(label):
     return expression_id, FACE_EXPRESSION_DEFINITIONS[expression_id]
 
 
+def normalize_face_command(command):
+    command = dict(command or {})
+    emotion_aliases = {
+        "Suspicoin": "Suspicion",
+        "Suspcion": "Suspicion",
+    }
+    if command.get("emotion") in emotion_aliases:
+        command["emotion"] = emotion_aliases[command["emotion"]]
+        if command.get("level") is not None:
+            command["text"] = (
+                f"/emotion {command['emotion']} {int(command.get('level', 1))} "
+                f"{int(command.get('priority', FACE_AXIS_PRIORITY))} "
+                f"{int(command.get('keeptime', FACE_AXIS_KEEPTIME))}"
+            )
+    return command
+
+
 def default_face_data(label="笑顔"):
     expression_id, definition = face_definition_by_label(label)
     axes = {}
     groups = []
 
-    if definition.get("command", {}).get("type") == "emotion":
+    if definition.get("command", {}).get("type") in ("emotion", "smile"):
         return {
             "id": expression_id,
             "label": definition["label"],
             "groups": [],
             "axes": {},
-            "command": dict(definition["command"]),
+            "command": normalize_face_command(definition["command"]),
         }
 
     for group in definition["groups"]:
@@ -677,13 +716,27 @@ def default_face_data(label="笑顔"):
 
 
 def face_axis_commands(face_data, keeptime=None):
-    command = face_data.get("command", {})
+    command = normalize_face_command(face_data.get("command", {}))
     if command.get("type") == "emotion":
         return [
             {
                 "command": "/emotion",
                 "emotion": command.get("emotion", "neutral"),
                 "text": command.get("text", "/emotion neutral"),
+            }
+        ]
+    if command.get("type") == "smile":
+        return [
+            {
+                "command": "/smile",
+                "level": int(command.get("level", 2)),
+                "priority": int(command.get("priority", FACE_AXIS_PRIORITY)),
+                "keeptime": int(keeptime if keeptime is not None else command.get("keeptime", FACE_AXIS_KEEPTIME)),
+                "text": (
+                    f"/smile start {int(command.get('level', 2))} "
+                    f"{int(command.get('priority', FACE_AXIS_PRIORITY))} "
+                    f"{int(keeptime if keeptime is not None else command.get('keeptime', FACE_AXIS_KEEPTIME))}"
+                ),
             }
         ]
 

@@ -114,10 +114,10 @@
   },
   "listening_pose": {
     "face": {
-      "id": "neutral",
-      "label": "ニュートラル",
-      "type": "neutral",
-      "level": 1
+      "id": "affiliative_smile",
+      "label": "親しみの笑顔",
+      "type": "AffiliativeSmile",
+      "level": 2
     },
     "eye_open": {
       "id": "normal",
@@ -149,8 +149,8 @@
       "text": "はい",
       "custom_text": "",
       "reuse_tts_cache": true,
-      "cache_dir": "C:\\Users\\nikola\\tadachi\\chatbot\\robot_style_editor\\sample_audio\\wav\\backchannel_cache",
-      "wav_path": "C:\\Users\\nikola\\tadachi\\chatbot\\robot_style_editor\\sample_audio\\はい.wav",
+      "cache_dir": "/Users/stela/ryoji/chatbot/robot_style_editor/sample_audio/wav/backchannel_cache",
+      "wav_path": "/Users/stela/ryoji/chatbot/robot_style_editor/sample_audio/はい.wav",
       "description": "うなづき時に、指定割合で既存WAVの相槌を再生する"
     },
     "amount": {
@@ -223,11 +223,11 @@
   "greeting": {
     "intent": "greeting",
     "label": "挨拶",
-    "text": "こんにちは、いらっしゃいませ。",
+    "text": "やあ",
     "face": {
-      "id": "affiliative_smile",
-      "label": "親しみの笑顔",
-      "type": "AffiliativeSmile",
+      "id": "wait_smile",
+      "label": "穏やかな笑顔",
+      "type": "WaitSmile",
       "level": 2
     },
     "techniques": [],
@@ -545,5 +545,5 @@
   "user_name": "ただち",
   "venue_id": "hotel",
   "venue_label": "ホテル",
-  "updated_at": "2026-05-26T17:06:22"
+  "updated_at": "2026-05-27T13:43:49"
 }

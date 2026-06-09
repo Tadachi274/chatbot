@@ -1,0 +1,118 @@
+{
+  "scenario_title": "手続き系: チェックイン",
+  "utterances": [
+    {
+      "speaker": "staff",
+      "segments": [
+        {
+          "type": "sentence",
+          "text": "いらっしゃいませ！",
+          "duration": 1.8,
+          "voice": {
+            "controls": {
+              "friendly": 1.0,
+              "reliable": 1.0,
+              "calm": 1.0,
+              "tension": 1.0,
+              "impatience": 1.0,
+              "sorry": 1.0,
+              "energetic": 1.0
+            },
+            "params": {
+              "volume": 1.3,
+              "rate": 1.0,
+              "pitch": 1.0,
+              "emphasis": 1.0,
+              "joy": 0.0,
+              "anger": 0.0,
+              "sadness": 0.0
+            }
+          }
+        }
+      ],
+      "duration": 1.8,
+      "events": []
+    },
+    {
+      "speaker": "customer",
+      "text": "チェックインお願いします",
+      "segments": []
+    }
+  ],
+  "user_name": "1",
+  "scenario_id": "luxury_hotel",
+  "scenario_label": "高級ホテル",
+  "updated_at": "2026-06-04T11:17:41",
+  "scenes": {
+    "hotel_checkin": {
+      "scenario_title": "手続き系: チェックイン",
+      "conversation_type_id": "hotel_checkin",
+      "conversation_intent": "explanation",
+      "default_face_label": "ニュートラル",
+      "utterances": [
+        {
+          "speaker": "staff",
+          "segments": [
+            {
+              "type": "sentence",
+              "text": "いらっしゃいませ！",
+              "duration": 1.8,
+              "voice": {
+                "controls": {
+                  "friendly": 1.0,
+                  "reliable": 1.0,
+                  "calm": 1.0,
+                  "tension": 1.0,
+                  "impatience": 1.0,
+                  "sorry": 1.0,
+                  "energetic": 1.0
+                },
+                "params": {
+                  "volume": 1.3,
+                  "rate": 1.0,
+                  "pitch": 1.0,
+                  "emphasis": 1.0,
+                  "joy": 0.0,
+                  "anger": 0.0,
+                  "sadness": 0.0
+                }
+              }
+            }
+          ],
+          "duration": 1.8,
+          "events": []
+        },
+        {
+          "speaker": "customer",
+          "text": "チェックインお願いします",
+          "segments": []
+        }
+      ]
+    },
+    "hotel_dirty_bed": {
+      "scenario_title": "謝罪系: ベッドが汚れていた",
+      "conversation_type_id": "hotel_dirty_bed",
+      "conversation_intent": "apology",
+      "default_face_label": "ニュートラル",
+      "utterances": []
+    },
+    "hotel_checkout": {
+      "scenario_title": "感謝系: チェックアウト",
+      "conversation_type_id": "hotel_checkout",
+      "conversation_intent": "gratitude",
+      "default_face_label": "ニュートラル",
+      "utterances": []
+    },
+    "hotel_sightseeing": {
+      "scenario_title": "質問系: 近くの観光スポット",
+      "conversation_type_id": "hotel_sightseeing",
+      "conversation_intent": "question",
+      "default_face_label": "ニュートラル",
+      "utterances": []
+    }
+  },
+  "active_scene_id": "hotel_checkin",
+  "conversation_type_id": "hotel_checkin",
+  "conversation_intent": "explanation",
+  "default_face_label": "ニュートラル"
+}

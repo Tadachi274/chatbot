@@ -1,7 +1,7 @@
 import copy
 import time
 import tkinter as tk
-from tkinter import ttk, messagebox
+from tkinter import ttk, messagebox, filedialog
 
 from .. import ui_style as ui
 from ..config import (
@@ -17,6 +17,7 @@ from ..config import (
     TIMELINE_PIXELS_PER_SECOND,
     TIME_RESOLUTION,
     FACE_EXPRESSION_OPTIONS,
+    SMILE_COMPATIBLE_EMOTIONS,
     face_axis_commands,
     default_face_data,
     default_voice_data,
@@ -25,15 +26,17 @@ from ..config import (
 )
 from ..panels.face_axis_editor_panel import FaceAxisEditorPanel
 from ..panels.voice_editor_panel import VoiceEditorPanel
+from ..pdf_exporter import export_conversation_pdf
 
 
 class ConversationEditorTab(tk.Frame):
-    def __init__(self, parent, store, status_var, on_changed=None, on_try_robot=None):
+    def __init__(self, parent, store, status_var, on_changed=None, on_try_robot=None, get_tts_engine=None):
         super().__init__(parent, bg=ui.COLORS["main_card"])
         self.store = store
         self.status_var = status_var
         self.on_changed = on_changed
         self.on_try_robot = on_try_robot
+        self.get_tts_engine = get_tts_engine
         self.scene_options = conversation_scene_options(self.store.data.get("scenario_id"))
         self.active_scene_id = self.initial_scene_id()
         self.ensure_scene_storage()
@@ -105,6 +108,10 @@ class ConversationEditorTab(tk.Frame):
                 "conversation_type_id": legacy_scene_id,
                 "conversation_intent": self.store.data.get("conversation_intent", "explanation"),
                 "default_face_label": self.store.data.get("default_face_label", "ニュートラル"),
+                "default_face": copy.deepcopy(
+                    self.store.data.get("default_face")
+                    or default_face_data(self.store.data.get("default_face_label", "ニュートラル"))
+                ),
                 "utterances": copy.deepcopy(legacy_utterances),
             }
 
@@ -116,6 +123,7 @@ class ConversationEditorTab(tk.Frame):
                     "conversation_type_id": option["id"],
                     "conversation_intent": option["intent"],
                     "default_face_label": "ニュートラル",
+                    "default_face": default_face_data("ニュートラル"),
                     "utterances": [],
                 },
             )
@@ -130,6 +138,7 @@ class ConversationEditorTab(tk.Frame):
                 "conversation_type_id": option["id"],
                 "conversation_intent": option["intent"],
                 "default_face_label": "ニュートラル",
+                "default_face": default_face_data("ニュートラル"),
                 "utterances": [],
             },
         )
@@ -143,6 +152,9 @@ class ConversationEditorTab(tk.Frame):
         self.store.data["conversation_type_id"] = scene.get("conversation_type_id", option["id"])
         self.store.data["conversation_intent"] = scene.get("conversation_intent", option["intent"])
         self.store.data["default_face_label"] = scene.get("default_face_label", "ニュートラル")
+        self.store.data["default_face"] = copy.deepcopy(
+            scene.get("default_face") or default_face_data(self.store.data["default_face_label"])
+        )
         self.store.data["utterances"] = copy.deepcopy(scene.get("utterances", []))
 
     def save_workspace_to_active_scene(self):
@@ -152,14 +164,27 @@ class ConversationEditorTab(tk.Frame):
         scene["conversation_type_id"] = self.store.data.get("conversation_type_id", option["id"])
         scene["conversation_intent"] = self.store.data.get("conversation_intent", option["intent"])
         scene["default_face_label"] = self.store.data.get("default_face_label", "ニュートラル")
+        scene["default_face"] = copy.deepcopy(
+            self.store.data.get("default_face") or default_face_data(scene["default_face_label"])
+        )
         scene["utterances"] = copy.deepcopy(self.store.data.get("utterances", []))
         self.store.data["active_scene_id"] = option["id"]
 
 
     def current_default_face_label(self):
-        scene = self.scene_data(self.active_scene_id)
-        label = scene.get("default_face_label") or self.store.data.get("default_face_label") or "ニュートラル"
+        label = self.store.data.get("default_face_label")
+        if not label:
+            scene = self.scene_data(self.active_scene_id)
+            label = scene.get("default_face_label") or "ニュートラル"
         return label if label in FACE_EXPRESSION_OPTIONS else "ニュートラル"
+
+
+    def current_default_face_data(self):
+        face = self.store.data.get("default_face")
+        label = self.current_default_face_label()
+        if face and face.get("label") == label:
+            return copy.deepcopy(face)
+        return default_face_data(label)
 
 
     def migrate_utterances(self):
@@ -231,14 +256,20 @@ class ConversationEditorTab(tk.Frame):
         )
         default_face_combo.pack(side="left", padx=(ui.SPACING["small_gap"], ui.SPACING["section_y"]))
         default_face_combo.bind("<<ComboboxSelected>>", lambda _event=None: self.on_default_face_selected())
+        ui.sub_button(header, text="基本表情を編集", command=self.open_default_face_editor).pack(
+            side="left", padx=(0, ui.SPACING["section_y"])
+        )
 
-        ui.sub_button(header, text="店員発話を追加", command=lambda: self.add_utterance(SPEAKER_STAFF)).pack(
+        ui.sub_button(header, text="店員発話を追加", command=lambda: self.add_utterance(SPEAKER_STAFF, position="top")).pack(
             side="left", padx=(0, ui.SPACING["small_gap"])
         )
-        ui.sub_button(header, text="客発話を追加", command=lambda: self.add_utterance(SPEAKER_CUSTOMER)).pack(
+        ui.sub_button(header, text="客発話を追加", command=lambda: self.add_utterance(SPEAKER_CUSTOMER, position="top")).pack(
             side="left", padx=(0, ui.SPACING["small_gap"])
         )
         ui.action_button(header, text="保存", command=self.save).pack(side="right")
+        ui.sub_button(header, text="PDF出力", command=self.export_pdf).pack(
+            side="right", padx=(0, ui.SPACING["small_gap"])
+        )
 
         body = ui.frame(main, bg="main_card")
         body.pack(fill="both", expand=True, padx=ui.SPACING["page_x"], pady=(0, ui.SPACING["gap"]))
@@ -264,10 +295,10 @@ class ConversationEditorTab(tk.Frame):
 
         add_row = ui.frame(self.timeline_content, bg="main_card")
         add_row.pack(fill="x", pady=(ui.SPACING["gap"], ui.SPACING["section_y"]))
-        ui.sub_button(add_row, text="+ 店員発話", command=lambda: self.add_utterance(SPEAKER_STAFF)).pack(
+        ui.sub_button(add_row, text="+ 店員発話", command=lambda: self.add_utterance(SPEAKER_STAFF, position="bottom")).pack(
             side="left", padx=(0, ui.SPACING["small_gap"])
         )
-        ui.sub_button(add_row, text="+ 客発話", command=lambda: self.add_utterance(SPEAKER_CUSTOMER)).pack(side="left")
+        ui.sub_button(add_row, text="+ 客発話", command=lambda: self.add_utterance(SPEAKER_CUSTOMER, position="bottom")).pack(side="left")
 
 
     def render_utterance_card(self, index, utterance):
@@ -730,10 +761,14 @@ class ConversationEditorTab(tk.Frame):
                 "text": text,
             }
 
+        segments = [self.build_sentence_segment(text, True)]
+        if speaker == SPEAKER_STAFF:
+            segments.append(self.build_pause_segment())
+
         utterance = {
             "speaker": speaker,
-            "segments": [self.build_sentence_segment(text, True)],
-            "duration": DEFAULT_SENTENCE_DURATION,
+            "segments": segments,
+            "duration": sum(float(segment.get("duration", DEFAULT_PAUSE_DURATION)) for segment in segments),
         }
         if speaker == SPEAKER_STAFF:
             utterance["events"] = []
@@ -776,13 +811,19 @@ class ConversationEditorTab(tk.Frame):
         return round(max(duration, TIME_RESOLUTION), 2)
 
 
-    def add_utterance(self, speaker):
+    def add_utterance(self, speaker, position="bottom"):
         self.sync_texts()
-        self.store.data.setdefault("utterances", []).append(self.build_utterance(speaker))
+        utterances = self.store.data.setdefault("utterances", [])
+        if position == "top":
+            utterances.insert(0, self.build_utterance(speaker))
+            position_label = "先頭"
+        else:
+            utterances.append(self.build_utterance(speaker))
+            position_label = "末尾"
         self.selected_utterance_index = None
         self.selected_event_index = None
         self.render_utterances()
-        self.status_var.set(f"{SPEAKER_LABELS[speaker]}を追加しました")
+        self.status_var.set(f"{SPEAKER_LABELS[speaker]}を{position_label}に追加しました")
 
 
     def delete_utterance(self, index):
@@ -864,10 +905,10 @@ class ConversationEditorTab(tk.Frame):
             utterance.setdefault("segments", []).append(self.build_pause_segment())
             self.status_var.set("間を追加しました")
         else:
-            utterance.setdefault("segments", []).append(
-                self.build_sentence_segment("", utterance.get("speaker") == SPEAKER_STAFF)
-            )
-            self.status_var.set("文を追加しました")
+            segments = utterance.setdefault("segments", [])
+            segments.append(self.build_sentence_segment("", utterance.get("speaker") == SPEAKER_STAFF))
+            segments.append(self.build_pause_segment())
+            self.status_var.set("文と間を追加しました")
         utterance["duration"] = self.calculate_utterance_duration(utterance)
         self.render_utterances()
 
@@ -987,7 +1028,11 @@ class ConversationEditorTab(tk.Frame):
         panel = None
         if is_staff:
             panel_area = ui.scrollable_frame(body, bg="main_card")
-            panel = VoiceEditorPanel(panel_area, initial_data=segment.get("voice"))
+            panel = VoiceEditorPanel(
+                panel_area,
+                initial_data=segment.get("voice"),
+                previous_voice_data=self.previous_staff_voice_data(utterance_index, segment_index),
+            )
             panel.pack(fill="x")
 
         def save_voice():
@@ -1042,12 +1087,55 @@ class ConversationEditorTab(tk.Frame):
         self.fetch_segment_duration(utterance_index, segment_index)
 
 
+    def previous_staff_voice_data(self, utterance_index, segment_index):
+        utterances = self.store.data.get("utterances", [])
+        if utterance_index < 0 or utterance_index >= len(utterances):
+            return None
+
+        current = utterances[utterance_index]
+        if current.get("speaker") != SPEAKER_STAFF:
+            return None
+
+        for index in range(segment_index - 1, -1, -1):
+            segments = current.get("segments", [])
+            if index >= len(segments):
+                continue
+            segment = segments[index]
+            if segment.get("type") == "sentence" and segment.get("voice"):
+                return copy.deepcopy(segment["voice"])
+
+        for u_index in range(utterance_index - 1, -1, -1):
+            utterance = utterances[u_index]
+            if utterance.get("speaker") != SPEAKER_STAFF:
+                continue
+            for segment in reversed(utterance.get("segments", [])):
+                if segment.get("type") == "sentence" and segment.get("voice"):
+                    return copy.deepcopy(segment["voice"])
+
+        return None
+
+
     def ensure_tts_client(self):
         if self.tts_client is None:
             from ...robot_style_editor.clients.tts_client import TTSClient
 
             self.tts_client = TTSClient()
+        self.tts_client.set_tts_engine(self.current_tts_engine())
         return self.tts_client
+
+
+    def current_tts_engine(self):
+        if self.get_tts_engine is None:
+            return "aitalk"
+        try:
+            return self.get_tts_engine()
+        except Exception:
+            return "aitalk"
+
+
+    def set_tts_engine(self, engine):
+        if self.tts_client is not None:
+            self.tts_client.set_tts_engine(engine)
 
 
     def sentence_tts_instructions(self, voice_data):
@@ -1142,7 +1230,6 @@ class ConversationEditorTab(tk.Frame):
 
         self.selected_utterance_index = utterance_index
         self.selected_event_index = event_index
-        self.start_face_preview_keepalive()
         self.render_utterances()
 
         dialog = tk.Toplevel(self)
@@ -1227,6 +1314,7 @@ class ConversationEditorTab(tk.Frame):
 
         self.selected_utterance_index = utterance_index
         self.selected_event_index = event_index
+        self.start_face_preview_keepalive()
         self.render_utterances()
 
         dialog = tk.Toplevel(self)
@@ -1301,6 +1389,11 @@ class ConversationEditorTab(tk.Frame):
             side="left", padx=(ui.SPACING["small_gap"], 0)
         )
         ui.action_button(actions, text="更新", command=save_event).pack(side="right")
+        ui.sub_button(
+            actions,
+            text="ニュートラルから見る",
+            command=lambda: self.preview_face_from_neutral(panel.get_data()),
+        ).pack(side="right", padx=(0, ui.SPACING["small_gap"]))
 
 
     def ensure_robot_client(self):
@@ -1330,13 +1423,45 @@ class ConversationEditorTab(tk.Frame):
         self.send_face_preview(face_data, changed_axes=changed_axes)
 
 
+    def preview_face_from_neutral(self, face_data):
+        try:
+            self.stop_face_preview_keepalive()
+            robot = self.ensure_robot_client()
+            command_text = "/emotion neutral 1 5 3000"
+            print(f"[FACE PREVIEW] ニュートラル: {command_text}", flush=True)
+            robot.send(command_text)
+            self.status_var.set("ニュートラルに戻してから表情を送ります")
+            delay_ms = 4000 if face_data.get("command", {}).get("type") != "emotion" else 2000
+            self.after(delay_ms, lambda data=copy.deepcopy(face_data): self.preview_face_after_neutral(data))
+        except Exception as exc:
+            self.status_var.set(f"ニュートラル送信エラー: {exc}")
+
+
+    def preview_face_after_neutral(self, face_data):
+        self.start_face_preview_keepalive()
+        self.update_face_preview_keepalive(face_data, changed_axes=None)
+        self.send_face_preview(face_data, changed_axes=None)
+
+
     def send_face_preview(self, face_data, changed_axes=None):
         try:
             robot = self.ensure_robot_client()
             command = face_data.get("command", {})
             label = face_data.get("label", "表情")
+            if command.get("type") == "smile":
+                level = int(command.get("level", 2))
+                priority = int(command.get("priority", 3))
+                keeptime = int(command.get("keeptime", 3000))
+                command_text = f"/smile start {level} {priority} {keeptime}"
+                print(f"[FACE PREVIEW] {label}: {command_text}", flush=True)
+                robot.send(command_text)
+                return
             if command.get("type") == "emotion":
-                command_text = command.get("text", "/emotion neutral")
+                emotion = command.get("emotion", "neutral")
+                if emotion not in SMILE_COMPATIBLE_EMOTIONS:
+                    print("[FACE PREVIEW] smile end: /smile end", flush=True)
+                    robot.send("/smile end")
+                command_text = command.get("text", "/emotion neutral 1 5 3000")
                 print(f"[FACE PREVIEW] {label}: {command_text}", flush=True)
                 robot.send(command_text)
                 return
@@ -1354,6 +1479,7 @@ class ConversationEditorTab(tk.Frame):
 
             axis_summary = ", ".join(f"{cmd['axis']}={int(cmd['value'])}" for cmd in axis_commands)
             print(f"[FACE PREVIEW] {label}: /movemulti5 axes({axis_summary})", flush=True)
+            robot.send("/smile end")
             for axis_command in axis_commands:
                 robot.send_face_axis(
                     axis=str(axis_command["axis"]),
@@ -1389,7 +1515,7 @@ class ConversationEditorTab(tk.Frame):
         if face_data.get("command", {}).get("type") == "emotion":
             return
         self.face_preview_keepalive_data = copy.deepcopy(face_data)
-        self.face_preview_keepalive_axes = [str(axis) for axis in changed_axes] if changed_axes is not None else None
+        self.face_preview_keepalive_axes = None
         if self.face_preview_keepalive_after_id is None:
             self.face_preview_keepalive_after_id = self.after(2800, self.send_face_preview_keepalive)
 
@@ -1418,7 +1544,13 @@ class ConversationEditorTab(tk.Frame):
             if utterance.get("speaker") == SPEAKER_CUSTOMER:
                 text = self.customer_text(utterance).strip()
                 if text:
-                    turns.append({"role": "customer", "text": text})
+                    turns.append(
+                        {
+                            "role": "customer",
+                            "text": text,
+                            "default_face": self.current_default_face_data(),
+                        }
+                    )
                 continue
 
             segments = copy.deepcopy(utterance.get("segments", []))
@@ -1429,7 +1561,7 @@ class ConversationEditorTab(tk.Frame):
                     "role": "staff",
                     "segments": segments,
                     "events": copy.deepcopy(utterance.get("events", [])),
-                    "default_face": default_face_data(self.store.data.get("default_face_label", "ニュートラル")),
+                    "default_face": self.current_default_face_data(),
                     "duration": self.calculate_utterance_duration(utterance),
                     "text": self.staff_turn_text(utterance),
                 }
@@ -1445,7 +1577,7 @@ class ConversationEditorTab(tk.Frame):
             "role": "staff",
             "segments": segments,
             "events": copy.deepcopy(utterance.get("events", [])),
-            "default_face": default_face_data(self.store.data.get("default_face_label", "ニュートラル")),
+            "default_face": self.current_default_face_data(),
             "duration": self.calculate_utterance_duration(utterance),
             "text": self.staff_turn_text(utterance),
         }
@@ -1513,18 +1645,90 @@ class ConversationEditorTab(tk.Frame):
         self.store.data["scenario_title"] = selected["label"]
         self.store.data["conversation_type_id"] = selected["id"]
         self.store.data["conversation_intent"] = selected["intent"]
+
+        current_face = self.store.data.get("default_face")
+        if current_face and current_face.get("label") in FACE_EXPRESSION_OPTIONS:
+            default_face_label = current_face["label"]
+            self.default_face_var.set(default_face_label)
+        else:
+            default_face_label = self.default_face_var.get().strip() or "ニュートラル"
+        if default_face_label not in FACE_EXPRESSION_OPTIONS:
+            default_face_label = "ニュートラル"
+            self.default_face_var.set(default_face_label)
+        self.store.data["default_face_label"] = default_face_label
+        if not current_face:
+            self.store.data["default_face"] = default_face_data(default_face_label)
+        self.active_scene_id = selected["id"]
+
+
+    def on_default_face_selected(self):
+        selected = self.scene_option_by_label(self.type_var.get().strip() or self.scene_options[0]["label"])
+        self.store.data["scenario_title"] = selected["label"]
+        self.store.data["conversation_type_id"] = selected["id"]
+        self.store.data["conversation_intent"] = selected["intent"]
+        self.active_scene_id = selected["id"]
         default_face_label = self.default_face_var.get().strip() or "ニュートラル"
         if default_face_label not in FACE_EXPRESSION_OPTIONS:
             default_face_label = "ニュートラル"
             self.default_face_var.set(default_face_label)
         self.store.data["default_face_label"] = default_face_label
-        self.active_scene_id = selected["id"]
-
-
-    def on_default_face_selected(self):
-        self.sync_title()
+        face_data = default_face_data(default_face_label)
+        self.store.data["default_face"] = face_data
         self.save_workspace_to_active_scene()
-        self.status_var.set(f"基本表情を設定しました: {self.default_face_var.get()}")
+        self.send_face_preview(face_data, changed_axes=None)
+        self.status_var.set(f"基本表情を設定して送信しました: {self.default_face_var.get()}")
+        if face_data.get("groups"):
+            self.open_default_face_editor()
+
+
+    def open_default_face_editor(self):
+        self.sync_title()
+        initial_face = self.current_default_face_data()
+
+        dialog = tk.Toplevel(self)
+        dialog.title("基本表情を編集")
+        dialog.transient(self)
+        dialog.grab_set()
+        dialog.geometry("760x620")
+
+        body = ui.frame(dialog, bg="main_card")
+        body.pack(fill="both", expand=True, padx=22, pady=18)
+        ui.label(body, text="基本表情を編集", font="page_title", bg="main_card").pack(anchor="w")
+
+        actions = ui.frame(body, bg="main_card")
+        actions.pack(side="bottom", fill="x", pady=(ui.SPACING["section_y"], 0))
+
+        panel_area = ui.scrollable_frame(body, bg="main_card")
+        panel = FaceAxisEditorPanel(
+            panel_area,
+            initial_data=initial_face,
+            on_changed=self.preview_face_on_robot,
+        )
+        panel.pack(fill="x")
+        self.start_face_preview_keepalive()
+
+        def close_dialog():
+            self.stop_face_preview_keepalive()
+            dialog.destroy()
+
+        def save_default_face():
+            face_data = panel.get_data()
+            self.store.data["default_face_label"] = face_data["label"]
+            self.store.data["default_face"] = face_data
+            self.default_face_var.set(face_data["label"])
+            self.save_workspace_to_active_scene()
+            self.stop_face_preview_keepalive()
+            dialog.destroy()
+            self.status_var.set(f"基本表情を保存しました: {face_data['label']}")
+
+        dialog.protocol("WM_DELETE_WINDOW", close_dialog)
+        ui.sub_button(actions, text="戻る", command=close_dialog).pack(side="left")
+        ui.sub_button(
+            actions,
+            text="ニュートラルから見る",
+            command=lambda: self.preview_face_from_neutral(panel.get_data()),
+        ).pack(side="right", padx=(0, ui.SPACING["small_gap"]))
+        ui.action_button(actions, text="更新", command=save_default_face).pack(side="right")
 
     def on_scene_selected(self):
         old_scene_id = self.active_scene_id
@@ -1580,6 +1784,31 @@ class ConversationEditorTab(tk.Frame):
         self.save_workspace_to_active_scene()
         path = self.store.save()
         self.status_var.set(f"保存しました: {path.name}")
+
+
+    def export_pdf(self):
+        self.sync_texts()
+        self.save_workspace_to_active_scene()
+        saved_path = self.store.save()
+        initial_name = f"{saved_path.stem}.pdf"
+        output_path = filedialog.asksaveasfilename(
+            title="会話をPDF出力",
+            initialdir=str(saved_path.parent),
+            initialfile=initial_name,
+            defaultextension=".pdf",
+            filetypes=[("PDF", "*.pdf")],
+        )
+        if not output_path:
+            return
+
+        try:
+            result = export_conversation_pdf(self.store.data.get("utterances", []), output_path)
+        except Exception as exc:
+            messagebox.showerror("PDF出力", f"PDF出力に失敗しました\n{exc}")
+            return
+
+        suffix = "（一部省略）" if result.get("truncated") else ""
+        self.status_var.set(f"PDFを出力しました: {result['path'].name}{suffix}")
 
 
     def try_robot(self):

@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 import argparse
+import base64
 import hashlib
 import json
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
@@ -42,6 +43,9 @@ class NikolaTTSPlayHandler(BaseHTTPRequestHandler):
             return
         if self.path == "/play":
             self.handle_play()
+            return
+        if self.path == "/upload":
+            self.handle_upload()
             return
 
         self.send_error(404, "not found")
@@ -121,6 +125,51 @@ class NikolaTTSPlayHandler(BaseHTTPRequestHandler):
             print(f"[NikolaTTSPlayServer] prepare error: {e}", flush=True)
             self.send_json({"ok": False, "error": str(e)}, status=500)
 
+    def handle_upload(self):
+        try:
+            payload = self.read_json()
+            text = str(payload.get("text", "")).strip()
+            instructions = payload.get("instructions", {}) or {}
+            person = payload.get("person") or tts.DEFAULT_PERSON
+            engine = payload.get("engine") or "upload"
+            audio_base64 = payload.get("audio_base64") or ""
+            if not audio_base64:
+                raise ValueError("audio_base64 is empty")
+
+            raw_audio = base64.b64decode(audio_base64.encode("ascii"))
+            audio_id = self.audio_id_for_upload(text, instructions, person, engine, raw_audio)
+            target = self.server.cache_dir / f"{audio_id}.wav"
+            target.parent.mkdir(parents=True, exist_ok=True)
+
+            if not target.exists():
+                source = self.server.cache_dir / f"{audio_id}_raw.wav"
+                source.write_bytes(raw_audio)
+                try:
+                    trim_silence_to_wav(source, target)
+                    source.unlink(missing_ok=True)
+                except Exception:
+                    shutil.move(str(source), str(target))
+
+            duration = self.wav_duration_sec(target)
+            with self.server.audio_lock:
+                self.server.audio_registry[audio_id] = {
+                    "path": target,
+                    "duration": duration,
+                    "text": text,
+                    "person": person,
+                    "engine": engine,
+                }
+
+            print(
+                f"[NikolaTTSPlayServer] upload id={audio_id} text={text!r} "
+                f"engine={engine} duration={duration:.2f}s",
+                flush=True,
+            )
+            self.send_json({"ok": True, "audio_id": audio_id, "duration": duration})
+        except Exception as e:
+            print(f"[NikolaTTSPlayServer] upload error: {e}", flush=True)
+            self.send_json({"ok": False, "error": str(e)}, status=500)
+
     def handle_play(self):
         try:
             payload = self.read_json()
@@ -163,6 +212,19 @@ class NikolaTTSPlayHandler(BaseHTTPRequestHandler):
             "instructions": instructions,
             "person": person,
             "tts_url": tts_url,
+            "cache_version": 1,
+        }
+        raw = json.dumps(payload, ensure_ascii=False, sort_keys=True, separators=(",", ":"))
+        return hashlib.sha256(raw.encode("utf-8")).hexdigest()[:24]
+
+    def audio_id_for_upload(self, text, instructions, person, engine, raw_audio):
+        audio_hash = hashlib.sha256(raw_audio).hexdigest()
+        payload = {
+            "text": text,
+            "instructions": instructions,
+            "person": person,
+            "engine": engine,
+            "audio_hash": audio_hash,
             "cache_version": 1,
         }
         raw = json.dumps(payload, ensure_ascii=False, sort_keys=True, separators=(",", ":"))

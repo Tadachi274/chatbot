@@ -1,0 +1,1496 @@
+{
+  "scenario_title": "手続き系: チェックイン",
+  "utterances": [
+    {
+      "speaker": "staff",
+      "segments": [
+        {
+          "type": "sentence",
+          "text": "Have you ever been to ATR?",
+          "duration": 3.6,
+          "voice": {
+            "controls": {
+              "friendly": 1.0,
+              "reliable": 1.0,
+              "calm": 1.0,
+              "tension": 1.0,
+              "impatience": 1.0,
+              "sorry": 1.0,
+              "energetic": 1.0
+            },
+            "params": {
+              "volume": 1.3,
+              "rate": 1.0,
+              "pitch": 1.0,
+              "emphasis": 1.0,
+              "joy": 0.0,
+              "anger": 0.0,
+              "sadness": 0.0
+            },
+            "tts_instructions": {
+              "tts_volume": 1.3,
+              "tts_rate": 1.0,
+              "tts_pitch": 1.0,
+              "tts_emphasis": 1.0,
+              "tts_emo_joy": 0.0,
+              "tts_emo_angry": 0.0,
+              "tts_emo_sad": 0.0
+            }
+          }
+        },
+        {
+          "type": "pause",
+          "duration": 0.8
+        }
+      ],
+      "duration": 4.4,
+      "events": []
+    },
+    {
+      "speaker": "staff",
+      "segments": [
+        {
+          "type": "sentence",
+          "text": "いらっしゃいませ！ 今日はどうされましたか？",
+          "duration": 3.2,
+          "voice": {
+            "controls": {
+              "friendly": 1.0,
+              "reliable": 1.0,
+              "calm": 1.0,
+              "tension": 1.0,
+              "impatience": 1.0,
+              "sorry": 1.0,
+              "energetic": 1.0
+            },
+            "params": {
+              "volume": 1.3,
+              "rate": 1.0,
+              "pitch": 1.0,
+              "emphasis": 1.0,
+              "joy": 0.0,
+              "anger": 0.0,
+              "sadness": 0.0
+            },
+            "tts_instructions": {
+              "tts_volume": 1.3,
+              "tts_rate": 1.0,
+              "tts_pitch": 1.0,
+              "tts_emphasis": 1.0,
+              "tts_emo_joy": 0.0,
+              "tts_emo_angry": 0.0,
+              "tts_emo_sad": 0.0
+            }
+          }
+        },
+        {
+          "type": "pause",
+          "duration": 0.8
+        },
+        {
+          "type": "sentence",
+          "text": "お手伝いできることがあれば教えてください",
+          "duration": 2.6,
+          "voice": {
+            "controls": {
+              "friendly": 1.0,
+              "reliable": 1.0,
+              "calm": 1.0,
+              "tension": 1.0,
+              "impatience": 1.0,
+              "sorry": 1.0,
+              "energetic": 1.0
+            },
+            "params": {
+              "volume": 1.3,
+              "rate": 1.0,
+              "pitch": 1.0,
+              "emphasis": 1.0,
+              "joy": 0.0,
+              "anger": 0.0,
+              "sadness": 0.0
+            },
+            "tts_instructions": {
+              "tts_volume": 1.3,
+              "tts_rate": 1.0,
+              "tts_pitch": 1.0,
+              "tts_emphasis": 1.0,
+              "tts_emo_joy": 0.0,
+              "tts_emo_angry": 0.0,
+              "tts_emo_sad": 0.0
+            }
+          }
+        }
+      ],
+      "duration": 6.6,
+      "events": [
+        {
+          "lane": "face",
+          "time": 1.6,
+          "duration": 5.0,
+          "value": "WaitSmile 3",
+          "face": {
+            "id": "emotion_waitsmile_3",
+            "label": "WaitSmile 3",
+            "groups": [],
+            "axes": {},
+            "command": {
+              "type": "emotion",
+              "emotion": "WaitSmile",
+              "level": 3,
+              "priority": 3,
+              "keeptime": 3000,
+              "text": "/emotion WaitSmile 3 3 3000"
+            }
+          }
+        },
+        {
+          "lane": "face",
+          "time": 6.4,
+          "duration": 1.0,
+          "value": "笑顔",
+          "face": {
+            "id": "smile",
+            "label": "笑顔",
+            "groups": [
+              {
+                "id": "upper_eyelids",
+                "label": "上まぶた",
+                "mode": "set",
+                "axes": [
+                  "1",
+                  "2"
+                ],
+                "values": {
+                  "1": 78,
+                  "2": 78
+                },
+                "enabled_axes": [
+                  "1",
+                  "2"
+                ]
+              },
+              {
+                "id": "lower_eyelids",
+                "label": "下瞼",
+                "mode": "set",
+                "axes": [
+                  "6",
+                  "7"
+                ],
+                "values": {
+                  "6": 35,
+                  "7": 35
+                },
+                "enabled_axes": [
+                  "6",
+                  "7"
+                ]
+              },
+              {
+                "id": "outer_brows_up",
+                "label": "眉外側上",
+                "mode": "set",
+                "axes": [
+                  "8",
+                  "12"
+                ],
+                "values": {
+                  "8": 45,
+                  "12": 45
+                },
+                "enabled_axes": [
+                  "8",
+                  "12"
+                ]
+              },
+              {
+                "id": "outer_brows_down",
+                "label": "眉外側下げ",
+                "mode": "set",
+                "axes": [
+                  "9",
+                  "13"
+                ],
+                "values": {
+                  "9": 0,
+                  "13": 0
+                },
+                "enabled_axes": [
+                  "9",
+                  "13"
+                ]
+              },
+              {
+                "id": "cheeks_diagonal",
+                "label": "頬斜め上",
+                "mode": "set",
+                "axes": [
+                  "16",
+                  "17"
+                ],
+                "values": {
+                  "16": 60,
+                  "17": 60
+                },
+                "enabled_axes": [
+                  "16",
+                  "17"
+                ]
+              },
+              {
+                "id": "mouth_corners",
+                "label": "口角",
+                "mode": "set",
+                "axes": [
+                  "18",
+                  "22"
+                ],
+                "values": {
+                  "18": 85,
+                  "22": 85
+                },
+                "enabled_axes": [
+                  "18",
+                  "22"
+                ]
+              },
+              {
+                "id": "mouth_side",
+                "label": "口横",
+                "mode": "set",
+                "axes": [
+                  "20",
+                  "24"
+                ],
+                "values": {
+                  "20": 45,
+                  "24": 45
+                },
+                "enabled_axes": [
+                  "20",
+                  "24"
+                ]
+              },
+              {
+                "id": "upper_lip",
+                "label": "上唇",
+                "mode": "set",
+                "axes": [
+                  "28"
+                ],
+                "values": {
+                  "28": 0
+                },
+                "enabled_axes": [
+                  "28"
+                ]
+              },
+              {
+                "id": "lower_lip",
+                "label": "下唇",
+                "mode": "set",
+                "axes": [
+                  "29"
+                ],
+                "values": {
+                  "29": 0
+                },
+                "enabled_axes": [
+                  "29"
+                ]
+              },
+              {
+                "id": "neck_horizontal",
+                "label": "首の角度横",
+                "mode": "set",
+                "axes": [
+                  "33"
+                ],
+                "values": {
+                  "33": 128
+                },
+                "enabled_axes": [
+                  "33"
+                ]
+              },
+              {
+                "id": "neck_vertical",
+                "label": "首の角度縦",
+                "mode": "set",
+                "axes": [
+                  "34"
+                ],
+                "values": {
+                  "34": 128
+                },
+                "enabled_axes": [
+                  "34"
+                ]
+              }
+            ],
+            "axes": {
+              "1": 78,
+              "2": 78,
+              "6": 35,
+              "7": 35,
+              "8": 45,
+              "12": 45,
+              "9": 0,
+              "13": 0,
+              "16": 60,
+              "17": 60,
+              "18": 85,
+              "22": 85,
+              "20": 45,
+              "24": 45,
+              "28": 0,
+              "29": 0,
+              "33": 128,
+              "34": 128
+            },
+            "command": {
+              "type": "movemulti5",
+              "velocity": 2000,
+              "priority": 3,
+              "keeptime": 3000
+            }
+          }
+        },
+        {
+          "lane": "face",
+          "time": 6.4,
+          "duration": 1.0,
+          "value": "笑顔",
+          "face": {
+            "id": "smile",
+            "label": "笑顔",
+            "groups": [
+              {
+                "id": "upper_eyelids",
+                "label": "上まぶた",
+                "mode": "set",
+                "axes": [
+                  "1",
+                  "2"
+                ],
+                "values": {
+                  "1": 78,
+                  "2": 78
+                },
+                "enabled_axes": [
+                  "1",
+                  "2"
+                ]
+              },
+              {
+                "id": "lower_eyelids",
+                "label": "下瞼",
+                "mode": "set",
+                "axes": [
+                  "6",
+                  "7"
+                ],
+                "values": {
+                  "6": 35,
+                  "7": 35
+                },
+                "enabled_axes": [
+                  "6",
+                  "7"
+                ]
+              },
+              {
+                "id": "outer_brows_up",
+                "label": "眉外側上",
+                "mode": "set",
+                "axes": [
+                  "8",
+                  "12"
+                ],
+                "values": {
+                  "8": 45,
+                  "12": 45
+                },
+                "enabled_axes": [
+                  "8",
+                  "12"
+                ]
+              },
+              {
+                "id": "outer_brows_down",
+                "label": "眉外側下げ",
+                "mode": "set",
+                "axes": [
+                  "9",
+                  "13"
+                ],
+                "values": {
+                  "9": 0,
+                  "13": 0
+                },
+                "enabled_axes": [
+                  "9",
+                  "13"
+                ]
+              },
+              {
+                "id": "cheeks_diagonal",
+                "label": "頬斜め上",
+                "mode": "set",
+                "axes": [
+                  "16",
+                  "17"
+                ],
+                "values": {
+                  "16": 60,
+                  "17": 60
+                },
+                "enabled_axes": [
+                  "16",
+                  "17"
+                ]
+              },
+              {
+                "id": "mouth_corners",
+                "label": "口角",
+                "mode": "set",
+                "axes": [
+                  "18",
+                  "22"
+                ],
+                "values": {
+                  "18": 85,
+                  "22": 85
+                },
+                "enabled_axes": [
+                  "18",
+                  "22"
+                ]
+              },
+              {
+                "id": "mouth_side",
+                "label": "口横",
+                "mode": "set",
+                "axes": [
+                  "20",
+                  "24"
+                ],
+                "values": {
+                  "20": 45,
+                  "24": 45
+                },
+                "enabled_axes": [
+                  "20",
+                  "24"
+                ]
+              },
+              {
+                "id": "upper_lip",
+                "label": "上唇",
+                "mode": "set",
+                "axes": [
+                  "28"
+                ],
+                "values": {
+                  "28": 0
+                },
+                "enabled_axes": [
+                  "28"
+                ]
+              },
+              {
+                "id": "lower_lip",
+                "label": "下唇",
+                "mode": "set",
+                "axes": [
+                  "29"
+                ],
+                "values": {
+                  "29": 0
+                },
+                "enabled_axes": [
+                  "29"
+                ]
+              },
+              {
+                "id": "neck_horizontal",
+                "label": "首の角度横",
+                "mode": "set",
+                "axes": [
+                  "33"
+                ],
+                "values": {
+                  "33": 128
+                },
+                "enabled_axes": [
+                  "33"
+                ]
+              },
+              {
+                "id": "neck_vertical",
+                "label": "首の角度縦",
+                "mode": "set",
+                "axes": [
+                  "34"
+                ],
+                "values": {
+                  "34": 128
+                },
+                "enabled_axes": [
+                  "34"
+                ]
+              }
+            ],
+            "axes": {
+              "1": 78,
+              "2": 78,
+              "6": 35,
+              "7": 35,
+              "8": 45,
+              "12": 45,
+              "9": 0,
+              "13": 0,
+              "16": 60,
+              "17": 60,
+              "18": 85,
+              "22": 85,
+              "20": 45,
+              "24": 45,
+              "28": 0,
+              "29": 0,
+              "33": 128,
+              "34": 128
+            },
+            "command": {
+              "type": "movemulti5",
+              "velocity": 2000,
+              "priority": 3,
+              "keeptime": 3000
+            }
+          }
+        }
+      ]
+    },
+    {
+      "speaker": "customer",
+      "text": "ちょっと道に迷っちゃって",
+      "segments": [],
+      "duration": 0.0
+    },
+    {
+      "speaker": "staff",
+      "segments": [
+        {
+          "type": "sentence",
+          "text": "どこに行かれたいんですか？",
+          "duration": 1.6,
+          "voice": {
+            "controls": {
+              "friendly": 1.0,
+              "reliable": 1.0,
+              "calm": 1.0,
+              "tension": 1.0,
+              "impatience": 1.0,
+              "sorry": 1.0,
+              "energetic": 1.0
+            },
+            "params": {
+              "volume": 1.3,
+              "rate": 1.0,
+              "pitch": 1.0,
+              "emphasis": 1.0,
+              "joy": 0.0,
+              "anger": 0.0,
+              "sadness": 0.0
+            },
+            "tts_instructions": {
+              "tts_volume": 1.3,
+              "tts_rate": 1.0,
+              "tts_pitch": 1.0,
+              "tts_emphasis": 1.0,
+              "tts_emo_joy": 0.0,
+              "tts_emo_angry": 0.0,
+              "tts_emo_sad": 0.0
+            }
+          }
+        }
+      ],
+      "duration": 1.6,
+      "events": []
+    },
+    {
+      "speaker": "customer",
+      "text": "ユニクロにいきたいです",
+      "segments": [],
+      "duration": 0.0
+    },
+    {
+      "speaker": "staff",
+      "segments": [
+        {
+          "type": "sentence",
+          "text": "ユニクロならあちら側です。",
+          "duration": 1.5,
+          "voice": {
+            "controls": {
+              "friendly": 1.0,
+              "reliable": 1.0,
+              "calm": 1.0,
+              "tension": 1.0,
+              "impatience": 1.0,
+              "sorry": 1.0,
+              "energetic": 1.0
+            },
+            "params": {
+              "volume": 1.3,
+              "rate": 1.0,
+              "pitch": 1.0,
+              "emphasis": 1.0,
+              "joy": 0.0,
+              "anger": 0.0,
+              "sadness": 0.0
+            },
+            "tts_instructions": {
+              "tts_volume": 1.3,
+              "tts_rate": 1.0,
+              "tts_pitch": 1.0,
+              "tts_emphasis": 1.0,
+              "tts_emo_joy": 0.0,
+              "tts_emo_angry": 0.0,
+              "tts_emo_sad": 0.0
+            }
+          }
+        }
+      ],
+      "duration": 1.5,
+      "events": []
+    },
+    {
+      "speaker": "customer",
+      "text": "ありがとうございます",
+      "segments": [],
+      "duration": 0.0
+    },
+    {
+      "speaker": "staff",
+      "segments": [
+        {
+          "type": "sentence",
+          "text": "気をつけて、いってらっしゃい",
+          "duration": 1.9000000000000001,
+          "voice": {
+            "controls": {
+              "friendly": 1.0,
+              "reliable": 1.0,
+              "calm": 1.0,
+              "tension": 1.0,
+              "impatience": 1.0,
+              "sorry": 1.0,
+              "energetic": 1.0
+            },
+            "params": {
+              "volume": 1.3,
+              "rate": 1.0,
+              "pitch": 1.0,
+              "emphasis": 1.0,
+              "joy": 0.0,
+              "anger": 0.0,
+              "sadness": 0.0
+            },
+            "tts_instructions": {
+              "tts_volume": 1.3,
+              "tts_rate": 1.0,
+              "tts_pitch": 1.0,
+              "tts_emphasis": 1.0,
+              "tts_emo_joy": 0.0,
+              "tts_emo_angry": 0.0,
+              "tts_emo_sad": 0.0
+            }
+          }
+        }
+      ],
+      "duration": 1.9,
+      "events": []
+    }
+  ],
+  "user_name": "2",
+  "scenario_id": "luxury_hotel",
+  "scenario_label": "高級ホテル",
+  "updated_at": "2026-06-09T13:15:06",
+  "scenes": {
+    "hotel_checkin": {
+      "scenario_title": "手続き系: チェックイン",
+      "conversation_type_id": "hotel_checkin",
+      "conversation_intent": "explanation",
+      "default_face_label": "ニュートラル",
+      "utterances": [
+        {
+          "speaker": "staff",
+          "segments": [
+            {
+              "type": "sentence",
+              "text": "Have you ever been to ATR?",
+              "duration": 3.6,
+              "voice": {
+                "controls": {
+                  "friendly": 1.0,
+                  "reliable": 1.0,
+                  "calm": 1.0,
+                  "tension": 1.0,
+                  "impatience": 1.0,
+                  "sorry": 1.0,
+                  "energetic": 1.0
+                },
+                "params": {
+                  "volume": 1.3,
+                  "rate": 1.0,
+                  "pitch": 1.0,
+                  "emphasis": 1.0,
+                  "joy": 0.0,
+                  "anger": 0.0,
+                  "sadness": 0.0
+                },
+                "tts_instructions": {
+                  "tts_volume": 1.3,
+                  "tts_rate": 1.0,
+                  "tts_pitch": 1.0,
+                  "tts_emphasis": 1.0,
+                  "tts_emo_joy": 0.0,
+                  "tts_emo_angry": 0.0,
+                  "tts_emo_sad": 0.0
+                }
+              }
+            },
+            {
+              "type": "pause",
+              "duration": 0.8
+            }
+          ],
+          "duration": 4.4,
+          "events": []
+        },
+        {
+          "speaker": "staff",
+          "segments": [
+            {
+              "type": "sentence",
+              "text": "いらっしゃいませ！ 今日はどうされましたか？",
+              "duration": 3.2,
+              "voice": {
+                "controls": {
+                  "friendly": 1.0,
+                  "reliable": 1.0,
+                  "calm": 1.0,
+                  "tension": 1.0,
+                  "impatience": 1.0,
+                  "sorry": 1.0,
+                  "energetic": 1.0
+                },
+                "params": {
+                  "volume": 1.3,
+                  "rate": 1.0,
+                  "pitch": 1.0,
+                  "emphasis": 1.0,
+                  "joy": 0.0,
+                  "anger": 0.0,
+                  "sadness": 0.0
+                },
+                "tts_instructions": {
+                  "tts_volume": 1.3,
+                  "tts_rate": 1.0,
+                  "tts_pitch": 1.0,
+                  "tts_emphasis": 1.0,
+                  "tts_emo_joy": 0.0,
+                  "tts_emo_angry": 0.0,
+                  "tts_emo_sad": 0.0
+                }
+              }
+            },
+            {
+              "type": "pause",
+              "duration": 0.8
+            },
+            {
+              "type": "sentence",
+              "text": "お手伝いできることがあれば教えてください",
+              "duration": 2.6,
+              "voice": {
+                "controls": {
+                  "friendly": 1.0,
+                  "reliable": 1.0,
+                  "calm": 1.0,
+                  "tension": 1.0,
+                  "impatience": 1.0,
+                  "sorry": 1.0,
+                  "energetic": 1.0
+                },
+                "params": {
+                  "volume": 1.3,
+                  "rate": 1.0,
+                  "pitch": 1.0,
+                  "emphasis": 1.0,
+                  "joy": 0.0,
+                  "anger": 0.0,
+                  "sadness": 0.0
+                },
+                "tts_instructions": {
+                  "tts_volume": 1.3,
+                  "tts_rate": 1.0,
+                  "tts_pitch": 1.0,
+                  "tts_emphasis": 1.0,
+                  "tts_emo_joy": 0.0,
+                  "tts_emo_angry": 0.0,
+                  "tts_emo_sad": 0.0
+                }
+              }
+            }
+          ],
+          "duration": 6.6,
+          "events": [
+            {
+              "lane": "face",
+              "time": 1.6,
+              "duration": 5.0,
+              "value": "WaitSmile 3",
+              "face": {
+                "id": "emotion_waitsmile_3",
+                "label": "WaitSmile 3",
+                "groups": [],
+                "axes": {},
+                "command": {
+                  "type": "emotion",
+                  "emotion": "WaitSmile",
+                  "level": 3,
+                  "priority": 3,
+                  "keeptime": 3000,
+                  "text": "/emotion WaitSmile 3 3 3000"
+                }
+              }
+            },
+            {
+              "lane": "face",
+              "time": 6.4,
+              "duration": 1.0,
+              "value": "笑顔",
+              "face": {
+                "id": "smile",
+                "label": "笑顔",
+                "groups": [
+                  {
+                    "id": "upper_eyelids",
+                    "label": "上まぶた",
+                    "mode": "set",
+                    "axes": [
+                      "1",
+                      "2"
+                    ],
+                    "values": {
+                      "1": 78,
+                      "2": 78
+                    },
+                    "enabled_axes": [
+                      "1",
+                      "2"
+                    ]
+                  },
+                  {
+                    "id": "lower_eyelids",
+                    "label": "下瞼",
+                    "mode": "set",
+                    "axes": [
+                      "6",
+                      "7"
+                    ],
+                    "values": {
+                      "6": 35,
+                      "7": 35
+                    },
+                    "enabled_axes": [
+                      "6",
+                      "7"
+                    ]
+                  },
+                  {
+                    "id": "outer_brows_up",
+                    "label": "眉外側上",
+                    "mode": "set",
+                    "axes": [
+                      "8",
+                      "12"
+                    ],
+                    "values": {
+                      "8": 45,
+                      "12": 45
+                    },
+                    "enabled_axes": [
+                      "8",
+                      "12"
+                    ]
+                  },
+                  {
+                    "id": "outer_brows_down",
+                    "label": "眉外側下げ",
+                    "mode": "set",
+                    "axes": [
+                      "9",
+                      "13"
+                    ],
+                    "values": {
+                      "9": 0,
+                      "13": 0
+                    },
+                    "enabled_axes": [
+                      "9",
+                      "13"
+                    ]
+                  },
+                  {
+                    "id": "cheeks_diagonal",
+                    "label": "頬斜め上",
+                    "mode": "set",
+                    "axes": [
+                      "16",
+                      "17"
+                    ],
+                    "values": {
+                      "16": 60,
+                      "17": 60
+                    },
+                    "enabled_axes": [
+                      "16",
+                      "17"
+                    ]
+                  },
+                  {
+                    "id": "mouth_corners",
+                    "label": "口角",
+                    "mode": "set",
+                    "axes": [
+                      "18",
+                      "22"
+                    ],
+                    "values": {
+                      "18": 85,
+                      "22": 85
+                    },
+                    "enabled_axes": [
+                      "18",
+                      "22"
+                    ]
+                  },
+                  {
+                    "id": "mouth_side",
+                    "label": "口横",
+                    "mode": "set",
+                    "axes": [
+                      "20",
+                      "24"
+                    ],
+                    "values": {
+                      "20": 45,
+                      "24": 45
+                    },
+                    "enabled_axes": [
+                      "20",
+                      "24"
+                    ]
+                  },
+                  {
+                    "id": "upper_lip",
+                    "label": "上唇",
+                    "mode": "set",
+                    "axes": [
+                      "28"
+                    ],
+                    "values": {
+                      "28": 0
+                    },
+                    "enabled_axes": [
+                      "28"
+                    ]
+                  },
+                  {
+                    "id": "lower_lip",
+                    "label": "下唇",
+                    "mode": "set",
+                    "axes": [
+                      "29"
+                    ],
+                    "values": {
+                      "29": 0
+                    },
+                    "enabled_axes": [
+                      "29"
+                    ]
+                  },
+                  {
+                    "id": "neck_horizontal",
+                    "label": "首の角度横",
+                    "mode": "set",
+                    "axes": [
+                      "33"
+                    ],
+                    "values": {
+                      "33": 128
+                    },
+                    "enabled_axes": [
+                      "33"
+                    ]
+                  },
+                  {
+                    "id": "neck_vertical",
+                    "label": "首の角度縦",
+                    "mode": "set",
+                    "axes": [
+                      "34"
+                    ],
+                    "values": {
+                      "34": 128
+                    },
+                    "enabled_axes": [
+                      "34"
+                    ]
+                  }
+                ],
+                "axes": {
+                  "1": 78,
+                  "2": 78,
+                  "6": 35,
+                  "7": 35,
+                  "8": 45,
+                  "12": 45,
+                  "9": 0,
+                  "13": 0,
+                  "16": 60,
+                  "17": 60,
+                  "18": 85,
+                  "22": 85,
+                  "20": 45,
+                  "24": 45,
+                  "28": 0,
+                  "29": 0,
+                  "33": 128,
+                  "34": 128
+                },
+                "command": {
+                  "type": "movemulti5",
+                  "velocity": 2000,
+                  "priority": 3,
+                  "keeptime": 3000
+                }
+              }
+            },
+            {
+              "lane": "face",
+              "time": 6.4,
+              "duration": 1.0,
+              "value": "笑顔",
+              "face": {
+                "id": "smile",
+                "label": "笑顔",
+                "groups": [
+                  {
+                    "id": "upper_eyelids",
+                    "label": "上まぶた",
+                    "mode": "set",
+                    "axes": [
+                      "1",
+                      "2"
+                    ],
+                    "values": {
+                      "1": 78,
+                      "2": 78
+                    },
+                    "enabled_axes": [
+                      "1",
+                      "2"
+                    ]
+                  },
+                  {
+                    "id": "lower_eyelids",
+                    "label": "下瞼",
+                    "mode": "set",
+                    "axes": [
+                      "6",
+                      "7"
+                    ],
+                    "values": {
+                      "6": 35,
+                      "7": 35
+                    },
+                    "enabled_axes": [
+                      "6",
+                      "7"
+                    ]
+                  },
+                  {
+                    "id": "outer_brows_up",
+                    "label": "眉外側上",
+                    "mode": "set",
+                    "axes": [
+                      "8",
+                      "12"
+                    ],
+                    "values": {
+                      "8": 45,
+                      "12": 45
+                    },
+                    "enabled_axes": [
+                      "8",
+                      "12"
+                    ]
+                  },
+                  {
+                    "id": "outer_brows_down",
+                    "label": "眉外側下げ",
+                    "mode": "set",
+                    "axes": [
+                      "9",
+                      "13"
+                    ],
+                    "values": {
+                      "9": 0,
+                      "13": 0
+                    },
+                    "enabled_axes": [
+                      "9",
+                      "13"
+                    ]
+                  },
+                  {
+                    "id": "cheeks_diagonal",
+                    "label": "頬斜め上",
+                    "mode": "set",
+                    "axes": [
+                      "16",
+                      "17"
+                    ],
+                    "values": {
+                      "16": 60,
+                      "17": 60
+                    },
+                    "enabled_axes": [
+                      "16",
+                      "17"
+                    ]
+                  },
+                  {
+                    "id": "mouth_corners",
+                    "label": "口角",
+                    "mode": "set",
+                    "axes": [
+                      "18",
+                      "22"
+                    ],
+                    "values": {
+                      "18": 85,
+                      "22": 85
+                    },
+                    "enabled_axes": [
+                      "18",
+                      "22"
+                    ]
+                  },
+                  {
+                    "id": "mouth_side",
+                    "label": "口横",
+                    "mode": "set",
+                    "axes": [
+                      "20",
+                      "24"
+                    ],
+                    "values": {
+                      "20": 45,
+                      "24": 45
+                    },
+                    "enabled_axes": [
+                      "20",
+                      "24"
+                    ]
+                  },
+                  {
+                    "id": "upper_lip",
+                    "label": "上唇",
+                    "mode": "set",
+                    "axes": [
+                      "28"
+                    ],
+                    "values": {
+                      "28": 0
+                    },
+                    "enabled_axes": [
+                      "28"
+                    ]
+                  },
+                  {
+                    "id": "lower_lip",
+                    "label": "下唇",
+                    "mode": "set",
+                    "axes": [
+                      "29"
+                    ],
+                    "values": {
+                      "29": 0
+                    },
+                    "enabled_axes": [
+                      "29"
+                    ]
+                  },
+                  {
+                    "id": "neck_horizontal",
+                    "label": "首の角度横",
+                    "mode": "set",
+                    "axes": [
+                      "33"
+                    ],
+                    "values": {
+                      "33": 128
+                    },
+                    "enabled_axes": [
+                      "33"
+                    ]
+                  },
+                  {
+                    "id": "neck_vertical",
+                    "label": "首の角度縦",
+                    "mode": "set",
+                    "axes": [
+                      "34"
+                    ],
+                    "values": {
+                      "34": 128
+                    },
+                    "enabled_axes": [
+                      "34"
+                    ]
+                  }
+                ],
+                "axes": {
+                  "1": 78,
+                  "2": 78,
+                  "6": 35,
+                  "7": 35,
+                  "8": 45,
+                  "12": 45,
+                  "9": 0,
+                  "13": 0,
+                  "16": 60,
+                  "17": 60,
+                  "18": 85,
+                  "22": 85,
+                  "20": 45,
+                  "24": 45,
+                  "28": 0,
+                  "29": 0,
+                  "33": 128,
+                  "34": 128
+                },
+                "command": {
+                  "type": "movemulti5",
+                  "velocity": 2000,
+                  "priority": 3,
+                  "keeptime": 3000
+                }
+              }
+            }
+          ]
+        },
+        {
+          "speaker": "customer",
+          "text": "ちょっと道に迷っちゃって",
+          "segments": [],
+          "duration": 0.0
+        },
+        {
+          "speaker": "staff",
+          "segments": [
+            {
+              "type": "sentence",
+              "text": "どこに行かれたいんですか？",
+              "duration": 1.6,
+              "voice": {
+                "controls": {
+                  "friendly": 1.0,
+                  "reliable": 1.0,
+                  "calm": 1.0,
+                  "tension": 1.0,
+                  "impatience": 1.0,
+                  "sorry": 1.0,
+                  "energetic": 1.0
+                },
+                "params": {
+                  "volume": 1.3,
+                  "rate": 1.0,
+                  "pitch": 1.0,
+                  "emphasis": 1.0,
+                  "joy": 0.0,
+                  "anger": 0.0,
+                  "sadness": 0.0
+                },
+                "tts_instructions": {
+                  "tts_volume": 1.3,
+                  "tts_rate": 1.0,
+                  "tts_pitch": 1.0,
+                  "tts_emphasis": 1.0,
+                  "tts_emo_joy": 0.0,
+                  "tts_emo_angry": 0.0,
+                  "tts_emo_sad": 0.0
+                }
+              }
+            }
+          ],
+          "duration": 1.6,
+          "events": []
+        },
+        {
+          "speaker": "customer",
+          "text": "ユニクロにいきたいです",
+          "segments": [],
+          "duration": 0.0
+        },
+        {
+          "speaker": "staff",
+          "segments": [
+            {
+              "type": "sentence",
+              "text": "ユニクロならあちら側です。",
+              "duration": 1.5,
+              "voice": {
+                "controls": {
+                  "friendly": 1.0,
+                  "reliable": 1.0,
+                  "calm": 1.0,
+                  "tension": 1.0,
+                  "impatience": 1.0,
+                  "sorry": 1.0,
+                  "energetic": 1.0
+                },
+                "params": {
+                  "volume": 1.3,
+                  "rate": 1.0,
+                  "pitch": 1.0,
+                  "emphasis": 1.0,
+                  "joy": 0.0,
+                  "anger": 0.0,
+                  "sadness": 0.0
+                },
+                "tts_instructions": {
+                  "tts_volume": 1.3,
+                  "tts_rate": 1.0,
+                  "tts_pitch": 1.0,
+                  "tts_emphasis": 1.0,
+                  "tts_emo_joy": 0.0,
+                  "tts_emo_angry": 0.0,
+                  "tts_emo_sad": 0.0
+                }
+              }
+            }
+          ],
+          "duration": 1.5,
+          "events": []
+        },
+        {
+          "speaker": "customer",
+          "text": "ありがとうございます",
+          "segments": [],
+          "duration": 0.0
+        },
+        {
+          "speaker": "staff",
+          "segments": [
+            {
+              "type": "sentence",
+              "text": "気をつけて、いってらっしゃい",
+              "duration": 1.9000000000000001,
+              "voice": {
+                "controls": {
+                  "friendly": 1.0,
+                  "reliable": 1.0,
+                  "calm": 1.0,
+                  "tension": 1.0,
+                  "impatience": 1.0,
+                  "sorry": 1.0,
+                  "energetic": 1.0
+                },
+                "params": {
+                  "volume": 1.3,
+                  "rate": 1.0,
+                  "pitch": 1.0,
+                  "emphasis": 1.0,
+                  "joy": 0.0,
+                  "anger": 0.0,
+                  "sadness": 0.0
+                },
+                "tts_instructions": {
+                  "tts_volume": 1.3,
+                  "tts_rate": 1.0,
+                  "tts_pitch": 1.0,
+                  "tts_emphasis": 1.0,
+                  "tts_emo_joy": 0.0,
+                  "tts_emo_angry": 0.0,
+                  "tts_emo_sad": 0.0
+                }
+              }
+            }
+          ],
+          "duration": 1.9,
+          "events": []
+        }
+      ],
+      "default_face": {
+        "id": "emotion_neutral",
+        "label": "ニュートラル",
+        "groups": [],
+        "axes": {},
+        "command": {
+          "type": "emotion",
+          "emotion": "neutral",
+          "level": 1,
+          "priority": 5,
+          "keeptime": 3000,
+          "text": "/emotion neutral 1 5 3000"
+        }
+      }
+    },
+    "hotel_dirty_bed": {
+      "scenario_title": "謝罪系: ベッドが汚れていた",
+      "conversation_type_id": "hotel_dirty_bed",
+      "conversation_intent": "apology",
+      "default_face_label": "ニュートラル",
+      "utterances": []
+    },
+    "hotel_checkout": {
+      "scenario_title": "感謝系: チェックアウト",
+      "conversation_type_id": "hotel_checkout",
+      "conversation_intent": "gratitude",
+      "default_face_label": "ニュートラル",
+      "utterances": []
+    },
+    "hotel_sightseeing": {
+      "scenario_title": "質問系: 近くの観光スポット",
+      "conversation_type_id": "hotel_sightseeing",
+      "conversation_intent": "question",
+      "default_face_label": "ニュートラル",
+      "utterances": []
+    }
+  },
+  "active_scene_id": "hotel_checkin",
+  "conversation_type_id": "hotel_checkin",
+  "conversation_intent": "explanation",
+  "default_face_label": "ニュートラル",
+  "default_face": {
+    "id": "emotion_neutral",
+    "label": "ニュートラル",
+    "groups": [],
+    "axes": {},
+    "command": {
+      "type": "emotion",
+      "emotion": "neutral",
+      "level": 1,
+      "priority": 5,
+      "keeptime": 3000,
+      "text": "/emotion neutral 1 5 3000"
+    }
+  }
+}

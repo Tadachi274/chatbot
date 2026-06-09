@@ -23,12 +23,13 @@ VOICE_PARAM_LABELS = {
 
 
 class VoiceEditorPanel(tk.Frame):
-    def __init__(self, parent, initial_data=None, on_changed=None):
+    def __init__(self, parent, initial_data=None, on_changed=None, previous_voice_data=None):
         super().__init__(parent, bg=ui.COLORS["panel"])
 
-        data = initial_data or default_voice_data()
-        controls = data.get("controls", {})
-        params = data.get("params", {})
+        self.previous_voice_data = previous_voice_data
+        data = self.normalize_voice_data(initial_data)
+        controls = data["controls"]
+        params = data["params"]
 
         self.on_changed = on_changed
         self._loading = False
@@ -49,6 +50,13 @@ class VoiceEditorPanel(tk.Frame):
         self.attach_traces()
         self.update_labels(notify=False)
 
+    def normalize_voice_data(self, data):
+        normalized = default_voice_data()
+        data = data or {}
+        normalized["controls"].update(data.get("controls", {}))
+        normalized["params"].update(data.get("params", {}))
+        return normalized
+
     def build_ui(self):
         header = ui.frame(self, bg="panel")
         header.pack(fill="x", pady=(0, ui.SPACING["small_gap"]))
@@ -57,6 +65,10 @@ class VoiceEditorPanel(tk.Frame):
         ui.sub_button(header, text="抽象値を反映", command=self.apply_abstract_controls).pack(
             side="right", padx=(0, ui.SPACING["small_gap"])
         )
+        if self.previous_voice_data is not None:
+            ui.sub_button(header, text="一つ前の声質を反映", command=self.apply_previous_voice).pack(
+                side="right", padx=(0, ui.SPACING["small_gap"])
+            )
 
         card = ui.bordered_frame(self, bg="card", border="border")
         card.pack(fill="x")
@@ -136,6 +148,29 @@ class VoiceEditorPanel(tk.Frame):
             self.energetic.set(1.0)
             for key, value in VOICE_BASE_PARAMS.items():
                 self.param_vars[key].set(float(value))
+        finally:
+            self._loading = False
+        self.update_labels()
+
+    def apply_previous_voice(self):
+        if self.previous_voice_data is None:
+            return
+
+        data = self.normalize_voice_data(self.previous_voice_data)
+        controls = data["controls"]
+        params = data["params"]
+        self._loading = True
+        try:
+            self.friendly.set(float(controls.get("friendly", 1.0)))
+            self.reliable.set(float(controls.get("reliable", 1.0)))
+            self.calm.set(float(controls.get("calm", 1.0)))
+            self.tension.set(float(controls.get("tension", 1.0)))
+            self.impatience.set(float(controls.get("impatience", 1.0)))
+            self.sorry.set(float(controls.get("sorry", 1.0)))
+            self.energetic.set(float(controls.get("energetic", 1.0)))
+            for key, value in params.items():
+                if key in self.param_vars:
+                    self.param_vars[key].set(float(value))
         finally:
             self._loading = False
         self.update_labels()

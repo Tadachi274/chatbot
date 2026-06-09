@@ -4,6 +4,7 @@ import time
 import re
 import shutil
 import json
+import base64
 import urllib.error
 import urllib.request
 from datetime import datetime
@@ -15,22 +16,28 @@ from ..config import (
     TTS_GENERATED_WAV_DIR,
     get_robot_tts_play_audio_url,
     get_robot_tts_prepare_url,
+    get_robot_tts_upload_url,
     get_robot_tts_play_url,
+    get_tts_engine,
     get_tts_playback_target,
+    set_tts_engine,
     get_tts_url,
     set_tts_playback_target,
 )
 from ...tts import tts_nikola_data as tts
 from ...tts.tts_audioplayer import AudioPlayer
 from ..audio.wav_silence import trim_silence_to_temp_wav
+from . import openai_tts
 
 class TTSClient:
     def __init__(self, url=None):
         self.url = url or get_tts_url()
+        self.tts_engine = get_tts_engine()
         self.playback_target = get_tts_playback_target()
         self.robot_play_url = get_robot_tts_play_url()
         self.robot_prepare_url = get_robot_tts_prepare_url()
         self.robot_play_audio_url = get_robot_tts_play_audio_url()
+        self.robot_upload_url = get_robot_tts_upload_url()
 
         # UIで使うWAVプレビュー用。
         # 事前音声は消したくないので autoremove=False
@@ -44,6 +51,10 @@ class TTSClient:
         self.robot_play_url = get_robot_tts_play_url()
         self.robot_prepare_url = get_robot_tts_prepare_url()
         self.robot_play_audio_url = get_robot_tts_play_audio_url()
+        self.robot_upload_url = get_robot_tts_upload_url()
+
+    def set_tts_engine(self, engine: str):
+        self.tts_engine = set_tts_engine(engine)
 
     def is_robot_playback(self):
         return self.playback_target == "robot"
@@ -67,6 +78,16 @@ class TTSClient:
                 person=resolved_person,
             )
 
+        if self.tts_engine == "openai":
+            thread = threading.Thread(
+                target=self._openai_speak_local,
+                args=(text, merged),
+                name="OpenAITTSSpeak",
+                daemon=True,
+            )
+            thread.start()
+            return thread
+
         if resolved_person is None:
             return tts.speak_async(
                 text=text,
@@ -82,6 +103,16 @@ class TTSClient:
         )
 
     def speak_on_robot(self, text: str, instructions: dict, person: str | None):
+        if self.tts_engine == "openai":
+            thread = threading.Thread(
+                target=self._openai_speak_on_robot,
+                args=(text, instructions, person),
+                name="OpenAIRobotTTSSpeak",
+                daemon=True,
+            )
+            thread.start()
+            return thread
+
         thread = threading.Thread(
             target=self._post_robot_speak,
             args=(text, instructions, person),
@@ -112,6 +143,25 @@ class TTSClient:
         except Exception as e:
             print(f"[TTSClient] robot speak failed url={self.robot_play_url}: {e}")
 
+    def _openai_speak_on_robot(self, text: str, instructions: dict, person: str | None):
+        try:
+            remote = self.prepare_remote_audio(text=text, instructions=instructions, person=person)
+            duration = float(remote.get("duration", 0.0))
+            self.play_remote_audio(
+                remote["audio_id"],
+                wait=False,
+                timeout=max(5.0, duration + 5.0),
+            )
+        except Exception as e:
+            print(f"[TTSClient] robot OpenAI speak failed url={self.robot_upload_url}: {e}")
+
+    def _openai_speak_local(self, text: str, instructions: dict):
+        try:
+            wav_path = openai_tts.synthesize_to_wav(text=text, instructions=instructions)
+            self.preview_player.play_later(wav_path)
+        except Exception as e:
+            print(f"[TTSClient] local OpenAI speak failed: {e}")
+
     def prepare_remote_audio(self, text: str, instructions: dict | None = None, person: str | None = None):
         text = text.strip()
         if not text:
@@ -122,6 +172,15 @@ class TTSClient:
             **(instructions or {}),
         }
         resolved_person = person or merged.get("tts_speaker_change") or tts.DEFAULT_PERSON
+        if self.tts_engine == "openai":
+            wav_path = self.synthesize_to_wav(text=text, instructions=merged, person=resolved_person)
+            return self.upload_remote_audio(
+                wav_path=wav_path,
+                text=text,
+                instructions=merged,
+                person=resolved_person,
+            )
+
         payload = {
             "text": text,
             "instructions": merged,
@@ -129,6 +188,18 @@ class TTSClient:
             "tts_url": self.url,
         }
         return self._post_json(self.robot_prepare_url, payload, timeout=60)
+
+    def upload_remote_audio(self, wav_path: Path, text: str, instructions: dict, person: str | None):
+        wav_path = Path(wav_path)
+        payload = {
+            "text": text,
+            "instructions": instructions,
+            "person": person or tts.DEFAULT_PERSON,
+            "engine": self.tts_engine,
+            "filename": wav_path.name,
+            "audio_base64": base64.b64encode(wav_path.read_bytes()).decode("ascii"),
+        }
+        return self._post_json(self.robot_upload_url, payload, timeout=60)
 
     def play_remote_audio(self, audio_id: str, wait: bool = True, timeout: float | None = None):
         payload = {
@@ -198,10 +269,17 @@ class TTSClient:
             instructions=merged,
             url=self.url,
             person=resolved_person,
+        ) if self.tts_engine != "openai" else openai_tts.synthesize_to_wav(
+            text=text,
+            instructions=merged,
+            output_dir=output_dir,
         )
 
         if output_dir is None:
             return wav_path
+
+        if self.tts_engine == "openai":
+            return Path(wav_path)
 
         return self.move_generated_wav(wav_path, text, resolved_person, output_dir)
 

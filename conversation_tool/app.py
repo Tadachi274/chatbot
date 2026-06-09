@@ -4,19 +4,29 @@ import tkinter as tk
 from tkinter import ttk, filedialog, messagebox
 
 from . import ui_style as ui
-from .config import FACE_EXPRESSION_OPTIONS, SAVE_DIR, SCENARIO_OPTIONS, default_face_data, face_axis_commands
+from .config import (
+    FACE_EXPRESSION_OPTIONS,
+    SAVE_DIR,
+    SCENARIO_OPTIONS,
+    SMILE_COMPATIBLE_EMOTIONS,
+    default_face_data,
+    face_axis_commands,
+)
 from .panels.face_axis_editor_panel import FaceAxisEditorPanel
 from .scenario_store import ScenarioStore
 from .tabs.editor_tab import ConversationEditorTab
 from .tabs.robot_run_tab import RobotRunTab
 from ..robot_style_editor.config import (
+    MIC_SILENCE_HOLD_SEC_DEFAULT,
     apply_robot_command_environment,
     apply_robot_tts_environment,
     get_default_mic_activity_mode,
     get_robot_tcp_config,
     get_robot_tts_play_url,
+    get_tts_engine,
     get_tts_playback_target,
     set_mic_activity_mode,
+    set_tts_engine,
     set_tts_playback_target,
 )
 
@@ -33,7 +43,9 @@ class ConversationToolApp(tk.Tk):
 
         self.status_var = tk.StringVar(value="ユーザーとシナリオを選択してください")
         self.tts_playback_var = tk.StringVar(value=get_tts_playback_target())
+        self.tts_engine_var = tk.StringVar(value=get_tts_engine())
         self.mic_activity_var = tk.StringVar(value=get_default_mic_activity_mode())
+        self.mic_silence_hold_var = tk.DoubleVar(value=float(MIC_SILENCE_HOLD_SEC_DEFAULT))
         self.apply_initial_runtime_choices()
         self.new_user_var = tk.StringVar()
         self.new_scenario_var = tk.StringVar(value=SCENARIO_OPTIONS[0]["label"])
@@ -45,6 +57,9 @@ class ConversationToolApp(tk.Tk):
         self.demo_tts_client = None
         self.demo_robot_client = None
         self.demo_axis_base_var = tk.StringVar(value="ニュートラル")
+        self.demo_face_keepalive_after_id = None
+        self.demo_face_keepalive_data = None
+        self.demo_face_keepalive_active = False
         self.notebook = None
         self.main_area = None
         self.selector_area = None
@@ -110,6 +125,26 @@ class ConversationToolApp(tk.Tk):
             bg="main_card",
         ).pack(side="left")
 
+        engine_frame = ui.frame(footer, bg="main_card")
+        engine_frame.pack(side="right", padx=(ui.SPACING["gap"], 0))
+        ui.label(engine_frame, text="TTS", font="small", bg="main_card", fg="sub_text").pack(side="left")
+        ui.radio(
+            engine_frame,
+            text="日本語",
+            variable=self.tts_engine_var,
+            value="aitalk",
+            command=self.on_tts_engine_changed,
+            bg="main_card",
+        ).pack(side="left")
+        ui.radio(
+            engine_frame,
+            text="English",
+            variable=self.tts_engine_var,
+            value="openai",
+            command=self.on_tts_engine_changed,
+            bg="main_card",
+        ).pack(side="left")
+
         mic_frame = ui.frame(footer, bg="main_card")
         mic_frame.pack(side="right", padx=(ui.SPACING["gap"], 0))
         ui.label(mic_frame, text="検出", font="small", bg="main_card", fg="sub_text").pack(side="left")
@@ -129,6 +164,27 @@ class ConversationToolApp(tk.Tk):
             command=self.on_mic_activity_changed,
             bg="main_card",
         ).pack(side="left")
+        ui.label(mic_frame, text="終了秒", font="small", bg="main_card", fg="sub_text").pack(
+            side="left", padx=(ui.SPACING["small_gap"], 0)
+        )
+        silence_spin = tk.Spinbox(
+            mic_frame,
+            from_=0.2,
+            to=1.0,
+            increment=0.1,
+            textvariable=self.mic_silence_hold_var,
+            command=self.on_mic_silence_hold_changed,
+            width=4,
+            format="%.1f",
+            font=ui.FONTS["small"],
+            bg=ui.COLORS["card"],
+            fg=ui.COLORS["text"],
+            relief="solid",
+            bd=1,
+        )
+        silence_spin.pack(side="left", padx=(ui.SPACING["small_gap"], 0))
+        silence_spin.bind("<Return>", lambda _event=None: self.on_mic_silence_hold_changed())
+        silence_spin.bind("<FocusOut>", lambda _event=None: self.on_mic_silence_hold_changed())
 
     def on_tts_playback_changed(self):
         target = set_tts_playback_target(self.tts_playback_var.get())
@@ -146,6 +202,19 @@ class ConversationToolApp(tk.Tk):
             url_note = f" / {get_robot_tts_play_url()} / cmd {tcp['host']}:{tcp['port']}"
         self.status_var.set(f"音声再生先を{label}にしました{url_note}")
 
+    def on_tts_engine_changed(self):
+        engine = set_tts_engine(self.tts_engine_var.get())
+        self.tts_engine_var.set(engine)
+        if self.run_tab is not None:
+            self.run_tab.set_tts_engine(engine)
+        if self.editor_tab is not None:
+            self.editor_tab.set_tts_engine(engine)
+        if self.demo_tts_client is not None:
+            self.demo_tts_client.set_tts_engine(engine)
+        label = "English(OpenAI)" if engine == "openai" else "日本語(AIトーク)"
+        suffix = "。OPENAI_API_KEY が必要です" if engine == "openai" else ""
+        self.status_var.set(f"TTSを{label}にしました{suffix}")
+
     def on_mic_activity_changed(self):
         mode = set_mic_activity_mode(self.mic_activity_var.get())
         self.mic_activity_var.set(mode)
@@ -155,6 +224,23 @@ class ConversationToolApp(tk.Tk):
         label = "Macマイク" if mode == "mic" else "ロボットact"
         suffix = "" if refreshed else "。実演中のため次回から反映します"
         self.status_var.set(f"発話検出を{label}にしました{suffix}")
+
+    def get_mic_silence_hold_sec(self):
+        try:
+            value = float(self.mic_silence_hold_var.get())
+        except (tk.TclError, ValueError):
+            value = float(MIC_SILENCE_HOLD_SEC_DEFAULT)
+        value = max(0.2, min(1.0, round(value, 1)))
+        self.mic_silence_hold_var.set(value)
+        return value
+
+    def on_mic_silence_hold_changed(self):
+        value = self.get_mic_silence_hold_sec()
+        refreshed = True
+        if self.run_tab is not None:
+            refreshed = self.run_tab.refresh_mic_activity_mode()
+        suffix = "" if refreshed else "。実演中のため次回から反映します"
+        self.status_var.set(f"発話終わり判定を{value:.1f}秒にしました{suffix}")
 
     def reset_robot_clients(self):
         if self.run_tab is not None:
@@ -271,12 +357,55 @@ class ConversationToolApp(tk.Tk):
         card = ui.bordered_frame(parent, bg="card", border="accent")
         card.pack(fill="x", padx=ui.SPACING["page_x"], pady=(0, ui.SPACING["gap"]))
 
-        ui.label(card, text="ニコラでできること", font="section_title", bg="card").pack(
+        ui.label(card, text="話し方を比べる", font="section_title", bg="card").pack(
             anchor="w", padx=ui.SPACING["card_x"], pady=(ui.SPACING["card_y"], ui.SPACING["small_gap"])
         )
 
         rows = ui.frame(card, bg="card")
         rows.pack(fill="x", padx=ui.SPACING["card_x"], pady=(0, ui.SPACING["card_y"]))
+
+        greeting_row = ui.frame(rows, bg="card")
+        greeting_row.pack(fill="x")
+        ui.label(greeting_row, text="いらっしゃいませ", font="small", bg="card", fg="sub_text", width=14, anchor="w").pack(
+            side="left"
+        )
+        ui.sub_button(
+            greeting_row,
+            text="ニュートラル",
+            command=lambda: self.demo_greeting_style(
+                label="ニュートラル",
+                face=("neutral", None),
+                instructions={},
+            ),
+        ).pack(side="left", padx=(0, ui.SPACING["small_gap"]))
+        ui.sub_button(
+            greeting_row,
+            text="ゆっくり",
+            command=lambda: self.demo_greeting_style(
+                label="ゆっくり",
+                face=("neutral", None),
+                instructions={"tts_rate": 0.8},
+            ),
+        ).pack(side="left", padx=(0, ui.SPACING["small_gap"]))
+        ui.sub_button(
+            greeting_row,
+            text="柔らかく笑顔あり",
+            command=lambda: self.demo_greeting_style(
+                label="柔らかく笑顔あり",
+                face=("WarmSmile", 2),
+                instructions={
+                    "tts_rate": 0.9,
+                    "tts_pitch": 1.05,
+                    "tts_emo_joy": 0.35,
+                    "tts_emphasis": 0.9,
+                },
+            ),
+        ).pack(side="left")
+
+        separator = tk.Frame(rows, height=1, bg=ui.COLORS["soft_border"])
+        separator.pack(fill="x", pady=ui.SPACING["small_gap"])
+
+        ui.label(rows, text="部品ごとに試す", font="body_bold", bg="card").pack(anchor="w", pady=(0, ui.SPACING["small_gap"]))
 
         speech_row = ui.frame(rows, bg="card")
         speech_row.pack(fill="x", pady=(0, ui.SPACING["small_gap"]))
@@ -333,6 +462,7 @@ class ConversationToolApp(tk.Tk):
 
             self.demo_tts_client = TTSClient()
         self.demo_tts_client.set_playback_target("robot")
+        self.demo_tts_client.set_tts_engine(self.tts_engine_var.get())
         if self.demo_robot_client is None:
             from ..robot_style_editor.clients.robot_command_client import RobotCommandClient
 
@@ -347,11 +477,27 @@ class ConversationToolApp(tk.Tk):
         except Exception as exc:
             self.status_var.set(f"デモ発話エラー: {exc}")
 
+    def demo_greeting_style(self, label, face, instructions):
+        try:
+            tts_client, robot = self.ensure_demo_runtime()
+            emotion, level = face
+            command = "/emotion neutral 1 5 3000" if level is None else f"/emotion {emotion} {int(level)} 3 3000"
+            print(f"[DEMO GREETING] {label}: {command}", flush=True)
+            if level is None or emotion not in SMILE_COMPATIBLE_EMOTIONS:
+                robot.send("/smile end")
+            robot.send(command)
+            tts_client.speak(text="いらっしゃいませ", instructions=instructions)
+            self.status_var.set(f"話し方デモを再生します: {label}")
+        except Exception as exc:
+            self.status_var.set(f"話し方デモエラー: {exc}")
+
     def demo_emotion(self, emotion, level):
         try:
             _tts_client, robot = self.ensure_demo_runtime()
-            command = "/emotion neutral" if level is None else f"/emotion {emotion} {int(level)} 3 3000"
+            command = "/emotion neutral 1 5 3000" if level is None else f"/emotion {emotion} {int(level)} 3 3000"
             print(f"[DEMO FACE] {command}", flush=True)
+            if level is None or emotion not in SMILE_COMPATIBLE_EMOTIONS:
+                robot.send("/smile end")
             robot.send(command)
             label = emotion if level is None else f"{emotion} {level}"
             self.status_var.set(f"表情デモを送信しました: {label}")
@@ -388,7 +534,13 @@ class ConversationToolApp(tk.Tk):
 
         actions = ui.frame(body, bg="main_card")
         actions.pack(side="bottom", fill="x", pady=(ui.SPACING["section_y"], 0))
-        ui.sub_button(actions, text="閉じる", command=dialog.destroy).pack(side="left")
+
+        def close_dialog():
+            self.stop_demo_face_keepalive()
+            dialog.destroy()
+
+        dialog.protocol("WM_DELETE_WINDOW", close_dialog)
+        ui.sub_button(actions, text="閉じる", command=close_dialog).pack(side="left")
 
         panel_area = ui.scrollable_frame(body, bg="main_card")
         panel = FaceAxisEditorPanel(
@@ -397,8 +549,14 @@ class ConversationToolApp(tk.Tk):
             on_changed=self.demo_preview_face_axes,
         )
         panel.pack(fill="x")
+        ui.sub_button(
+            actions,
+            text="ニュートラルから見る",
+            command=lambda: self.demo_preview_face_from_neutral(panel.get_data()),
+        ).pack(side="right")
 
         self.demo_send_axis_base_face()
+        self.demo_face_keepalive_active = True
         self.status_var.set("笑顔の軸調整デモを開きました")
 
     def demo_send_axis_base_face(self):
@@ -406,17 +564,76 @@ class ConversationToolApp(tk.Tk):
         self.demo_send_face_data(face, keeptime=3000, label="基準表情")
 
     def demo_preview_face_axes(self, face_data, force=False, changed_axes=None):
+        self.update_demo_face_keepalive(face_data)
         self.demo_send_face_data(face_data, keeptime=3000, label="笑顔の軸調整", changed_axes=changed_axes)
+
+    def demo_preview_face_from_neutral(self, face_data):
+        import copy
+
+        self.stop_demo_face_keepalive()
+        self.demo_emotion("neutral", None)
+        self.status_var.set("ニュートラルに戻してから笑顔の軸調整を送ります")
+        delay_ms = 4000 if face_data.get("command", {}).get("type") != "emotion" else 2000
+        self.after(delay_ms, lambda data=copy.deepcopy(face_data): self.demo_preview_face_after_neutral(data))
+
+    def demo_preview_face_after_neutral(self, face_data):
+        self.demo_face_keepalive_active = True
+        self.update_demo_face_keepalive(face_data)
+        self.demo_send_face_data(face_data, keeptime=3000, label="笑顔の軸調整", changed_axes=None)
+
+    def update_demo_face_keepalive(self, face_data):
+        if not self.demo_face_keepalive_active:
+            return
+        if face_data.get("command", {}).get("type") == "emotion":
+            return
+        import copy
+
+        self.demo_face_keepalive_data = copy.deepcopy(face_data)
+        if self.demo_face_keepalive_after_id is None:
+            self.demo_face_keepalive_after_id = self.after(2800, self.send_demo_face_keepalive)
+
+    def send_demo_face_keepalive(self):
+        self.demo_face_keepalive_after_id = None
+        if not self.demo_face_keepalive_active or self.demo_face_keepalive_data is None:
+            return
+        self.demo_send_face_data(
+            self.demo_face_keepalive_data,
+            keeptime=3000,
+            label="笑顔の軸調整 維持",
+            changed_axes=None,
+        )
+        if self.demo_face_keepalive_active and self.demo_face_keepalive_data is not None:
+            self.demo_face_keepalive_after_id = self.after(2800, self.send_demo_face_keepalive)
+
+    def stop_demo_face_keepalive(self):
+        self.demo_face_keepalive_active = False
+        self.demo_face_keepalive_data = None
+        if self.demo_face_keepalive_after_id is not None:
+            try:
+                self.after_cancel(self.demo_face_keepalive_after_id)
+            except Exception:
+                pass
+            self.demo_face_keepalive_after_id = None
 
     def demo_send_face_data(self, face_data, keeptime=3000, label="表情", changed_axes=None):
         try:
             _tts_client, robot = self.ensure_demo_runtime()
             command = face_data.get("command", {})
+            if command.get("type") == "smile":
+                level = int(command.get("level", 2))
+                priority = int(command.get("priority", 3))
+                command_text = f"/smile start {level} {priority} {int(keeptime)}"
+                print(f"[DEMO FACE] {label}: {command_text}", flush=True)
+                robot.send(command_text)
+                return
             if command.get("type") == "emotion":
+                emotion = command.get("emotion", "neutral")
+                if emotion not in SMILE_COMPATIBLE_EMOTIONS:
+                    print("[DEMO FACE] smile end: /smile end", flush=True)
+                    robot.send("/smile end")
                 if command.get("emotion") == "neutral":
-                    command_text = command.get("text", "/emotion neutral")
+                    command_text = command.get("text", "/emotion neutral 1 5 3000")
                 else:
-                    emotion = command.get("emotion", "neutral")
                     level = int(command.get("level", 1))
                     priority = int(command.get("priority", 3))
                     command_text = f"/emotion {emotion} {level} {priority} {int(keeptime)}"
@@ -436,6 +653,7 @@ class ConversationToolApp(tk.Tk):
                 return
             axis_summary = ", ".join(f"{cmd['axis']}={cmd['value']}" for cmd in commands)
             print(f"[DEMO FACE] {label}: axes({axis_summary})", flush=True)
+            robot.send("/smile end")
             for command in commands:
                 robot.send_face_axis(
                     axis=str(command["axis"]),
@@ -560,11 +778,14 @@ class ConversationToolApp(tk.Tk):
             store=self.store,
             status_var=self.status_var,
             on_try_robot=self.open_robot_run_tab,
+            get_tts_engine=lambda: self.tts_engine_var.get(),
         )
         self.run_tab = RobotRunTab(
             self.notebook,
             get_turns=self.editor_tab.scenario_turns,
             status_var=self.status_var,
+            get_mic_silence_hold_sec=self.get_mic_silence_hold_sec,
+            get_tts_engine=lambda: self.tts_engine_var.get(),
         )
 
         self.notebook.add(self.editor_tab, text="会話設定")

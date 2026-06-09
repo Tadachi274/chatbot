@@ -103,8 +103,8 @@ PERSON = [
     "kenta_emo_22_standard",
     "maki_emo_22_standard",
     "shiori_emo_22_standard",
-    # "yamato_22_kansai",
-    # "miyabi_22_kansai",
+    "yamato_22_kansai",
+    "miyabi_22_kansai",
 ]
 
 NOD_AMPLITUDES = {
