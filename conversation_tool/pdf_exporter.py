@@ -35,7 +35,7 @@ def build_export_rows(utterances):
         if speaker == SPEAKER_CUSTOMER:
             text = customer_text(utterance)
             if text:
-                rows.append(("客", [text]))
+                rows.append(("自分", [text]))
             continue
 
         if speaker != SPEAKER_STAFF:
@@ -47,7 +47,7 @@ def build_export_rows(utterances):
             lines.append(text)
         lines.extend(staff_event_lines(utterance))
         if lines:
-            rows.append(("店員", lines))
+            rows.append(("ロボ", lines))
     return rows
 
 
@@ -136,7 +136,7 @@ def load_font(ImageFont, font_path, size):
 def make_layout(rows, content_width, font, bold, Image, ImageDraw):
     scratch = Image.new("RGB", (10, 10), "white")
     draw = ImageDraw.Draw(scratch)
-    label_width = max(int(content_width * 0.13), int(text_width(draw, "店員", bold) + 22))
+    label_width = max(int(content_width * 0.13), int(text_width(draw, "自分", bold) + 22))
     text_width_limit = content_width - label_width - 28
     row_gap = 8
     line_gap = 5
@@ -193,7 +193,7 @@ def draw_page(layout, width, height, margin, font, bold, Image, ImageDraw, trunc
                 draw.text((x, max_y - line_height), "以下省略", fill="#6b7280", font=font)
             break
 
-        label_fill = "#e0f2fe" if row["speaker"] == "店員" else "#fef3c7"
+        label_fill = "#e0f2fe" if row["speaker"] == "ロボ" else "#dcfce7"
         draw.rectangle((x, y, x + content_width, y + row_height), fill="#ffffff", outline="#cbd5e1", width=1)
         draw.rectangle((x, y, x + label_width, y + row_height), fill=label_fill, outline="#cbd5e1", width=1)
         draw.text((x + 10, y + 10), row["speaker"], fill="#111827", font=bold)

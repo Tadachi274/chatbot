@@ -7,6 +7,16 @@ DEFAULT_SCENARIO_PATH = SAVE_DIR / "conversation_scenario.json"
 
 SCENARIO_OPTIONS = [
     {
+        "id": "direction_guidance",
+        "label": "道案内",
+        "default_title": "道案内",
+    },
+    {
+        "id": "housework",
+        "label": "家事",
+        "default_title": "家事",
+    },
+    {
         "id": "luxury_hotel",
         "label": "高級ホテル",
         "default_title": "高級ホテルの接客",
@@ -24,6 +34,20 @@ SCENARIO_OPTIONS = [
 ]
 
 CONVERSATION_SCENE_OPTIONS_BY_SCENARIO = {
+    "direction_guidance": [
+        {
+            "id": "direction_guidance_main",
+            "label": "道案内",
+            "intent": "explanation",
+        },
+    ],
+    "housework": [
+        {
+            "id": "housework_main",
+            "label": "家事",
+            "intent": "explanation",
+        },
+    ],
     "luxury_hotel": [
         {
             "id": "hotel_checkin",
@@ -96,7 +120,7 @@ CONVERSATION_SCENE_OPTIONS_BY_SCENARIO = {
 def conversation_scene_options(scenario_id):
     return CONVERSATION_SCENE_OPTIONS_BY_SCENARIO.get(
         scenario_id,
-        CONVERSATION_SCENE_OPTIONS_BY_SCENARIO["luxury_hotel"],
+        CONVERSATION_SCENE_OPTIONS_BY_SCENARIO["direction_guidance"],
     )
 
 DEFAULT_UTTERANCE_DURATION = 3.0
@@ -324,6 +348,12 @@ FACE_EXPRESSION_DEFINITIONS = {
                 "axes": ["34"],
                 "default": 128,
             },
+            {
+                "id": "face_rotation",
+                "label": "顔の向き",
+                "axes": ["35"],
+                "default": 128,
+            },
         ],
     },
     "neutral": {
@@ -436,8 +466,8 @@ SPEAKER_STAFF = "staff"
 SPEAKER_CUSTOMER = "customer"
 
 SPEAKER_LABELS = {
-    SPEAKER_STAFF: "店員発話",
-    SPEAKER_CUSTOMER: "客発話",
+    SPEAKER_STAFF: "ロボ発話",
+    SPEAKER_CUSTOMER: "自分発話",
 }
 
 STAFF_EVENT_LANES = [
@@ -451,7 +481,7 @@ STAFF_EVENT_LANES = [
         "id": "gaze",
         "label": "視線",
         "options": [
-            "客の方",
+            "自分の方",
             "上",
             "下",
             "右",
@@ -462,7 +492,7 @@ STAFF_EVENT_LANES = [
             "左下",
             "正面",
         ],
-        "default": "客の方",
+        "default": "自分の方",
     },
     {
         "id": "nod",

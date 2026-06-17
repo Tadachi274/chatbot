@@ -235,12 +235,12 @@ class ConversationEditorTab(tk.Frame):
         header = ui.frame(main, bg="main_card")
         header.pack(fill="x", padx=ui.SPACING["page_x"], pady=(ui.SPACING["page_y"], ui.SPACING["gap"]))
 
-        ui.label(header, text="シナリオ", font="app_title", bg="main_card").pack(side="left")
+        ui.label(header, text="会話場面", font="app_title", bg="main_card").pack(side="left")
         type_combo = ttk.Combobox(
             header,
             textvariable=self.type_var,
             values=[option["label"] for option in self.scene_options],
-            state="readonly",
+            state="disabled" if len(self.scene_options) == 1 else "readonly",
             width=32,
         )
         type_combo.pack(side="left", padx=(ui.SPACING["gap"], ui.SPACING["section_y"]))
@@ -260,10 +260,10 @@ class ConversationEditorTab(tk.Frame):
             side="left", padx=(0, ui.SPACING["section_y"])
         )
 
-        ui.sub_button(header, text="店員発話を追加", command=lambda: self.add_utterance(SPEAKER_STAFF, position="top")).pack(
+        ui.sub_button(header, text="ロボ発話を追加", command=lambda: self.add_utterance(SPEAKER_STAFF, position="top")).pack(
             side="left", padx=(0, ui.SPACING["small_gap"])
         )
-        ui.sub_button(header, text="客発話を追加", command=lambda: self.add_utterance(SPEAKER_CUSTOMER, position="top")).pack(
+        ui.sub_button(header, text="自分発話を追加", command=lambda: self.add_utterance(SPEAKER_CUSTOMER, position="top")).pack(
             side="left", padx=(0, ui.SPACING["small_gap"])
         )
         ui.action_button(header, text="保存", command=self.save).pack(side="right")
@@ -295,10 +295,10 @@ class ConversationEditorTab(tk.Frame):
 
         add_row = ui.frame(self.timeline_content, bg="main_card")
         add_row.pack(fill="x", pady=(ui.SPACING["gap"], ui.SPACING["section_y"]))
-        ui.sub_button(add_row, text="+ 店員発話", command=lambda: self.add_utterance(SPEAKER_STAFF, position="bottom")).pack(
+        ui.sub_button(add_row, text="+ ロボ発話", command=lambda: self.add_utterance(SPEAKER_STAFF, position="bottom")).pack(
             side="left", padx=(0, ui.SPACING["small_gap"])
         )
-        ui.sub_button(add_row, text="+ 客発話", command=lambda: self.add_utterance(SPEAKER_CUSTOMER, position="bottom")).pack(side="left")
+        ui.sub_button(add_row, text="+ 自分発話", command=lambda: self.add_utterance(SPEAKER_CUSTOMER, position="bottom")).pack(side="left")
 
 
     def render_utterance_card(self, index, utterance):
@@ -330,14 +330,14 @@ class ConversationEditorTab(tk.Frame):
             side="right", padx=(0, ui.SPACING["card_x"]), pady=ui.SPACING["small_gap"]
         )
         if is_staff:
-            ui.sub_button(head, text="この発話を試す", command=lambda i=index: self.try_staff_utterances([i])).pack(
+            ui.sub_button(head, text="このロボ発話を試す", command=lambda i=index: self.try_staff_utterances([i])).pack(
                 side="right", padx=(0, ui.SPACING["small_gap"]), pady=ui.SPACING["small_gap"]
             )
             consecutive_indices = self.consecutive_staff_indices(index)
             if len(consecutive_indices) > 1:
                 ui.sub_button(
                     head,
-                    text="連続店員を試す",
+                    text="連続ロボ発話を試す",
                     command=lambda indices=consecutive_indices: self.try_staff_utterances(indices),
                 ).pack(side="right", padx=(0, ui.SPACING["small_gap"]), pady=ui.SPACING["small_gap"])
 
@@ -1617,11 +1617,11 @@ class ConversationEditorTab(tk.Frame):
                 turns.append(turn)
 
         if not turns:
-            messagebox.showwarning("確認", "試す店員発話がありません")
+            messagebox.showwarning("確認", "試すロボ発話がありません")
             return
 
         path = self.store.save()
-        label = f"店員発話 {indices[0] + 1}" if len(turns) == 1 else f"店員発話 {indices[0] + 1}-{indices[-1] + 1}"
+        label = f"ロボ発話 {indices[0] + 1}" if len(turns) == 1 else f"ロボ発話 {indices[0] + 1}-{indices[-1] + 1}"
         self.status_var.set(f"保存しました: {path.name}")
         if self.on_try_robot is not None:
             self.on_try_robot(turns, label)

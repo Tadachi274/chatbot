@@ -69,7 +69,7 @@ class RobotRunTab(tk.Frame):
         ui.label(page, text="ロボットで試す", font="page_title", bg="main_card").pack(anchor="w")
         ui.label(
             page,
-            text="客の発話終了をマイクで検出し、店員発話の音声と表情・視線・頷きをタイムライン通りに再生します。",
+            text="自分の発話終了をマイクで検出し、ロボ発話の音声と表情・視線・頷きをタイムライン通りに再生します。",
             font="body",
             bg="main_card",
             fg="sub_text",
@@ -82,7 +82,7 @@ class RobotRunTab(tk.Frame):
         ui.sub_button(controls, text="実演準備", command=self.prepare_robot_run).pack(side="left")
         ui.action_button(controls, text="実演開始", command=self.start_robot_run).pack(side="left", padx=(ui.SPACING["small_gap"], 0))
         ui.sub_button(controls, text="停止", command=self.stop_robot_run).pack(side="left", padx=(ui.SPACING["small_gap"], 0))
-        ui.sub_button(controls, text="客発話完了", command=lambda: self.on_run_customer_speech_end(None)).pack(
+        ui.sub_button(controls, text="自分発話完了", command=lambda: self.on_run_customer_speech_end(None)).pack(
             side="left", padx=(ui.SPACING["small_gap"], 0)
         )
 
@@ -94,8 +94,8 @@ class RobotRunTab(tk.Frame):
             MicActivityPanel = self.mic_panel_class()
             self.mic_panel = MicActivityPanel(
                 page,
-                title="客発話の切れ目検出",
-                description="実環境の act 値が 1 以上の間を客の発話中として扱い、発話終了後に次へ進みます。",
+                title="自分発話の切れ目検出",
+                description="実環境の act 値が 1 以上の間を自分の発話中として扱い、発話終了後に次へ進みます。",
                 on_speech_start=self.on_run_customer_speech_start,
                 on_speech_end=self.on_run_customer_speech_end,
                 status_var=self.status_var,
@@ -205,7 +205,7 @@ class RobotRunTab(tk.Frame):
         for idx in range(start, end):
             turn = turns[idx]
             is_current = self.run_state == "running" and idx == self.run_index
-            role = "客" if turn.get("role") == "customer" else "ロボット"
+            role = "自分" if turn.get("role") == "customer" else "ロボ"
             bg = "panel" if is_current else "card"
             card = ui.bordered_frame(self.lyric_frame, bg=bg, border="border")
             card.pack(fill="x", pady=(0, ui.SPACING["small_gap"]))
@@ -269,7 +269,7 @@ class RobotRunTab(tk.Frame):
         ui.label(page, text="ロボット実演の準備中", font="page_title", bg="main_card").pack(anchor="w")
         ui.label(
             page,
-            text="各店員発話を声色設定に合わせてTTS音声化しています。",
+            text="各ロボ発話を声色設定に合わせてTTS音声化しています。",
             font="body",
             bg="main_card",
             fg="sub_text",
@@ -356,7 +356,7 @@ class RobotRunTab(tk.Frame):
                     self.emit_prep_progress(
                         completed,
                         total,
-                        f"{turn_index + 1}. 店員発話を生成中: {text[:28]}",
+                        f"{turn_index + 1}. ロボ発話を生成中: {text[:28]}",
                     )
                     voice_data = segment.get("voice", default_voice_data())
                     instructions = voice_data.get("tts_instructions")
@@ -444,12 +444,12 @@ class RobotRunTab(tk.Frame):
         if turn.get("role") == "customer":
             self.send_customer_default_face_once(turn)
             if self.use_mic_detection_for_run():
-                self.status_var.set("客の発話待ちです")
+                self.status_var.set("自分の発話待ちです")
                 if self.mic_panel is not None:
                     self.mic_panel.clear_pause()
                     self.mic_panel.start()
             else:
-                self.status_var.set("客発話後に「客発話完了」を押してください")
+                self.status_var.set("自分発話後に「自分発話完了」を押してください")
             return
 
         if self.mic_panel is not None:
@@ -508,7 +508,7 @@ class RobotRunTab(tk.Frame):
     def on_run_customer_speech_start(self, _t):
         if self.run_state != "running":
             return
-        self.status_var.set("客の発話中です")
+        self.status_var.set("自分の発話中です")
 
 
     def on_run_customer_speech_end(self, _t):
@@ -715,12 +715,13 @@ class RobotRunTab(tk.Frame):
 
 
     def apply_gaze_event(self, event):
-        direction = self.gaze_label_to_lookaway(event.get("value", "客の方"))
+        direction = self.gaze_label_to_lookaway(event.get("value", "自分の方"))
         self.ensure_robot_client().send_lookaway(direction=direction, priority=4, keeptime=800)
 
 
     def gaze_label_to_lookaway(self, label):
         return {
+            "自分の方": "f",
             "客の方": "f",
             "正面": "f",
             "上": "u",

@@ -271,7 +271,7 @@ class ConversationToolApp(tk.Tk):
         self.clear_frame(self.session_bar)
         self.session_bar.pack(fill="x", padx=ui.SPACING["page_x"], pady=(ui.SPACING["page_y"], ui.SPACING["gap"]))
 
-        label = f"ユーザー: {self.active_user} / 店舗: {self.active_scenario['label']}"
+        label = f"ユーザー: {self.active_user} / シナリオ: {self.active_scenario['label']}"
         ui.label(self.session_bar, text=label, font="section_title", bg="main_card").pack(side="left")
         ui.sub_button(
             self.session_bar,
@@ -292,7 +292,7 @@ class ConversationToolApp(tk.Tk):
         )
         ui.label(
             new_card,
-            text="新しいユーザー名を作成し、最初に編集する店舗シナリオを選びます。",
+            text="新しいユーザー名を作成し、最初に編集するシナリオを選びます。",
             font="small",
             bg="card",
             fg="muted",
@@ -307,7 +307,7 @@ class ConversationToolApp(tk.Tk):
 
         scenario_row = ui.frame(new_card, bg="card")
         scenario_row.pack(fill="x", padx=ui.SPACING["card_x"], pady=(0, ui.SPACING["card_y"]))
-        ui.label(scenario_row, text="店舗", font="small", bg="card", fg="sub_text", width=8, anchor="w").pack(side="left")
+        ui.label(scenario_row, text="シナリオ", font="small", bg="card", fg="sub_text", width=8, anchor="w").pack(side="left")
         ttk.Combobox(
             scenario_row,
             textvariable=self.new_scenario_var,
@@ -326,7 +326,7 @@ class ConversationToolApp(tk.Tk):
         )
         ui.label(
             existing_card,
-            text="保存済みのシナリオJSONを選んで、そのユーザーと店舗シナリオを読み込みます。",
+            text="保存済みのシナリオJSONを選んで、そのユーザーとシナリオを読み込みます。",
             font="small",
             bg="card",
             fg="muted",
@@ -693,7 +693,7 @@ class ConversationToolApp(tk.Tk):
         if path.exists():
             messagebox.showerror(
                 "作成できません",
-                f"同じユーザーの同じ店舗シナリオが既にあります。\n既存ユーザーからファイルを選択してください。\n\n{path}",
+                f"同じユーザーの同じシナリオが既にあります。\n既存ユーザーからファイルを選択してください。\n\n{path}",
             )
             return
 
@@ -814,7 +814,7 @@ class ConversationToolApp(tk.Tk):
         for option in SCENARIO_OPTIONS:
             if option["id"] == scenario_id or option["label"] == scenario_label:
                 return option
-        raise ValueError("選択したJSONの店舗シナリオを判定できませんでした")
+        raise ValueError("選択したJSONのシナリオを判定できませんでした")
 
     def scenario_path(self, username, scenario_id):
         safe_user = self.safe_filename(username)
