@@ -1,0 +1,349 @@
+{
+  "scenario_title": "家事",
+  "utterances": [
+    {
+      "speaker": "customer",
+      "text": "ただいま",
+      "segments": []
+    },
+    {
+      "speaker": "staff",
+      "segments": [
+        {
+          "type": "sentence",
+          "text": "お帰り。ご飯食べた？",
+          "duration": 2.4000000000000004,
+          "voice": {
+            "controls": {
+              "friendly": 1.55,
+              "reliable": 1.0,
+              "calm": 1.0,
+              "tension": 1.0,
+              "impatience": 1.0,
+              "sorry": 1.0,
+              "energetic": 1.0
+            },
+            "params": {
+              "volume": 1.3,
+              "rate": 1.0,
+              "pitch": 1.0,
+              "emphasis": 1.06,
+              "joy": 0.44,
+              "anger": 0.0,
+              "sadness": 0.44
+            },
+            "tts_instructions": {
+              "tts_volume": 1.3,
+              "tts_rate": 1.0,
+              "tts_pitch": 1.0,
+              "tts_emphasis": 1.06,
+              "tts_emo_joy": 0.44,
+              "tts_emo_angry": 0.0,
+              "tts_emo_sad": 0.44
+            }
+          }
+        },
+        {
+          "type": "pause",
+          "duration": 0.8
+        }
+      ],
+      "duration": 3.2,
+      "events": []
+    },
+    {
+      "speaker": "customer",
+      "text": "うん。〜",
+      "segments": []
+    },
+    {
+      "speaker": "staff",
+      "segments": [
+        {
+          "type": "sentence",
+          "text": "お風呂掃除やね。あと、あしたは燃えるゴミの日やよ。",
+          "duration": 4.5,
+          "voice": {
+            "controls": {
+              "friendly": 1.0,
+              "reliable": 1.0,
+              "calm": 1.0,
+              "tension": 1.0,
+              "impatience": 1.0,
+              "sorry": 1.0,
+              "energetic": 1.0
+            },
+            "params": {
+              "volume": 1.3,
+              "rate": 1.0,
+              "pitch": 1.0,
+              "emphasis": 1.0,
+              "joy": 0.0,
+              "anger": 0.0,
+              "sadness": 0.0
+            },
+            "tts_instructions": {
+              "tts_volume": 1.3,
+              "tts_rate": 1.0,
+              "tts_pitch": 1.0,
+              "tts_emphasis": 1.0,
+              "tts_emo_joy": 0.0,
+              "tts_emo_angry": 0.0,
+              "tts_emo_sad": 0.0
+            }
+          }
+        },
+        {
+          "type": "pause",
+          "duration": 0.8
+        }
+      ],
+      "duration": 5.3,
+      "events": []
+    },
+    {
+      "speaker": "customer",
+      "text": "じゃあ〜",
+      "segments": []
+    },
+    {
+      "speaker": "staff",
+      "segments": [
+        {
+          "type": "sentence",
+          "text": "OK。終わったら声かけるね。",
+          "duration": 2.8000000000000003,
+          "voice": {
+            "controls": {
+              "friendly": 1.0,
+              "reliable": 1.0,
+              "calm": 1.0,
+              "tension": 1.0,
+              "impatience": 1.0,
+              "sorry": 1.0,
+              "energetic": 1.0
+            },
+            "params": {
+              "volume": 1.3,
+              "rate": 1.0,
+              "pitch": 1.0,
+              "emphasis": 1.0,
+              "joy": 0.0,
+              "anger": 0.0,
+              "sadness": 0.0
+            },
+            "tts_instructions": {
+              "tts_volume": 1.3,
+              "tts_rate": 1.0,
+              "tts_pitch": 1.0,
+              "tts_emphasis": 1.0,
+              "tts_emo_joy": 0.0,
+              "tts_emo_angry": 0.0,
+              "tts_emo_sad": 0.0
+            }
+          }
+        },
+        {
+          "type": "pause",
+          "duration": 0.8
+        }
+      ],
+      "duration": 3.6,
+      "events": []
+    }
+  ],
+  "user_name": "大学生２",
+  "scenario_id": "housework",
+  "scenario_label": "家事",
+  "updated_at": "2026-06-25T16:11:51",
+  "scenes": {
+    "housework_main": {
+      "scenario_title": "家事",
+      "conversation_type_id": "housework_main",
+      "conversation_intent": "explanation",
+      "default_face_label": "笑顔_デフォルト 2",
+      "default_face": {
+        "id": "smile_default_2",
+        "label": "笑顔_デフォルト 2",
+        "groups": [],
+        "axes": {},
+        "command": {
+          "type": "smile",
+          "level": 2,
+          "priority": 3,
+          "keeptime": 3000,
+          "text": "/smile start 2 3 3000"
+        }
+      },
+      "utterances": [
+        {
+          "speaker": "customer",
+          "text": "ただいま",
+          "segments": []
+        },
+        {
+          "speaker": "staff",
+          "segments": [
+            {
+              "type": "sentence",
+              "text": "お帰り。ご飯食べた？",
+              "duration": 2.4000000000000004,
+              "voice": {
+                "controls": {
+                  "friendly": 1.55,
+                  "reliable": 1.0,
+                  "calm": 1.0,
+                  "tension": 1.0,
+                  "impatience": 1.0,
+                  "sorry": 1.0,
+                  "energetic": 1.0
+                },
+                "params": {
+                  "volume": 1.3,
+                  "rate": 1.0,
+                  "pitch": 1.0,
+                  "emphasis": 1.06,
+                  "joy": 0.44,
+                  "anger": 0.0,
+                  "sadness": 0.44
+                },
+                "tts_instructions": {
+                  "tts_volume": 1.3,
+                  "tts_rate": 1.0,
+                  "tts_pitch": 1.0,
+                  "tts_emphasis": 1.06,
+                  "tts_emo_joy": 0.44,
+                  "tts_emo_angry": 0.0,
+                  "tts_emo_sad": 0.44
+                }
+              }
+            },
+            {
+              "type": "pause",
+              "duration": 0.8
+            }
+          ],
+          "duration": 3.2,
+          "events": []
+        },
+        {
+          "speaker": "customer",
+          "text": "うん。〜",
+          "segments": []
+        },
+        {
+          "speaker": "staff",
+          "segments": [
+            {
+              "type": "sentence",
+              "text": "お風呂掃除やね。あと、あしたは燃えるゴミの日やよ。",
+              "duration": 4.5,
+              "voice": {
+                "controls": {
+                  "friendly": 1.0,
+                  "reliable": 1.0,
+                  "calm": 1.0,
+                  "tension": 1.0,
+                  "impatience": 1.0,
+                  "sorry": 1.0,
+                  "energetic": 1.0
+                },
+                "params": {
+                  "volume": 1.3,
+                  "rate": 1.0,
+                  "pitch": 1.0,
+                  "emphasis": 1.0,
+                  "joy": 0.0,
+                  "anger": 0.0,
+                  "sadness": 0.0
+                },
+                "tts_instructions": {
+                  "tts_volume": 1.3,
+                  "tts_rate": 1.0,
+                  "tts_pitch": 1.0,
+                  "tts_emphasis": 1.0,
+                  "tts_emo_joy": 0.0,
+                  "tts_emo_angry": 0.0,
+                  "tts_emo_sad": 0.0
+                }
+              }
+            },
+            {
+              "type": "pause",
+              "duration": 0.8
+            }
+          ],
+          "duration": 5.3,
+          "events": []
+        },
+        {
+          "speaker": "customer",
+          "text": "じゃあ〜",
+          "segments": []
+        },
+        {
+          "speaker": "staff",
+          "segments": [
+            {
+              "type": "sentence",
+              "text": "OK。終わったら声かけるね。",
+              "duration": 2.8000000000000003,
+              "voice": {
+                "controls": {
+                  "friendly": 1.0,
+                  "reliable": 1.0,
+                  "calm": 1.0,
+                  "tension": 1.0,
+                  "impatience": 1.0,
+                  "sorry": 1.0,
+                  "energetic": 1.0
+                },
+                "params": {
+                  "volume": 1.3,
+                  "rate": 1.0,
+                  "pitch": 1.0,
+                  "emphasis": 1.0,
+                  "joy": 0.0,
+                  "anger": 0.0,
+                  "sadness": 0.0
+                },
+                "tts_instructions": {
+                  "tts_volume": 1.3,
+                  "tts_rate": 1.0,
+                  "tts_pitch": 1.0,
+                  "tts_emphasis": 1.0,
+                  "tts_emo_joy": 0.0,
+                  "tts_emo_angry": 0.0,
+                  "tts_emo_sad": 0.0
+                }
+              }
+            },
+            {
+              "type": "pause",
+              "duration": 0.8
+            }
+          ],
+          "duration": 3.6,
+          "events": []
+        }
+      ]
+    }
+  },
+  "active_scene_id": "housework_main",
+  "conversation_type_id": "housework_main",
+  "conversation_intent": "explanation",
+  "default_face_label": "笑顔_デフォルト 2",
+  "default_face": {
+    "id": "smile_default_2",
+    "label": "笑顔_デフォルト 2",
+    "groups": [],
+    "axes": {},
+    "command": {
+      "type": "smile",
+      "level": 2,
+      "priority": 3,
+      "keeptime": 3000,
+      "text": "/smile start 2 3 3000"
+    }
+  }
+}

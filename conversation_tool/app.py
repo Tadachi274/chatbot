@@ -10,9 +10,11 @@ from .config import (
     SCENARIO_OPTIONS,
     SMILE_COMPATIBLE_EMOTIONS,
     default_face_data,
+    default_voice_data,
     face_axis_commands,
 )
 from .panels.face_axis_editor_panel import FaceAxisEditorPanel
+from .panels.voice_editor_panel import VoiceEditorPanel
 from .scenario_store import ScenarioStore
 from .tabs.editor_tab import ConversationEditorTab
 from .tabs.robot_run_tab import RobotRunTab
@@ -31,6 +33,9 @@ from ..robot_style_editor.config import (
 )
 
 
+PRIMARY_SCENARIO_IDS = ("direction_guidance", "housework")
+
+
 class ConversationToolApp(tk.Tk):
     def __init__(self):
         super().__init__()
@@ -41,16 +46,16 @@ class ConversationToolApp(tk.Tk):
 
         ui.apply_app_style(self)
 
-        self.status_var = tk.StringVar(value="ユーザーとシナリオを選択してください")
+        self.status_var = tk.StringVar(value="ユーザー名を入力してください")
         self.tts_playback_var = tk.StringVar(value=get_tts_playback_target())
         self.tts_engine_var = tk.StringVar(value=get_tts_engine())
         self.mic_activity_var = tk.StringVar(value=get_default_mic_activity_mode())
         self.mic_silence_hold_var = tk.DoubleVar(value=float(MIC_SILENCE_HOLD_SEC_DEFAULT))
         self.apply_initial_runtime_choices()
         self.new_user_var = tk.StringVar()
-        self.new_scenario_var = tk.StringVar(value=SCENARIO_OPTIONS[0]["label"])
         self.active_user = None
         self.active_scenario = None
+        self.demo_shortcut_active = False
         self.store = None
         self.editor_tab = None
         self.run_tab = None
@@ -97,10 +102,17 @@ class ConversationToolApp(tk.Tk):
 
         footer = ui.frame(main, bg="main_card")
         footer.pack(fill="x", padx=ui.SPACING["page_x"], pady=(0, ui.SPACING["section_y"]))
-        ui.variable_label(footer, self.status_var, font="small", bg="main_card", fg="sub_text").pack(
-            side="left", fill="x", expand=True
-        )
-        self.build_runtime_controls(footer)
+        ui.variable_label(
+            footer,
+            self.status_var,
+            font="small",
+            bg="main_card",
+            fg="sub_text",
+            anchor="w",
+        ).pack(fill="x", pady=(0, ui.SPACING["small_gap"]))
+        runtime_row = ui.frame(footer, bg="main_card")
+        runtime_row.pack(fill="x")
+        self.build_runtime_controls(runtime_row)
 
         self.render_empty_state()
 
@@ -264,7 +276,7 @@ class ConversationToolApp(tk.Tk):
         self.selector_area.pack(fill="x", padx=ui.SPACING["page_x"], pady=(ui.SPACING["page_y"], ui.SPACING["section_y"]))
         self.build_user_selection(self.selector_area)
         self.render_empty_state()
-        self.status_var.set("ユーザーとシナリオを選択してください")
+        self.status_var.set("ユーザー名を入力してください")
 
     def show_session_bar(self):
         self.selector_area.pack_forget()
@@ -272,12 +284,18 @@ class ConversationToolApp(tk.Tk):
         self.session_bar.pack(fill="x", padx=ui.SPACING["page_x"], pady=(ui.SPACING["page_y"], ui.SPACING["gap"]))
 
         label = f"ユーザー: {self.active_user} / シナリオ: {self.active_scenario['label']}"
-        ui.label(self.session_bar, text=label, font="section_title", bg="main_card").pack(side="left")
         ui.sub_button(
             self.session_bar,
-            text="ユーザーやシナリオを変更",
+            text="デモ選択へ戻る" if self.demo_shortcut_active else "ユーザーやシナリオを変更",
             command=self.change_user_or_scenario,
-        ).pack(side="right")
+        ).pack(side="right", padx=(ui.SPACING["gap"], 0))
+        ui.label(
+            self.session_bar,
+            text=label,
+            font="section_title",
+            bg="main_card",
+            anchor="w",
+        ).pack(side="left", fill="x", expand=True)
 
     def build_user_selection(self, parent):
         ui.label(parent, text="ユーザー開始", font="page_title", bg="main_card").pack(anchor="w")
@@ -292,7 +310,7 @@ class ConversationToolApp(tk.Tk):
         )
         ui.label(
             new_card,
-            text="新しいユーザー名を作成し、最初に編集するシナリオを選びます。",
+            text="ユーザー名を入力すると、道案内と家事の会話場面を作成して開始します。",
             font="small",
             bg="card",
             fg="muted",
@@ -305,19 +323,9 @@ class ConversationToolApp(tk.Tk):
         ui.label(new_row, text="名前", font="small", bg="card", fg="sub_text", width=8, anchor="w").pack(side="left")
         ui.entry(new_row, self.new_user_var, font="input").pack(side="left", fill="x", expand=True)
 
-        scenario_row = ui.frame(new_card, bg="card")
-        scenario_row.pack(fill="x", padx=ui.SPACING["card_x"], pady=(0, ui.SPACING["card_y"]))
-        ui.label(scenario_row, text="シナリオ", font="small", bg="card", fg="sub_text", width=8, anchor="w").pack(side="left")
-        ttk.Combobox(
-            scenario_row,
-            textvariable=self.new_scenario_var,
-            values=[option["label"] for option in SCENARIO_OPTIONS],
-            state="readonly",
-            width=30,
-        ).pack(side="left", fill="x", expand=True)
-        ui.action_button(scenario_row, text="新しいユーザーを開始", command=self.start_new_user_session).pack(
-            side="left", padx=(ui.SPACING["small_gap"], 0)
-        )
+        action_row = ui.frame(new_card, bg="card")
+        action_row.pack(fill="x", padx=ui.SPACING["card_x"], pady=(0, ui.SPACING["card_y"]))
+        ui.action_button(action_row, text="ユーザーを開始", command=self.start_new_user_session).pack(side="left")
 
         existing_card = ui.bordered_frame(cards, bg="card", border="border")
         existing_card.pack(side="left", fill="both", expand=True)
@@ -348,7 +356,7 @@ class ConversationToolApp(tk.Tk):
         card.pack(fill="x", padx=ui.SPACING["page_x"], pady=ui.SPACING["section_y"])
         ui.label(
             card,
-            text="ユーザー名を入力し、シナリオを選択して開始してください。",
+            text="ユーザー名を入力して開始してください。",
             font="section_title",
             bg="card",
         ).pack(anchor="w", padx=ui.SPACING["card_x"], pady=ui.SPACING["card_y"])
@@ -427,6 +435,21 @@ class ConversationToolApp(tk.Tk):
         ui.sub_button(face_row, text="sorry 2", command=lambda: self.demo_emotion("sorry", 2)).pack(
             side="left", padx=(0, ui.SPACING["small_gap"])
         )
+        ui.sub_button(face_row, text="AffiliativeSmile 3", command=lambda: self.demo_emotion("AffiliativeSmile", 3)).pack(
+            side="left", padx=(0, ui.SPACING["small_gap"])
+        )
+        ui.sub_button(face_row, text="AmusedDisgust 2", command=lambda: self.demo_emotion("AmusedDisgust", 2)).pack(
+            side="left", padx=(0, ui.SPACING["small_gap"])
+        )
+        ui.sub_button(face_row, text="Releaf 2", command=lambda: self.demo_emotion("Releaf", 2)).pack(
+            side="left", padx=(0, ui.SPACING["small_gap"])
+        )
+        ui.sub_button(face_row, text="FearfulSurprise 2", command=lambda: self.demo_emotion("FearfulSurprise", 2)).pack(
+            side="left", padx=(0, ui.SPACING["small_gap"])
+        )
+        ui.sub_button(face_row, text="Flirty 2", command=lambda: self.demo_emotion("Flirty", 2)).pack(
+            side="left", padx=(0, ui.SPACING["small_gap"])
+        )
         ui.sub_button(face_row, text="軸ごとの調整", command=self.demo_face_axes).pack(side="left")
 
         voice_row = ui.frame(rows, bg="card")
@@ -447,11 +470,35 @@ class ConversationToolApp(tk.Tk):
             text="悲しみ1.0",
             command=lambda: self.demo_voice("悲しみ1.0", {"tts_emo_sad": 1.0}),
         ).pack(side="left")
+        ui.sub_button(
+            voice_row,
+            text="喜び1.0",
+            command=lambda: self.demo_voice("喜び1.0", {"tts_emo_joy": 1.0}),
+        ).pack(side="left", padx=(ui.SPACING["small_gap"], 0))
+        ui.sub_button(
+            voice_row,
+            text="怒り1.0",
+            command=lambda: self.demo_voice("怒り1.0", {"tts_emo_angry": 1.0}),
+        ).pack(side="left", padx=(ui.SPACING["small_gap"], 0))
+        ui.sub_button(
+            voice_row,
+            text="軸ごとの調整",
+            command=self.demo_voice_axes,
+        ).pack(side="left", padx=(ui.SPACING["small_gap"], 0))
 
         motion_row = ui.frame(rows, bg="card")
         motion_row.pack(fill="x")
         ui.label(motion_row, text="動作", font="small", bg="card", fg="sub_text", width=8, anchor="w").pack(side="left")
         ui.sub_button(motion_row, text="お辞儀", command=self.demo_bow).pack(side="left")
+
+        demo_row = ui.frame(rows, bg="card")
+        demo_row.pack(fill="x", pady=(ui.SPACING["small_gap"], 0))
+        ui.label(demo_row, text="会話デモ", font="small", bg="card", fg="sub_text", width=8, anchor="w").pack(side="left")
+        ui.action_button(
+            demo_row,
+            text="忠地 高級ホテル チェックインを開く",
+            command=self.open_tadachi_hotel_checkin_demo,
+        ).pack(side="left")
 
     def ensure_demo_runtime(self):
         apply_robot_tts_environment("real")
@@ -628,7 +675,9 @@ class ConversationToolApp(tk.Tk):
                 return
             if command.get("type") == "emotion":
                 emotion = command.get("emotion", "neutral")
-                if emotion not in SMILE_COMPATIBLE_EMOTIONS:
+                smile_overlay = face_data.get("smile_overlay", {})
+                use_smile_overlay = bool(smile_overlay.get("enabled", False))
+                if not use_smile_overlay and emotion not in SMILE_COMPATIBLE_EMOTIONS:
                     print("[DEMO FACE] smile end: /smile end", flush=True)
                     robot.send("/smile end")
                 if command.get("emotion") == "neutral":
@@ -639,6 +688,12 @@ class ConversationToolApp(tk.Tk):
                     command_text = f"/emotion {emotion} {level} {priority} {int(keeptime)}"
                 print(f"[DEMO FACE] {label}: {command_text}", flush=True)
                 robot.send(command_text)
+                if use_smile_overlay:
+                    level = int(smile_overlay.get("level", 3))
+                    priority = int(smile_overlay.get("priority", 3))
+                    smile_text = f"/smile start {level} {priority} {int(keeptime)}"
+                    print(f"[DEMO FACE] {label} smile: {smile_text}", flush=True)
+                    robot.send(smile_text)
                 return
 
             commands = face_axis_commands(face_data, keeptime=keeptime)
@@ -674,6 +729,45 @@ class ConversationToolApp(tk.Tk):
         except Exception as exc:
             self.status_var.set(f"声色デモエラー: {exc}")
 
+    def demo_voice_axes(self):
+        dialog = tk.Toplevel(self)
+        dialog.title("声色を軸ごとに調整")
+        dialog.transient(self)
+        dialog.geometry("760x720")
+
+        body = ui.frame(dialog, bg="main_card")
+        body.pack(fill="both", expand=True, padx=22, pady=18)
+        ui.label(body, text="声色を軸ごとに調整", font="page_title", bg="main_card").pack(anchor="w")
+
+        text_row = ui.frame(body, bg="main_card")
+        text_row.pack(fill="x", pady=(ui.SPACING["section_y"], ui.SPACING["gap"]))
+        ui.label(text_row, text="言葉", font="body_bold", bg="main_card", width=8, anchor="w").pack(side="left")
+        text_var = tk.StringVar(value="いらっしゃいませ")
+        ui.entry(text_row, text_var, font="input").pack(side="left", fill="x", expand=True)
+
+        actions = ui.frame(body, bg="main_card")
+        actions.pack(side="bottom", fill="x", pady=(ui.SPACING["section_y"], 0))
+        ui.sub_button(actions, text="閉じる", command=dialog.destroy).pack(side="left")
+
+        panel_area = ui.scrollable_frame(body, bg="main_card")
+        panel = VoiceEditorPanel(panel_area, initial_data=default_voice_data())
+        panel.pack(fill="x")
+
+        def play_current_voice():
+            text = text_var.get().strip()
+            if not text:
+                messagebox.showwarning("確認", "発話する言葉を入力してください")
+                return
+            try:
+                tts_client, _robot = self.ensure_demo_runtime()
+                tts_client.speak(text=text, instructions=panel.get_data()["tts_instructions"])
+                self.status_var.set(f"調整した声色で再生します: {text}")
+            except Exception as exc:
+                self.status_var.set(f"声色調整デモエラー: {exc}")
+
+        ui.action_button(actions, text="この声色で再生", command=play_current_voice).pack(side="right")
+        self.status_var.set("声色の軸調整デモを開きました")
+
     def demo_bow(self):
         try:
             _tts_client, robot = self.ensure_demo_runtime()
@@ -682,22 +776,60 @@ class ConversationToolApp(tk.Tk):
         except Exception as exc:
             self.status_var.set(f"お辞儀デモエラー: {exc}")
 
+    def open_tadachi_hotel_checkin_demo(self):
+        path = SAVE_DIR / "忠地" / "luxury_hotel.json"
+        if not path.exists():
+            messagebox.showerror("デモを開けません", f"保存済みデモが見つかりません。\n{path}")
+            return
+
+        scenario = self.selected_scenario("高級ホテル")
+        self.load_session(
+            path=path,
+            username="忠地",
+            scenario=scenario,
+            create=False,
+            active_scene_id="hotel_checkin",
+            demo_shortcut=True,
+        )
+        self.status_var.set("デモ会話を開きました: 忠地 / 高級ホテル / チェックイン")
+
     def start_new_user_session(self):
         username = self.new_user_var.get().strip()
         if not username:
             messagebox.showwarning("確認", "ユーザー名を入力してください")
             return
 
-        scenario = self.selected_scenario(self.new_scenario_var.get())
+        created = self.ensure_primary_scenario_files(username)
+        scenario = self.scenario_by_id("direction_guidance")
         path = self.scenario_path(username, scenario["id"])
-        if path.exists():
-            messagebox.showerror(
-                "作成できません",
-                f"同じユーザーの同じシナリオが既にあります。\n既存ユーザーからファイルを選択してください。\n\n{path}",
-            )
-            return
+        self.load_session(path=path, username=username, scenario=scenario, create=created)
 
-        self.load_session(path=path, username=username, scenario=scenario, create=True)
+    def ensure_primary_scenario_files(self, username):
+        created_any = False
+        for scenario in self.primary_scenarios():
+            path = self.scenario_path(username, scenario["id"])
+            if path.exists():
+                continue
+            store = ScenarioStore(path=path)
+            self.initialize_store_for_scenario(store, username, scenario)
+            store.save()
+            created_any = True
+        return created_any
+
+    def initialize_store_for_scenario(self, store, username, scenario):
+        scene_option = self.primary_scene_option(scenario)
+        store.data["user_name"] = username
+        store.data["scenario_id"] = scenario["id"]
+        store.data["scenario_label"] = scenario["label"]
+        store.data["scenario_title"] = scenario["default_title"]
+        store.data["conversation_type_id"] = scene_option["id"]
+        store.data["conversation_intent"] = scene_option["intent"]
+        store.data["active_scene_id"] = scene_option["id"]
+
+    def primary_scene_option(self, scenario):
+        from .config import conversation_scene_options
+
+        return conversation_scene_options(scenario["id"])[0]
 
     def load_existing_user_file(self):
         SAVE_DIR.mkdir(parents=True, exist_ok=True)
@@ -718,23 +850,43 @@ class ConversationToolApp(tk.Tk):
         except Exception as exc:
             messagebox.showerror("読み込みエラー", str(exc))
 
-    def load_session(self, path, username, scenario, create):
+    def load_session(self, path, username, scenario, create, active_scene_id=None, demo_shortcut=False):
         self.store = ScenarioStore(path=path)
         self.store.data["user_name"] = username
         self.store.data["scenario_id"] = scenario["id"]
         self.store.data["scenario_label"] = scenario["label"]
         self.store.data.setdefault("scenario_title", scenario["default_title"])
+        if active_scene_id is not None:
+            self.store.data["active_scene_id"] = active_scene_id
         self.store.save()
         self.active_user = username
         self.active_scenario = scenario
+        self.demo_shortcut_active = bool(demo_shortcut)
 
         self.build_tabs()
         self.show_session_bar()
         action = "開始しました" if create else "読み込みました"
         self.status_var.set(f"{username} / {scenario['label']} を{action}")
 
-    def change_user_or_scenario(self):
+    def switch_primary_scenario(self, label):
+        scenario = self.selected_primary_scenario(label)
+        if scenario is None:
+            return False
+        if self.active_scenario and self.active_scenario.get("id") == scenario["id"]:
+            return True
         if not self.confirm_save_before_change():
+            return False
+
+        username = self.active_user
+        if not username:
+            return False
+        self.ensure_primary_scenario_files(username)
+        path = self.scenario_path(username, scenario["id"])
+        self.load_session(path=path, username=username, scenario=scenario, create=False)
+        return True
+
+    def change_user_or_scenario(self):
+        if not self.demo_shortcut_active and not self.confirm_save_before_change():
             return
 
         self.store = None
@@ -743,6 +895,7 @@ class ConversationToolApp(tk.Tk):
         self.notebook = None
         self.active_user = None
         self.active_scenario = None
+        self.demo_shortcut_active = False
         self.show_user_selection()
 
     def confirm_save_before_change(self):
@@ -779,6 +932,9 @@ class ConversationToolApp(tk.Tk):
             status_var=self.status_var,
             on_try_robot=self.open_robot_run_tab,
             get_tts_engine=lambda: self.tts_engine_var.get(),
+            scene_switch_options=self.primary_scenarios() if self.is_primary_session() else None,
+            active_scene_label=self.active_scenario["label"] if self.is_primary_session() else None,
+            on_scene_switch=self.switch_primary_scenario if self.is_primary_session() else None,
         )
         self.run_tab = RobotRunTab(
             self.notebook,
@@ -797,6 +953,8 @@ class ConversationToolApp(tk.Tk):
             self.run_tab.show_overview(turns=turns, label=label)
         if self.notebook is not None and self.run_tab is not None:
             self.notebook.select(self.run_tab)
+        if self.run_tab is not None:
+            self.run_tab.reset_face_to_neutral()
         if label:
             self.status_var.set(f"保存しました。実演タブで確認できます: {label}")
         else:
@@ -807,6 +965,28 @@ class ConversationToolApp(tk.Tk):
             if option["label"] == label:
                 return option
         return SCENARIO_OPTIONS[0]
+
+    def scenario_by_id(self, scenario_id):
+        for option in SCENARIO_OPTIONS:
+            if option["id"] == scenario_id:
+                return option
+        return SCENARIO_OPTIONS[0]
+
+    def primary_scenarios(self):
+        return [self.scenario_by_id(scenario_id) for scenario_id in PRIMARY_SCENARIO_IDS]
+
+    def selected_primary_scenario(self, label):
+        for option in self.primary_scenarios():
+            if option["label"] == label:
+                return option
+        return None
+
+    def is_primary_session(self):
+        return (
+            not self.demo_shortcut_active
+            and self.active_scenario is not None
+            and self.active_scenario.get("id") in PRIMARY_SCENARIO_IDS
+        )
 
     def scenario_from_data_or_path(self, data, path):
         scenario_id = data.get("scenario_id") or path.stem

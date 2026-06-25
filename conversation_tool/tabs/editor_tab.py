@@ -13,6 +13,7 @@ from ..config import (
     SPEAKER_LABELS,
     SPEAKER_STAFF,
     STAFF_EVENT_LANES,
+    TIMELINE_DRAG_SENSITIVITY,
     TIMELINE_MIN_SECONDS,
     TIMELINE_PIXELS_PER_SECOND,
     TIME_RESOLUTION,
@@ -30,22 +31,36 @@ from ..pdf_exporter import export_conversation_pdf
 
 
 class ConversationEditorTab(tk.Frame):
-    def __init__(self, parent, store, status_var, on_changed=None, on_try_robot=None, get_tts_engine=None):
+    def __init__(
+        self,
+        parent,
+        store,
+        status_var,
+        on_changed=None,
+        on_try_robot=None,
+        get_tts_engine=None,
+        scene_switch_options=None,
+        active_scene_label=None,
+        on_scene_switch=None,
+    ):
         super().__init__(parent, bg=ui.COLORS["main_card"])
         self.store = store
         self.status_var = status_var
         self.on_changed = on_changed
         self.on_try_robot = on_try_robot
         self.get_tts_engine = get_tts_engine
+        self.scene_switch_options = scene_switch_options
+        self.on_scene_switch = on_scene_switch
         self.scene_options = conversation_scene_options(self.store.data.get("scenario_id"))
         self.active_scene_id = self.initial_scene_id()
         self.ensure_scene_storage()
         self.load_scene_into_workspace(self.active_scene_id)
-        self.type_var = tk.StringVar(value=self.current_conversation_type_label())
+        self.type_var = tk.StringVar(value=active_scene_label or self.current_conversation_type_label())
         self.default_face_var = tk.StringVar(value=self.current_default_face_label())
         self.selected_utterance_index = None
         self.selected_event_index = None
         self.text_vars = []
+        self.utterance_cards = []
         self.event_drag = None
         self.segment_drag = None
         self.robot_client = None
@@ -67,8 +82,12 @@ class ConversationEditorTab(tk.Frame):
 
     def add_initial_utterances(self):
         self.store.data["utterances"] = [
-            self.build_utterance(SPEAKER_STAFF, "いらっしゃいませ！"),
-            self.build_utterance(SPEAKER_CUSTOMER, "チェックインお願いします"),
+            self.build_utterance(SPEAKER_STAFF, ""),
+            self.build_utterance(SPEAKER_CUSTOMER, ""),
+            self.build_utterance(SPEAKER_STAFF, ""),
+            self.build_utterance(SPEAKER_CUSTOMER, ""),
+            self.build_utterance(SPEAKER_STAFF, ""),
+            self.build_utterance(SPEAKER_CUSTOMER, ""),
         ]
 
     def current_conversation_type_label(self):
@@ -182,6 +201,16 @@ class ConversationEditorTab(tk.Frame):
     def current_default_face_data(self):
         face = self.store.data.get("default_face")
         label = self.current_default_face_label()
+        if face and face.get("command", {}).get("type") == "smile":
+            level = int(face.get("command", {}).get("level", 2))
+            neutral = default_face_data("ニュートラル")
+            neutral["smile_overlay"] = {
+                "enabled": True,
+                "level": level,
+                "priority": int(face.get("command", {}).get("priority", 3)),
+                "keeptime": int(face.get("command", {}).get("keeptime", 3000)),
+            }
+            return neutral
         if face and face.get("label") == label:
             return copy.deepcopy(face)
         return default_face_data(label)
@@ -236,11 +265,12 @@ class ConversationEditorTab(tk.Frame):
         header.pack(fill="x", padx=ui.SPACING["page_x"], pady=(ui.SPACING["page_y"], ui.SPACING["gap"]))
 
         ui.label(header, text="会話場面", font="app_title", bg="main_card").pack(side="left")
+        type_options = self.scene_switch_options or self.scene_options
         type_combo = ttk.Combobox(
             header,
             textvariable=self.type_var,
-            values=[option["label"] for option in self.scene_options],
-            state="disabled" if len(self.scene_options) == 1 else "readonly",
+            values=[option["label"] for option in type_options],
+            state="disabled" if len(type_options) == 1 else "readonly",
             width=32,
         )
         type_combo.pack(side="left", padx=(ui.SPACING["gap"], ui.SPACING["section_y"]))
@@ -288,6 +318,7 @@ class ConversationEditorTab(tk.Frame):
             child.destroy()
 
         self.text_vars = []
+        self.utterance_cards = []
         utterances = self.store.data.get("utterances", [])
 
         for index, utterance in enumerate(utterances):
@@ -309,6 +340,7 @@ class ConversationEditorTab(tk.Frame):
 
         card = ui.bordered_frame(self.timeline_content, bg="card", border=accent, thickness=2)
         card.pack(fill="x", pady=(0, ui.SPACING["section_y"]))
+        self.utterance_cards.append(card)
 
         head = ui.frame(card, bg=soft)
         head.pack(fill="x")
@@ -546,9 +578,10 @@ class ConversationEditorTab(tk.Frame):
         drag = self.segment_drag
         canvas = drag["canvas"]
         current_x = canvas.canvasx(tk_event.x)
-        delta_px = current_x - drag["mouse_x"]
-        if abs(delta_px) < 2:
+        raw_delta_px = current_x - drag["mouse_x"]
+        if abs(raw_delta_px) < 2:
             return "break"
+        delta_px = raw_delta_px * TIMELINE_DRAG_SENSITIVITY
 
         drag["moved"] = True
         utterance = self.store.data["utterances"][drag["utterance_index"]]
@@ -618,7 +651,8 @@ class ConversationEditorTab(tk.Frame):
 
         utterance = self.store.data["utterances"][utterance_index]
         if mode == "move":
-            target_x = canvas.canvasx(tk_event.x)
+            current_x = canvas.canvasx(tk_event.x)
+            target_x = drag["mouse_x"] + ((current_x - drag["mouse_x"]) * TIMELINE_DRAG_SENSITIVITY)
             target_index = self.segment_index_for_x(utterance, target_x)
             self.move_segment_to_index(utterance, segment_index, target_index)
 
@@ -686,11 +720,12 @@ class ConversationEditorTab(tk.Frame):
         drag = self.event_drag
         canvas = drag["canvas"]
         current_x = canvas.canvasx(tk_event.x)
-        delta_px = current_x - drag["mouse_x"]
-        if abs(delta_px) < 2:
+        raw_delta_px = current_x - drag["mouse_x"]
+        if abs(raw_delta_px) < 2:
             return "break"
 
         drag["moved"] = True
+        delta_px = raw_delta_px * TIMELINE_DRAG_SENSITIVITY
         delta_sec = delta_px / TIMELINE_PIXELS_PER_SECOND
         utterance = self.store.data["utterances"][drag["utterance_index"]]
         event = utterance["events"][drag["event_index"]]
@@ -817,13 +852,51 @@ class ConversationEditorTab(tk.Frame):
         if position == "top":
             utterances.insert(0, self.build_utterance(speaker))
             position_label = "先頭"
+            target_index = 0
         else:
             utterances.append(self.build_utterance(speaker))
             position_label = "末尾"
+            target_index = len(utterances) - 1
         self.selected_utterance_index = None
         self.selected_event_index = None
         self.render_utterances()
+        if position == "top":
+            self.after_idle(self.scroll_timeline_to_top)
+        else:
+            self.after_idle(lambda index=target_index: self.scroll_utterance_to_center(index))
         self.status_var.set(f"{SPEAKER_LABELS[speaker]}を{position_label}に追加しました")
+
+
+    def scroll_timeline_to_top(self):
+        canvas = self.timeline_content.master
+        if hasattr(canvas, "yview_moveto"):
+            canvas.yview_moveto(0.0)
+
+
+    def scroll_utterance_to_center(self, index):
+        if index < 0 or index >= len(self.utterance_cards):
+            return
+        canvas = self.timeline_content.master
+        if not hasattr(canvas, "yview_moveto"):
+            return
+
+        self.timeline_content.update_idletasks()
+        canvas.update_idletasks()
+        card = self.utterance_cards[index]
+        scrollregion = canvas.bbox("all")
+        if not scrollregion:
+            return
+
+        content_height = max(1, scrollregion[3] - scrollregion[1])
+        canvas_height = max(1, canvas.winfo_height())
+        if content_height <= canvas_height:
+            canvas.yview_moveto(0.0)
+            return
+
+        card_center_y = card.winfo_y() + (card.winfo_height() / 2)
+        target_y = card_center_y - (canvas_height / 2)
+        max_scroll = max(1, content_height - canvas_height)
+        canvas.yview_moveto(max(0.0, min(1.0, target_y / max_scroll)))
 
 
     def delete_utterance(self, index):
@@ -1458,12 +1531,21 @@ class ConversationEditorTab(tk.Frame):
                 return
             if command.get("type") == "emotion":
                 emotion = command.get("emotion", "neutral")
-                if emotion not in SMILE_COMPATIBLE_EMOTIONS:
+                smile_overlay = face_data.get("smile_overlay", {})
+                use_smile_overlay = bool(smile_overlay.get("enabled", False))
+                if not use_smile_overlay and emotion not in SMILE_COMPATIBLE_EMOTIONS:
                     print("[FACE PREVIEW] smile end: /smile end", flush=True)
                     robot.send("/smile end")
                 command_text = command.get("text", "/emotion neutral 1 5 3000")
                 print(f"[FACE PREVIEW] {label}: {command_text}", flush=True)
                 robot.send(command_text)
+                if use_smile_overlay:
+                    level = int(smile_overlay.get("level", 3))
+                    priority = int(smile_overlay.get("priority", 3))
+                    keeptime = int(smile_overlay.get("keeptime", 3000))
+                    smile_text = f"/smile start {level} {priority} {keeptime}"
+                    print(f"[FACE PREVIEW] {label} smile: {smile_text}", flush=True)
+                    robot.send(smile_text)
                 return
 
             axis_commands = face_axis_commands(face_data)
@@ -1731,6 +1813,13 @@ class ConversationEditorTab(tk.Frame):
         ui.action_button(actions, text="更新", command=save_default_face).pack(side="right")
 
     def on_scene_selected(self):
+        if self.on_scene_switch is not None:
+            selected_label = self.type_var.get()
+            switched = self.on_scene_switch(selected_label)
+            if not switched:
+                self.type_var.set(self.store.data.get("scenario_label") or self.current_conversation_type_label())
+            return
+
         old_scene_id = self.active_scene_id
         self.sync_utterance_inputs()
         self.save_workspace_to_active_scene()

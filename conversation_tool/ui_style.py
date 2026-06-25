@@ -112,32 +112,41 @@ def scrollable_frame(parent, bg="main_card", bind_mousewheel=True, **pack_kwargs
     canvas.bind("<Configure>", on_canvas_configure)
 
     if bind_mousewheel:
+        def pointer_inside_outer():
+            try:
+                x = outer.winfo_pointerx()
+                y = outer.winfo_pointery()
+                left = outer.winfo_rootx()
+                top = outer.winfo_rooty()
+                right = left + outer.winfo_width()
+                bottom = top + outer.winfo_height()
+                return left <= x <= right and top <= y <= bottom
+            except tk.TclError:
+                return False
+
         def on_mousewheel(event):
+            if not pointer_inside_outer():
+                return
             delta = getattr(event, "delta", 0)
             if delta == 0:
                 return
             steps = int(-delta / 120) if abs(delta) >= 120 else (-1 if delta > 0 else 1)
             canvas.yview_scroll(steps, "units")
+            return "break"
 
         def on_linux_mousewheel(event):
+            if not pointer_inside_outer():
+                return
             if event.num == 4:
                 canvas.yview_scroll(-1, "units")
             elif event.num == 5:
                 canvas.yview_scroll(1, "units")
+            return "break"
 
-        def bind_wheel(_event=None):
-            canvas.bind_all("<MouseWheel>", on_mousewheel)
-            canvas.bind_all("<Button-4>", on_linux_mousewheel)
-            canvas.bind_all("<Button-5>", on_linux_mousewheel)
-
-        def unbind_wheel(_event=None):
-            canvas.unbind_all("<MouseWheel>")
-            canvas.unbind_all("<Button-4>")
-            canvas.unbind_all("<Button-5>")
-
-        for target in (outer, canvas, content):
-            target.bind("<Enter>", bind_wheel, add="+")
-            target.bind("<Leave>", unbind_wheel, add="+")
+        canvas.bind_all("<MouseWheel>", on_mousewheel, add="+")
+        canvas.bind_all("<Shift-MouseWheel>", on_mousewheel, add="+")
+        canvas.bind_all("<Button-4>", on_linux_mousewheel, add="+")
+        canvas.bind_all("<Button-5>", on_linux_mousewheel, add="+")
 
     return content
 
@@ -186,9 +195,9 @@ def action_button(parent, text, command, **kwargs):
         parent,
         text=text,
         command=command,
-        bg=COLORS["accent"],
-        active_bg=COLORS["accent_active"],
-        fg="#ffffff",
+        bg=COLORS["sub_button"],
+        active_bg=COLORS["sub_button_active"],
+        fg=COLORS["accent"],
         **kwargs,
     )
 

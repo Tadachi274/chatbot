@@ -5,9 +5,8 @@ from .. import ui_style as ui
 from ..config import (
     FACE_AXIS_LABELS,
     FACE_AXIS_RANGE,
-    FACE_EXPRESSION_DEFINITIONS,
+    FACE_EXPRESSION_OPTIONS,
     default_face_data,
-    face_definition_by_label,
 )
 
 
@@ -24,6 +23,8 @@ class FaceAxisEditorPanel(tk.Frame):
         self.axis_enabled_vars = {}
         self.value_labels = {}
         self.preview_changed_axes = None
+        self.smile_overlay_enabled = tk.BooleanVar(value=False)
+        self.smile_overlay_level = tk.IntVar(value=3)
 
         self.build_ui()
         self.load_face_data(self.face_data, notify=False)
@@ -31,6 +32,7 @@ class FaceAxisEditorPanel(tk.Frame):
     def normalize_face_data(self, data):
         label = data.get("label", "笑顔")
         normalized = default_face_data(label)
+        legacy_smile_command = data.get("command", {}).get("type") == "smile"
         saved_axes = {str(axis): int(value) for axis, value in data.get("axes", {}).items()}
         if data.get("axes"):
             normalized["axes"].update(saved_axes)
@@ -104,8 +106,25 @@ class FaceAxisEditorPanel(tk.Frame):
                 normalized["axes"].update(group["values"])
                 normalized_groups.append(group)
             normalized["groups"] = normalized_groups
-        if data.get("command"):
+        if data.get("command") and not legacy_smile_command:
             normalized["command"].update(data["command"])
+        if legacy_smile_command:
+            command = data.get("command", {})
+            normalized = default_face_data("ニュートラル")
+            normalized["smile_overlay"] = {
+                "enabled": True,
+                "level": int(command.get("level", 3)),
+                "priority": int(command.get("priority", 3)),
+                "keeptime": int(command.get("keeptime", 3000)),
+            }
+        elif "smile_overlay" in data:
+            overlay = dict(data.get("smile_overlay") or {})
+            normalized["smile_overlay"] = {
+                "enabled": bool(overlay.get("enabled", False)),
+                "level": int(overlay.get("level", 3)),
+                "priority": int(overlay.get("priority", 3)),
+                "keeptime": int(overlay.get("keeptime", 3000)),
+            }
         return normalized
 
     def build_ui(self):
@@ -115,7 +134,7 @@ class FaceAxisEditorPanel(tk.Frame):
 
         combo = ttk.Combobox(
             header,
-            values=[definition["label"] for definition in FACE_EXPRESSION_DEFINITIONS.values()],
+            values=FACE_EXPRESSION_OPTIONS,
             textvariable=self.expression_label,
             state="readonly",
             width=14,
@@ -144,6 +163,8 @@ class FaceAxisEditorPanel(tk.Frame):
                 anchor="w",
                 justify="left",
             ).pack(fill="x", padx=ui.SPACING["card_x"], pady=ui.SPACING["card_y"])
+            if self.face_data.get("command", {}).get("type") == "emotion":
+                self.build_smile_overlay_control()
             return
 
         for group in self.face_data.get("groups", []):
@@ -226,6 +247,9 @@ class FaceAxisEditorPanel(tk.Frame):
         try:
             self.face_data = self.normalize_face_data(data)
             self.expression_label.set(self.face_data["label"])
+            overlay = self.face_data.get("smile_overlay", {})
+            self.smile_overlay_enabled.set(bool(overlay.get("enabled", False)))
+            self.smile_overlay_level.set(int(overlay.get("level", 3)))
             self.rebuild_axis_controls()
         finally:
             self._loading = False
@@ -254,6 +278,50 @@ class FaceAxisEditorPanel(tk.Frame):
                 enabled.append(str(axis))
         return enabled
 
+    def build_smile_overlay_control(self):
+        overlay = self.face_data.setdefault(
+            "smile_overlay",
+            {"enabled": False, "level": 3, "priority": 3, "keeptime": 3000},
+        )
+        row = ui.frame(self.card, bg="card")
+        row.pack(fill="x", padx=ui.SPACING["card_x"], pady=(0, ui.SPACING["card_y"]))
+        check = tk.Checkbutton(
+            row,
+            text="/smileを追加",
+            variable=self.smile_overlay_enabled,
+            command=self.on_smile_overlay_changed,
+            font=ui.FONTS["body"],
+            bg=ui.COLORS["card"],
+            fg=ui.COLORS["text"],
+            activebackground=ui.COLORS["card"],
+            activeforeground=ui.COLORS["text"],
+            selectcolor=ui.COLORS["card"],
+            padx=4,
+        )
+        check.pack(side="left")
+        ui.label(row, text="強さ", font="small", bg="card", fg="muted").pack(
+            side="left", padx=(ui.SPACING["gap"], ui.SPACING["small_gap"])
+        )
+        combo = ttk.Combobox(
+            row,
+            textvariable=self.smile_overlay_level,
+            values=[1, 2, 3],
+            state="readonly",
+            width=4,
+        )
+        combo.pack(side="left")
+        combo.bind("<<ComboboxSelected>>", lambda _event=None: self.on_smile_overlay_changed())
+        self.smile_overlay_enabled.set(bool(overlay.get("enabled", False)))
+        self.smile_overlay_level.set(int(overlay.get("level", 3)))
+
+    def on_smile_overlay_changed(self):
+        overlay = self.face_data.setdefault("smile_overlay", {})
+        overlay["enabled"] = bool(self.smile_overlay_enabled.get())
+        overlay["level"] = int(self.smile_overlay_level.get())
+        overlay["priority"] = int(overlay.get("priority", 3))
+        overlay["keeptime"] = int(overlay.get("keeptime", 3000))
+        self.notify_changed(force=True, changed_axes=[])
+
     def notify_changed(self, force=False, changed_axes=None):
         if self._loading or self.on_changed is None:
             return
@@ -267,4 +335,5 @@ class FaceAxisEditorPanel(tk.Frame):
             "groups": self.face_data["groups"],
             "axes": {axis: int(value) for axis, value in self.face_data["axes"].items()},
             "command": self.face_data["command"],
+            "smile_overlay": dict(self.face_data.get("smile_overlay", {})),
         }

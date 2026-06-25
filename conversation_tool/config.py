@@ -130,6 +130,7 @@ MIN_EVENT_TIME = 0.0
 TIME_RESOLUTION = 0.1
 TIMELINE_PIXELS_PER_SECOND = 110
 TIMELINE_MIN_SECONDS = 5
+TIMELINE_DRAG_SENSITIVITY = 0.45
 
 FACE_AXIS_RANGE = (0, 255)
 FACE_AXIS_VELOCITY = 2000
@@ -460,6 +461,7 @@ FACE_EXPRESSION_DEFINITIONS = {
 FACE_EXPRESSION_OPTIONS = [
     definition["label"]
     for definition in FACE_EXPRESSION_DEFINITIONS.values()
+    if definition.get("command", {}).get("type") != "smile"
 ]
 
 SPEAKER_STAFF = "staff"
@@ -704,13 +706,36 @@ def default_face_data(label="笑顔"):
     axes = {}
     groups = []
 
-    if definition.get("command", {}).get("type") in ("emotion", "smile"):
+    if definition.get("command", {}).get("type") == "smile":
+        level = int(definition.get("command", {}).get("level", 2))
+        neutral = FACE_EXPRESSION_DEFINITIONS["emotion_neutral"]
+        return {
+            "id": "emotion_neutral",
+            "label": neutral["label"],
+            "groups": [],
+            "axes": {},
+            "command": normalize_face_command(neutral["command"]),
+            "smile_overlay": {
+                "enabled": True,
+                "level": level,
+                "priority": FACE_AXIS_PRIORITY,
+                "keeptime": FACE_AXIS_KEEPTIME,
+            },
+        }
+
+    if definition.get("command", {}).get("type") == "emotion":
         return {
             "id": expression_id,
             "label": definition["label"],
             "groups": [],
             "axes": {},
             "command": normalize_face_command(definition["command"]),
+            "smile_overlay": {
+                "enabled": False,
+                "level": 3,
+                "priority": FACE_AXIS_PRIORITY,
+                "keeptime": FACE_AXIS_KEEPTIME,
+            },
         }
 
     for group in definition["groups"]:
@@ -759,7 +784,7 @@ def face_axis_commands(face_data, keeptime=None):
         return [
             {
                 "command": "/smile",
-                "level": int(command.get("level", 2)),
+                "level": int(command.get("level", 3)),
                 "priority": int(command.get("priority", FACE_AXIS_PRIORITY)),
                 "keeptime": int(keeptime if keeptime is not None else command.get("keeptime", FACE_AXIS_KEEPTIME)),
                 "text": (

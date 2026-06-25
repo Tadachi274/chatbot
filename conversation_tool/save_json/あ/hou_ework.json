@@ -1,0 +1,11 @@
+{
+  "scenario_title": "家事",
+  "utterances": [],
+  "user_name": "あ",
+  "scenario_id": "housework",
+  "scenario_label": "家事",
+  "conversation_type_id": "housework_main",
+  "conversation_intent": "explanation",
+  "active_scene_id": "housework_main",
+  "updated_at": "2026-06-25T18:59:18"
+}
